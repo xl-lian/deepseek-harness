@@ -1,0 +1,4 @@
+dsh-desktop
+build/
+*.app
+.DS_Store
