@@ -3,11 +3,21 @@ set -euo pipefail
 
 root=$(cd "$(dirname "$0")" && pwd)
 app="$root/build/DeepSeek Harness.app"
+sdk="$(xcrun --sdk macosx --show-sdk-path)"
 
-swiftc -O -target arm64-apple-macosx12.0 \
-  -sdk "$(xcrun --sdk macosx --show-sdk-path)" \
-  -framework Cocoa -framework WebKit \
-  -o "$root/dsh-desktop" "$root/main.swift"
+compile() {
+  local arch=$1
+  swiftc -O -target "${arch}-apple-macosx12.0" \
+    -sdk "$sdk" \
+    -framework Cocoa -framework WebKit \
+    -o "$root/dsh-desktop-${arch}" "$root/main.swift"
+}
+
+compile arm64
+compile x86_64
+lipo -create -output "$root/dsh-desktop" \
+  "$root/dsh-desktop-arm64" "$root/dsh-desktop-x86_64"
+rm -f "$root/dsh-desktop-arm64" "$root/dsh-desktop-x86_64"
 
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"

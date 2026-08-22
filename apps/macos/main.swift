@@ -169,17 +169,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - dsh server lifecycle
 
     private func locateDSH() -> String? {
-        let candidates = [
-            ProcessInfo.processInfo.environment["DSH_BIN"],
+        var candidates: [String] = []
+        if let override = ProcessInfo.processInfo.environment["DSH_BIN"] {
+            candidates.append(override)
+        }
+        candidates.append(contentsOf: [
             "/opt/homebrew/bin/dsh",
             "/usr/local/bin/dsh",
-            "/usr/bin/dsh"
-        ]
-        for path in candidates.compactMap({ $0 })
-        where FileManager.default.isExecutableFile(atPath: path) {
-            return path
+            "/usr/bin/dsh",
+        ])
+        if let fromShell = commandFromUserShell("command -v dsh") {
+            candidates.append(fromShell)
+        }
+
+        var seen = Set<String>()
+        for path in candidates where seen.insert(path).inserted {
+            if FileManager.default.isExecutableFile(atPath: path) {
+                return path
+            }
         }
         return nil
+    }
+
+    /// GUI apps get a tiny PATH. Source the user's shell startup files so
+    /// Homebrew, nvm, fnm, and volta installs of `dsh` are visible.
+    private func commandFromUserShell(_ command: String) -> String? {
+        let script = """
+        [ -f "$HOME/.zprofile" ] && . "$HOME/.zprofile"
+        [ -f "$HOME/.zshrc" ] && . "$HOME/.zshrc"
+        [ -f "$HOME/.bash_profile" ] && . "$HOME/.bash_profile"
+        [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+        [ -f "$HOME/.profile" ] && . "$HOME/.profile"
+        \(command)
+        """
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        process.arguments = ["-c", script]
+        let stdout = Pipe()
+        process.standardOutput = stdout
+        process.standardError = FileHandle.nullDevice
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            return nil
+        }
+        guard process.terminationStatus == 0 else { return nil }
+        let text = String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return text.isEmpty ? nil : text
     }
 
     private func startServer() -> String? {
