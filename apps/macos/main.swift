@@ -39,8 +39,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var webView: DesktopWebView!
     private var serverProcess: Process?
     private let serverURL = URL(string: "http://127.0.0.1:3080")!
+    private var authenticatedURL: URL?
     private var startupTimer: Timer?
     private var readyChecks = 0
+    private var stdoutBuffer = Data()
+
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         buildMenu()
@@ -235,12 +238,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         process.environment = env
         process.currentDirectoryURL = FileManager.default.homeDirectoryForCurrentUser
 
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+
         do {
             try process.run()
             serverProcess = process
+            watchForReadyURL(pipe)
             return nil
         } catch {
             return error.localizedDescription
+        }
+    }
+
+    /// `dsh web` prints the authenticated URL (`dsh web: http://…?token=…`)
+    /// once the server listens. Load exactly that URL: the bare origin gets a
+    /// 401 from the current webserver.
+    private func watchForReadyURL(_ pipe: Pipe) {
+        pipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
+            guard let self = self else { return }
+            self.stdoutBuffer.append(handle.availableData)
+            guard let text = String(data: self.stdoutBuffer, encoding: .utf8),
+                  let range = text.range(of: #"https?://[^\s]+"#, options: .regularExpression),
+                  let url = URL(string: String(text[range]))
+            else { return }
+            pipe.fileHandleForReading.readabilityHandler = nil
+            DispatchQueue.main.async {
+                self.authenticatedURL = url
+                self.startupTimer?.invalidate()
+                self.loadServer()
+            }
         }
     }
 
@@ -260,7 +288,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let semaphore = DispatchSemaphore(value: 0)
         var isUp = false
         URLSession.shared.dataTask(with: request) { _, response, _ in
-            if let http = response as? HTTPURLResponse, http.statusCode == 200 {
+            // Any HTTP reply (including the webserver's 401 challenge) means
+            // the server is listening; only connection failures mean "down".
+            if response is HTTPURLResponse {
                 isUp = true
             }
             semaphore.signal()
@@ -293,7 +323,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func loadServer() {
-        webView.load(URLRequest(url: serverURL))
+        let target = authenticatedURL ?? serverURL
+        webView.load(URLRequest(url: target))
     }
 
     private func injectWideChat() {
