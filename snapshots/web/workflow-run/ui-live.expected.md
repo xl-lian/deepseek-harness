@@ -1,3 +1,4 @@
 - button "snapshot-flow Run · Running 1 · 1 member {{duration}} Running" [expanded]
 - button "Run 1 member {{duration}} Running 1"
 - button "Activity"
+- button "Compare runs"
