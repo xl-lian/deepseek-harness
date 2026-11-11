@@ -4335,6 +4335,12 @@ export interface Config {
    * resolve against the process working directory.
    */
   workflowDirs?: string[]
+  /** Maximum `log()` lines one top-level run writes to the Session log (default 500). */
+  maxRecordedLogLines?: number
+  /** Maximum `phase()` transitions one top-level run writes to the Session log (default 500). */
+  maxRecordedPhases?: number
+  /** Longest recorded log line or phase title in characters; longer text is clipped (default 2000). */
+  maxRecordedLineChars?: number
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-tool-workflow -->

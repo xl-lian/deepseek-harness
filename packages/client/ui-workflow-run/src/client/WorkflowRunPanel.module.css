@@ -278,3 +278,41 @@
 .headerContentLayout {
   gap: 6px;
 }
+
+.duration {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  font-variant-numeric: tabular-nums;
+  line-height: calc(18px + var(--dsh-content-font-delta-secondary, 0px));
+  white-space: nowrap;
+}
+
+.activity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  margin: 0;
+  padding: 4px 8px 4px 28px;
+  overflow-y: auto;
+  list-style: none;
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  line-height: calc(18px + var(--dsh-content-font-delta-secondary, 0px));
+}
+
+.activityEntry {
+  min-width: 0;
+  color: var(--dsw-alias-label-secondary);
+  overflow-wrap: anywhere;
+}
+
+.activityEntry[data-activity-kind='phase'] {
+  margin-top: 4px;
+  color: var(--dsw-alias-label-primary);
+  font-weight: 500;
+}
+
+.activityNotice {
+  color: var(--dsw-alias-label-tertiary);
+}

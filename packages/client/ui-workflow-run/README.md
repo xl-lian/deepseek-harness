@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Use `dsh-client-ui-workflow-run` to inspect each durable top-level workflow run as an independent Chat node. Expand a run to see its phases and expand a phase to see members; running, failed, cancelled, and interrupted levels open by default, while completed levels remain closed. A running member can open its child Session only when it belongs to the current Session and is available locally. The node shows identities and statuses only; scripts, outputs, errors, logs, usage, topology, and controls remain outside this surface.
+Use `dsh-client-ui-workflow-run` to inspect each durable top-level workflow run as an independent Chat node. Expand a run to see its phases and expand a phase to see members; running, failed, cancelled, and interrupted levels open by default, while completed levels remain closed. A running member can open its child Session only when it belongs to the current Session and is available locally. The header shows the latest phase, member counts, and elapsed time, each level shows its recorded duration, and an Activity disclosure lists recorded phase and log lines. Scripts, outputs, errors, usage, topology, and controls remain outside this surface.
 
 ## Table of Contents
 
@@ -43,7 +43,7 @@ Completion updates the visible status immediately but delays its automatic close
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The node is a deterministic replay of durable session events: `tool-workflow/run-start` creates one Context keyed by `runId`, and member starts, member endings, and the run ending update that Context in log order. A history tail containing only updates remains pending until an older page supplies the unique start, after which prepend, complete replay, and live append produce the same state.
+The node is a deterministic replay of durable session events: `tool-workflow/run-start` creates one Context keyed by `runId`, and phase and log records, member starts, member endings, and the run ending update that Context in log order. Durations come from those events' recorded times; a span without a recorded end ticks only while its run is live. A history tail containing only updates remains pending until an older page supplies the unique start, after which prepend, complete replay, and live append produce the same state.
 
 ### Disclosure choices
 
@@ -88,7 +88,7 @@ These limits define which runs produce records and what the node exposes; they a
 - **Only top-level calls through `dsh-tool-workflow` produce these records** — nested PTC mode calls and direct `WorkflowEngine` consumers do not.
 - **A run lost without terminal events in a normally ended Turn stays running** — for example a background run whose process crashed during a later Turn, or a run whose recording stopped after a failed append; the session log carries no fact that marks it stopped.
 - **Navigation is intentionally live-only** — terminal members remain visible for review but never expose a cold-session opener from this node.
-- **The node shows run, phase, member identity, and status only** — scripts, outputs, errors, logs, usage, static topology, and controls remain outside this surface.
+- **The node shows recorded progress only** — scripts, outputs, errors, usage, static topology, and controls remain outside this surface, and an interrupted span has no duration because no end was recorded.
 
 <a id="dev-note"></a>
 ### Dev Note

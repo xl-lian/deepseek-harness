@@ -4,7 +4,7 @@ import type {
 import type { ChatConversationViewNode } from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {
-  ToolWorkflowAgentEndData, ToolWorkflowAgentStartData,
+  ToolWorkflowAgentEndData, ToolWorkflowAgentStartData, ToolWorkflowLogData, ToolWorkflowPhaseData,
 } from '@deepseek-ai/dsh-tool-workflow/types'
 import type { WorkflowAgentOutcome, WorkflowStopReason } from '@deepseek-ai/dsh-workflow/types'
 
@@ -17,6 +17,18 @@ export interface WorkflowRunMemberData {
   readonly label: string
   readonly childId: SessionId
   readonly status: WorkflowRunStatus
+  /** Unix epoch milliseconds of the member's recorded start. */
+  readonly startedAt: number
+  /** Unix epoch milliseconds of the member's recorded settlement. */
+  readonly endedAt?: number
+}
+
+/** One recorded `phase()` or `log()` call, in log order. */
+export interface WorkflowRunActivityEntry {
+  /** Session sequence number of the record. */
+  readonly seq: number
+  readonly kind: 'phase' | 'log'
+  readonly text: string
 }
 
 /** Final renderer data for one exact phase identity. */
@@ -32,6 +44,15 @@ export interface WorkflowRunChatData {
   readonly name: string
   readonly status: WorkflowRunStatus
   readonly phases: readonly WorkflowRunPhaseData[]
+  /** Unix epoch milliseconds of the run's recorded start. */
+  readonly startedAt: number
+  /** Unix epoch milliseconds of the run's recorded settlement. */
+  readonly endedAt?: number
+  /** Title of the latest recorded `phase()` call. */
+  readonly currentPhase?: string
+  readonly activity: readonly WorkflowRunActivityEntry[]
+  /** Progress records the Host skipped under its recording caps. */
+  readonly progressEventsDropped: number
 }
 
 declare module '@deepseek-ai/dsh-client-ui-chat/client' {
@@ -43,12 +64,18 @@ declare module '@deepseek-ai/dsh-client-ui-chat/client' {
 
 interface WorkflowMemberState extends Omit<ToolWorkflowAgentStartData, 'runId'> {
   readonly outcome?: WorkflowAgentOutcome
+  readonly startedAt: number
+  readonly endedAt?: number
 }
 
 interface WorkflowState {
   readonly name: string
   readonly stopReason?: WorkflowStopReason
   readonly members: readonly WorkflowMemberState[]
+  readonly startedAt: number
+  readonly endedAt?: number
+  readonly activity: readonly WorkflowRunActivityEntry[]
+  readonly progressEventsDropped: number
 }
 
 /**
@@ -115,8 +142,11 @@ function projectWorkflow(
       status: member.outcome === undefined
         ? interrupted ? 'interrupted' : 'running'
         : statusFromOutcome(member.outcome),
+      startedAt: member.startedAt,
+      ...member.endedAt === undefined ? {} : { endedAt: member.endedAt },
     })
   }
+  const currentPhase = state.activity.findLast(entry => entry.kind === 'phase')
   const projectedPhases = [...phases].map(([key, phase]) => ({
     key,
     phase: phase.phase,
@@ -128,24 +158,39 @@ function projectWorkflow(
       ? interrupted ? 'interrupted' : 'running'
       : statusFromStopReason(state.stopReason),
     phases: projectedPhases,
+    startedAt: state.startedAt,
+    ...state.endedAt === undefined ? {} : { endedAt: state.endedAt },
+    ...currentPhase === undefined ? {} : { currentPhase: currentPhase.text },
+    activity: state.activity,
+    progressEventsDropped: state.progressEventsDropped,
   }
 }
 
-function updateAgentStart(state: WorkflowState, data: ToolWorkflowAgentStartData): WorkflowState {
+function updateAgentStart(state: WorkflowState, data: ToolWorkflowAgentStartData, time: number): WorkflowState {
   const member: WorkflowMemberState = {
     seq: data.seq,
     label: data.label,
     ...data.phase === undefined ? {} : { phase: data.phase },
     childId: data.childId,
+    startedAt: time,
   }
   return { ...state, members: [...state.members, member] }
 }
 
-function updateAgentEnd(state: WorkflowState, data: ToolWorkflowAgentEndData): WorkflowState {
+function updateProgress(
+  state: WorkflowState,
+  seq: number,
+  kind: WorkflowRunActivityEntry['kind'],
+  data: ToolWorkflowPhaseData | ToolWorkflowLogData,
+): WorkflowState {
+  return { ...state, activity: [...state.activity, { seq, kind, text: 'title' in data ? data.title : data.message }] }
+}
+
+function updateAgentEnd(state: WorkflowState, data: ToolWorkflowAgentEndData, time: number): WorkflowState {
   return {
     ...state,
     members: state.members.map(member => member.seq === data.seq
-      ? { ...member, outcome: data.outcome }
+      ? { ...member, outcome: data.outcome, endedAt: time }
       : member),
   }
 }
@@ -158,6 +203,8 @@ export const workflowRunDefinition: ConversationNodeDefinition<WorkflowState> = 
     if (event.type === 'tool-workflow/run-start') return { id: String(event.data.runId), role: 'start' }
     if (event.type === 'tool-workflow/agent-start'
       || event.type === 'tool-workflow/agent-end'
+      || event.type === 'tool-workflow/phase'
+      || event.type === 'tool-workflow/log'
       || event.type === 'tool-workflow/run-end') {
       return { id: String(event.data.runId), role: 'update' }
     }
@@ -167,17 +214,34 @@ export const workflowRunDefinition: ConversationNodeDefinition<WorkflowState> = 
     if (match.event.type !== 'tool-workflow/run-start') {
       throw new Error('workflow-run start requires tool-workflow/run-start')
     }
-    return { name: match.event.data.name, members: [] }
+    return {
+      name: match.event.data.name,
+      members: [],
+      startedAt: match.event.time,
+      activity: [],
+      progressEventsDropped: 0,
+    }
   },
   update: (context, match) => {
     if (match.event.type === 'tool-workflow/agent-start') {
-      return updateAgentStart(context.state, match.event.data)
+      return updateAgentStart(context.state, match.event.data, match.event.time)
     }
     if (match.event.type === 'tool-workflow/agent-end') {
-      return updateAgentEnd(context.state, match.event.data)
+      return updateAgentEnd(context.state, match.event.data, match.event.time)
+    }
+    if (match.event.type === 'tool-workflow/phase') {
+      return updateProgress(context.state, match.event.seq, 'phase', match.event.data)
+    }
+    if (match.event.type === 'tool-workflow/log') {
+      return updateProgress(context.state, match.event.seq, 'log', match.event.data)
     }
     if (match.event.type === 'tool-workflow/run-end') {
-      return { ...context.state, stopReason: match.event.data.stopReason }
+      return {
+        ...context.state,
+        stopReason: match.event.data.stopReason,
+        endedAt: match.event.time,
+        progressEventsDropped: match.event.data.progressEventsDropped ?? 0,
+      }
     }
     return context.state
   },

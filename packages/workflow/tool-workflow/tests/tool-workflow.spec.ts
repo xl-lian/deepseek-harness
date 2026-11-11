@@ -100,7 +100,13 @@ class StubEngine extends WorkflowEngine {
   }
 }
 
-async function setup(config?: { toolName?: string; maxResultChars?: number }) {
+async function setup(config?: {
+  toolName?: string
+  maxResultChars?: number
+  maxRecordedLogLines?: number
+  maxRecordedPhases?: number
+  maxRecordedLineChars?: number
+}) {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
@@ -149,6 +155,67 @@ describe('dsh-tool-workflow', () => {
     expect(rendered).toContain('workflow "audit" completed (7 agents)')
     expect(rendered).toContain('"findings"')
     expect(engine.disposed).toBe(1)
+  })
+
+  it('records foreground phases and log lines in order, clipped, and counts what the caps skip', async () => {
+    const { ctx, engine, parent, session } = await setup({ maxRecordedLogLines: 1, maxRecordedPhases: 1, maxRecordedLineChars: 4 })
+    const pending = execute(ctx, { script: SCRIPT, meta: META }, { agent: parent })
+    await vi.waitFor(() => { expect(engine.requests).toHaveLength(1) })
+    const runId = WorkflowRunId('run-1')
+    engine.phase(runId, 'Scan')
+    engine.logLine(runId, 'abcdefgh')
+    engine.phase(runId, 'Second')
+    engine.logLine(runId, 'second')
+    engine.settleRun(runId, { value: 1, stopReason: 'completed', agentsStarted: 0 })
+    expect((await pending).isError).toBe(false)
+    expect(session.snapshotEvents().map(event => [event.type, event.data])).toEqual([
+      ['tool-workflow/run-start', { runId, name: 'audit' }],
+      ['tool-workflow/phase', { runId, title: 'Scan' }],
+      ['tool-workflow/log', { runId, message: 'abcd…' }],
+      ['tool-workflow/run-end', { runId, stopReason: 'completed', progressEventsDropped: 2 }],
+    ])
+  })
+
+  it('records a line of exactly the character limit verbatim', async () => {
+    const { ctx, engine, parent, session } = await setup({ maxRecordedLineChars: 4 })
+    const pending = execute(ctx, { script: SCRIPT, meta: META }, { agent: parent })
+    await vi.waitFor(() => { expect(engine.requests).toHaveLength(1) })
+    const runId = WorkflowRunId('run-1')
+    engine.logLine(runId, 'abcd')
+    engine.settleRun(runId, { value: 1, stopReason: 'completed', agentsStarted: 0 })
+    await pending
+    expect(session.snapshotEvents().find(event => event.type === 'tool-workflow/log')?.data).toEqual({ runId, message: 'abcd' })
+  })
+
+  it.each([
+    ['phase', 'tool-workflow/phase', (engine: StubEngine) => { engine.phase(WorkflowRunId('run-1'), 'Scan') }],
+    ['log', 'tool-workflow/log', (engine: StubEngine) => { engine.logLine(WorkflowRunId('run-1'), 'line') }],
+  ] as const)('stops recording after a failed %s append without failing the run', async (_label, type, emit) => {
+    const { ctx, engine, parent, session } = await setup()
+    const pending = execute(ctx, { script: SCRIPT, meta: META }, { agent: parent })
+    await vi.waitFor(() => { expect(engine.requests).toHaveLength(1) })
+    const append = session.append.bind(session)
+    vi.spyOn(session, 'append').mockImplementation(((event: string, ...rest: unknown[]) => {
+      if (event === type) throw new Error('disk full')
+      return (append as (...values: unknown[]) => unknown)(event, ...rest)
+    }) as typeof session.append)
+    emit(engine)
+    engine.settleRun(WorkflowRunId('run-1'), { value: 1, stopReason: 'completed', agentsStarted: 0 })
+    expect((await pending).isError).toBe(false)
+    expect(session.snapshotEvents().map(event => event.type)).toEqual(['tool-workflow/run-start'])
+  })
+
+  it('ignores progress from runs it does not record', async () => {
+    const { ctx, engine, parent, session } = await setup()
+    const pending = execute(ctx, { script: SCRIPT, meta: META }, { agent: parent })
+    await vi.waitFor(() => { expect(engine.requests).toHaveLength(1) })
+    const stranger = WorkflowRunId('run-1')
+    engine.settleRun(stranger, { value: 1, stopReason: 'completed', agentsStarted: 0 })
+    await pending
+    engine.requests.push(engine.requests[0]!)
+    engine.phase(WorkflowRunId('run-2'), 'Late')
+    engine.logLine(WorkflowRunId('run-2'), 'late')
+    expect(session.snapshotEvents().some(event => event.type === 'tool-workflow/phase' || event.type === 'tool-workflow/log')).toBe(false)
   })
 
   it('records one top-level run and its members in the calling Session after cleanup', async () => {
@@ -530,7 +597,7 @@ describe('dsh-tool-workflow', () => {
       expect(engine.disposed).toBe(1)
       // The durable session record still brackets the background run.
       expect(session.snapshotEvents().map(event => event.type)).toEqual([
-        'tool-workflow/run-start', 'job/registered', 'tool-workflow/agent-start',
+        'tool-workflow/run-start', 'job/registered', 'tool-workflow/phase', 'tool-workflow/log', 'tool-workflow/agent-start',
         'tool-workflow/agent-end', 'tool-workflow/run-end', 'job/settled',
       ])
       // A straggling event after settlement finds no tracked run and is dropped.

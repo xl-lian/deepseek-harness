@@ -23,6 +23,11 @@ export const zh = {
   'status.failed': '失败',
   'status.cancelled': '已取消',
   'status.interrupted': '已中断',
+  'duration.seconds': '{seconds}秒',
+  'duration.minutes': '{minutes}分{seconds}秒',
+  'duration.hours': '{hours}小时{minutes}分',
+  'activity.title': '活动',
+  'activity.dropped': '另有 {count} 条进度未记录',
 }
 
 /** English dictionary (same key set). */
@@ -45,6 +50,11 @@ export const en: Record<WorkflowRunKey, string> = {
   'status.failed': 'Failed',
   'status.cancelled': 'Cancelled',
   'status.interrupted': 'Interrupted',
+  'duration.seconds': '{seconds}s',
+  'duration.minutes': '{minutes}m {seconds}s',
+  'duration.hours': '{hours}h {minutes}m',
+  'activity.title': 'Activity',
+  'activity.dropped': '{count} more progress entries were not recorded',
 }
 
 /** Union of this namespace's dictionary keys. */
@@ -70,6 +80,11 @@ export const ja = {
   'status.failed': '失敗',
   'status.cancelled': 'キャンセル',
   'status.interrupted': '中断',
+  'duration.seconds': '{seconds}秒',
+  'duration.minutes': '{minutes}分 {seconds}秒',
+  'duration.hours': '{hours}時間 {minutes}分',
+  'activity.title': 'アクティビティ',
+  'activity.dropped': 'さらに {count} 件の進捗は記録されていません',
 } satisfies Record<keyof typeof en, string>
 
 /** Spanish dictionary, checked against the English keys. */
@@ -92,6 +107,11 @@ export const es = {
   'status.failed': 'Fallido',
   'status.cancelled': 'Cancelado',
   'status.interrupted': 'interrumpido',
+  'duration.seconds': '{seconds}s',
+  'duration.minutes': '{minutes}m {seconds}s',
+  'duration.hours': '{hours}h {minutes}m',
+  'activity.title': 'Actividad',
+  'activity.dropped': '{count} entradas de progreso más no se registraron',
 } satisfies Record<keyof typeof en, string>
 
 /** French dictionary, checked against the English keys. */
@@ -114,6 +134,11 @@ export const fr = {
   'status.failed': 'Échec',
   'status.cancelled': 'Annulé',
   'status.interrupted': 'Interrompu',
+  'duration.seconds': '{seconds}s',
+  'duration.minutes': '{minutes}m {seconds}s',
+  'duration.hours': '{hours}h {minutes}m',
+  'activity.title': 'Activité',
+  'activity.dropped': '{count} entrées de progression supplémentaires non enregistrées',
 } satisfies Record<keyof typeof en, string>
 
 /** German dictionary, checked against the English keys. */
@@ -136,6 +161,11 @@ export const de = {
   'status.failed': 'Fehlgeschlagen',
   'status.cancelled': 'Abgesagt',
   'status.interrupted': 'Unterbrochen',
+  'duration.seconds': '{seconds}s',
+  'duration.minutes': '{minutes}m {seconds}s',
+  'duration.hours': '{hours}h {minutes}m',
+  'activity.title': 'Aktivität',
+  'activity.dropped': '{count} weitere Fortschrittseinträge wurden nicht aufgezeichnet',
 } satisfies Record<keyof typeof en, string>
 
 /** Russian dictionary, checked against the English keys. */
@@ -158,6 +188,11 @@ export const ru = {
   'status.failed': 'Не удалось',
   'status.cancelled': 'Отменено',
   'status.interrupted': 'Прерванный',
+  'duration.seconds': '{seconds}s',
+  'duration.minutes': '{minutes}m {seconds}s',
+  'duration.hours': '{hours}h {minutes}m',
+  'activity.title': 'Активность',
+  'activity.dropped': 'Ещё записей о ходе работы не сохранено: {count}',
 } satisfies Record<keyof typeof en, string>
 
 /** Portuguese dictionary, checked against the English keys. */
@@ -180,4 +215,9 @@ export const pt = {
   'status.failed': 'Falha',
   'status.cancelled': 'Cancelado',
   'status.interrupted': 'Interrompido',
+  'duration.seconds': '{seconds}s',
+  'duration.minutes': '{minutes}m {seconds}s',
+  'duration.hours': '{hours}h {minutes}m',
+  'activity.title': 'Atividade',
+  'activity.dropped': 'Mais {count} entradas de progresso não foram registradas',
 } satisfies Record<keyof typeof en, string>

@@ -56,6 +56,9 @@ A missing directory, an invalid or unpaired meta file, a mismatched name, or a n
 | `maxResultChars` | `50000` | Rendered-result ceiling; longer JSON is truncated with a notice. |
 | `enableRunInBackground` | `true` | Expose `run_in_background`; disabled calls are also rejected. |
 | `workflowDirs` | `[]` | Directories of saved workflows, each a `<name>.meta.json` beside a `<name>.js` script body. |
+| `maxRecordedLogLines` | `500` | `log()` lines one top-level run writes to the Session log. |
+| `maxRecordedPhases` | `500` | `phase()` transitions one top-level run writes to the Session log. |
+| `maxRecordedLineChars` | `2000` | Longest recorded log line or phase title; longer text is clipped. |
 
 The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-tool-workflow) is the exhaustive source for every accepted field.
 
@@ -83,9 +86,9 @@ A background call registers the run through `jobs.start` inside the job starter,
 
 ### Durable session records
 
-For a root transport execution (`exec.parent` absent), the tool projects the run into the calling Agent's Session with four log-only events: run-start after `start()` returns, member starts and endings filtered by `run.id`, then run-end only after the result is available and disposal reaches quiescence. Nested transport calls execute normally but write no record. The first failed Session append disables later recording for that run with one warning, leaving either no record or a legal continuous prefix without changing the tool result or cleanup.
+For a root transport execution (`exec.parent` absent), the tool projects the run into the calling Agent's Session with log-only events: run-start after `start()` returns, phase and log records and member starts and endings filtered by `run.id`, then run-end only after the result is available and disposal reaches quiescence. Nested transport calls execute normally but write no record. The first failed Session append disables later recording for that run with one warning, leaving either no record or a legal continuous prefix without changing the tool result or cleanup.
 
-The engine's `workflow/phase` and `workflow/log` events have no per-line durable surface from this tool: the session log deliberately records run and member lifecycle only, and the Web transcript derives from those records. A background run's lines reach a human through the job observation record instead, which is transient by design.
+Phase and log records are narration and imply no execution structure. Each run's records are capped by `maxRecordedPhases` and `maxRecordedLogLines`, each text is clipped to `maxRecordedLineChars`, and run-end reports how many records the caps skipped. A background run's lines also reach the job's output ring, which is transient by design.
 
 ### Render intent
 

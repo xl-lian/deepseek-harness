@@ -34,10 +34,24 @@ export interface ToolWorkflowAgentEndData {
   readonly outcome: WorkflowAgentOutcome
 }
 
+/** Records one `phase()` call of a top-level run. */
+export interface ToolWorkflowPhaseData {
+  readonly runId: WorkflowRunId
+  readonly title: string
+}
+
+/** Records one `log()` call of a top-level run; a line over the configured length is clipped. */
+export interface ToolWorkflowLogData {
+  readonly runId: WorkflowRunId
+  readonly message: string
+}
+
 /** Settles one workflow run after its live resources reach quiescence. */
 export interface ToolWorkflowRunEndData {
   readonly runId: WorkflowRunId
   readonly stopReason: WorkflowStopReason
+  /** Phase and log records skipped by the recording caps; absent when none were. */
+  readonly progressEventsDropped?: number
 }
 
 declare module '@deepseek-ai/dsh-session/types' {
@@ -58,8 +72,18 @@ declare module '@deepseek-ai/dsh-session/types' {
      */
     'tool-workflow/agent-end': ToolWorkflowAgentEndData
     /**
+     * Records one script phase transition as narration; phases impose no execution structure.
+     * @param data - run identity and verbatim or clipped phase title.
+     */
+    'tool-workflow/phase': ToolWorkflowPhaseData
+    /**
+     * Records one script narration line.
+     * @param data - run identity and verbatim or clipped message.
+     */
+    'tool-workflow/log': ToolWorkflowLogData
+    /**
      * Closes one workflow record after cleanup.
-     * @param data - stable run identity and terminal reason.
+     * @param data - stable run identity, terminal reason, and any dropped progress count.
      */
     'tool-workflow/run-end': ToolWorkflowRunEndData
   }

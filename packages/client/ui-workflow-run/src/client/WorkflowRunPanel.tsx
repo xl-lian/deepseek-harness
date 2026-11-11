@@ -1,5 +1,5 @@
 import {
-  useLayoutEffect, useMemo, useRef, useState,
+  useEffect, useLayoutEffect, useMemo, useRef, useState,
   type FocusEvent, type MouseEvent, type ReactNode,
 } from 'react'
 import {
@@ -13,7 +13,7 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SessionStatusSnapshot } from '@deepseek-ai/dsh-client-ui-session/client'
 import type { WorkflowRunKey } from './locales.ts'
 import type {
-  WorkflowRunMemberData, WorkflowRunPhaseData, WorkflowRunStatus,
+  WorkflowRunActivityEntry, WorkflowRunMemberData, WorkflowRunPhaseData, WorkflowRunStatus,
 } from './workflow-definition.ts'
 import css from './WorkflowRunPanel.module.css'
 
@@ -45,6 +45,38 @@ function dotState(status: WorkflowRunStatus): StateDotState {
     case 'interrupted': return 'warning'
     /* v8 ignore next -- WorkflowRunStatus is closed and every variant is handled above. */
     default: return status satisfies never
+  }
+}
+
+function formatDuration(elapsedMs: number, t: WorkflowRunPanelProps['t']): string {
+  const totalSeconds = Math.max(0, Math.floor(elapsedMs / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  if (hours > 0) return t('duration.hours', { hours, minutes })
+  return minutes > 0 ? t('duration.minutes', { minutes, seconds }) : t('duration.seconds', { seconds })
+}
+
+/**
+ * Render a span's elapsed time. A span with no recorded end ticks while its run
+ * is live and otherwise has no provable duration.
+ */
+function spanDuration(
+  startedAt: number,
+  endedAt: number | undefined,
+  now: number | undefined,
+  t: WorkflowRunPanelProps['t'],
+): string | null {
+  const end = endedAt ?? now
+  return end === undefined ? null : formatDuration(end - startedAt, t)
+}
+
+function phaseSpan(phase: WorkflowRunPhaseData): { startedAt: number; endedAt: number | undefined } {
+  const startedAt = Math.min(...phase.members.map(member => member.startedAt))
+  const ended = phase.members.every(member => member.endedAt !== undefined)
+  return {
+    startedAt,
+    endedAt: ended ? Math.max(...phase.members.map(member => member.endedAt as number)) : undefined,
   }
 }
 
@@ -203,9 +235,11 @@ function navigableMembers(
   return result
 }
 
-function RunHeader({ children, count, name, onToggle, open, status, t }: {
+function RunHeader({ children, count, duration, name, onToggle, open, status, summary, t }: {
   readonly children: ReactNode
   readonly count: number
+  readonly duration: string | null
+  readonly summary: string
   readonly name: string
   readonly onToggle: () => void
   readonly open: boolean
@@ -229,7 +263,8 @@ function RunHeader({ children, count, name, onToggle, open, status, t }: {
       collapsedContent={(
         <>
           <span className={css.separator} aria-hidden />
-          <span className={css.runSummary}>{memberCount(count, t)}</span>
+          <span className={css.runSummary} data-run-summary>{summary === '' ? memberCount(count, t) : `${summary} · ${memberCount(count, t)}`}</span>
+          {duration === null ? null : <span className={css.duration} data-run-duration>{duration}</span>}
           <span className={css.statusTail} data-status={status}>
             <StateDot state={dotState(status)} />
             <span>{t(STATUS_KEYS[status])}</span>
@@ -242,8 +277,9 @@ function RunHeader({ children, count, name, onToggle, open, status, t }: {
   )
 }
 
-function MemberRow({ member, mode, openSession, parentSessionId, t }: {
+function MemberRow({ member, mode, now, openSession, parentSessionId, t }: {
   readonly member: WorkflowRunMemberData
+  readonly now: number | undefined
   readonly mode: ChildMode | undefined
   readonly openSession: WorkflowRunInjected['openSession']
   readonly parentSessionId: SessionId
@@ -251,6 +287,7 @@ function MemberRow({ member, mode, openSession, parentSessionId, t }: {
 }) {
   const navigable = mode !== undefined
   const name = readableMember(member.label, t)
+  const duration = spanDuration(member.startedAt, member.endedAt, now, t)
   const [focused, setFocused] = useState(false)
   const renderButton = navigable || focused
 
@@ -258,6 +295,7 @@ function MemberRow({ member, mode, openSession, parentSessionId, t }: {
     <>
       <span className={css.dotSlot}><StateDot state={dotState(member.status)} /></span>
       <span className={css.memberLabelWrap} data-member-label-wrap><span className={css.memberLabel} data-member-label>{name}</span></span>
+      {duration === null ? null : <span className={css.duration} data-member-duration>{duration}</span>}
       <span className={css.memberStatus} data-member-status-text>{t(STATUS_KEYS[member.status])}</span>
     </>
   )
@@ -291,7 +329,7 @@ function MemberRow({ member, mode, openSession, parentSessionId, t }: {
 
 function PhaseSection({
   contentRef, onContentBlur, onToggle, open, pendingCleanCollapse,
-  phase, navigable, openSession, parentSessionId, t,
+  phase, navigable, now, openSession, parentSessionId, t,
 }: {
   readonly contentRef: (element: HTMLDivElement | null) => void
   readonly onContentBlur: (event: FocusEvent<HTMLDivElement>) => void
@@ -300,10 +338,13 @@ function PhaseSection({
   readonly pendingCleanCollapse: boolean
   readonly phase: WorkflowRunPhaseData
   readonly navigable: ReadonlyMap<SessionId, ChildMode>
+  readonly now: number | undefined
   readonly openSession: WorkflowRunInjected['openSession']
   readonly parentSessionId: SessionId
   readonly t: WorkflowRunPanelProps['t']
 }) {
+  const span = phaseSpan(phase)
+  const duration = spanDuration(span.startedAt, span.endedAt, now, t)
   return (
     <div
       className={css.phase}
@@ -326,6 +367,7 @@ function PhaseSection({
           <>
             <span className={css.separator} aria-hidden />
             <span className={css.phaseCount} data-phase-count>{memberCount(phase.members.length, t)}</span>
+            {duration === null ? null : <span className={css.duration} data-phase-duration>{duration}</span>}
             <span className={css.phaseStatus} data-phase-status-text>{phaseStatusSummary(phase.members, t)}</span>
           </>
         )}
@@ -336,12 +378,46 @@ function PhaseSection({
               key={member.seq}
               member={member}
               mode={navigable.get(member.childId)}
+              now={now}
               openSession={openSession}
               parentSessionId={parentSessionId}
               t={t}
             />
           ))}
         </div>
+      </StatusDisclosure>
+    </div>
+  )
+}
+
+function ActivitySection({ entries, dropped, t }: {
+  readonly entries: readonly WorkflowRunActivityEntry[]
+  readonly dropped: number
+  readonly t: WorkflowRunPanelProps['t']
+}) {
+  const [open, setOpen] = useState(false)
+  if (entries.length === 0 && dropped === 0) return null
+  return (
+    <div className={css.phase} data-workflow-activity>
+      <StatusDisclosure
+        icon={<IconChevronRightOutlineRegular />}
+        title={t('activity.title')}
+        open={open}
+        onToggle={() => { setOpen(value => !value) }}
+        expandOnRowClick
+        previewChevron={false}
+        rowClassName={css.phaseHeader}
+        contentClassName={css.headerContent}
+        contentLayoutClassName={css.headerContentLayout}
+        leadingClassName={css.phaseLeading}
+        titleClassName={css.phaseTitle}
+      >
+        <ol className={css.activity}>
+          {entries.map(entry => (
+            <li key={entry.seq} className={css.activityEntry} data-activity-kind={entry.kind}>{entry.text}</li>
+          ))}
+          {dropped === 0 ? null : <li className={css.activityNotice}>{t('activity.dropped', { count: dropped })}</li>}
+        </ol>
       </StatusDisclosure>
     </div>
   )
@@ -361,6 +437,17 @@ export function WorkflowRunPanel({ node, sessionId, useSessions, useSessionStatu
     run: initialDisclosureState(runFacts),
     phases: new Map(phaseFacts.map(([key, facts]) => [key, initialDisclosureState(facts)])),
   }))
+  const live = node.data.status === 'running'
+  const [clock, setClock] = useState(() => Date.now())
+  // The clock only runs while the run can still move.
+  useEffect(() => {
+    if (!live) return
+    setClock(Date.now())
+    const timer = setInterval(() => { setClock(Date.now()) }, 1_000)
+    return () => { clearInterval(timer) }
+  }, [live])
+  const now = live ? clock : undefined
+  const members = useMemo(() => node.data.phases.flatMap(phase => phase.members), [node.data.phases])
   const runContentRef = useRef<HTMLDivElement>(null)
   const phaseContentRefs = useRef(new Map<string, HTMLDivElement>())
   const statuses = useSessionStatus(value => value)
@@ -451,6 +538,11 @@ export function WorkflowRunPanel({ node, sessionId, useSessions, useSessionStatu
     >
       <RunHeader
         count={totalMembers}
+        duration={spanDuration(node.data.startedAt, node.data.endedAt, now, t)}
+        summary={[
+          ...node.data.currentPhase === undefined ? [] : [node.data.currentPhase],
+          ...members.length === 0 ? [] : [phaseStatusSummary(members, t)],
+        ].join(' · ')}
         name={node.data.name}
         open={disclosures.run.open}
         onToggle={toggleRun}
@@ -476,12 +568,14 @@ export function WorkflowRunPanel({ node, sessionId, useSessions, useSessionStatu
                   pendingCleanCollapse={disclosure.pendingCleanCollapse}
                   phase={phase}
                   navigable={navigable}
+                  now={now}
                   openSession={openSession}
                   parentSessionId={sessionId}
                   t={t}
                 />
               )
             })}
+          <ActivitySection entries={node.data.activity} dropped={node.data.progressEventsDropped} t={t} />
         </div>
       </RunHeader>
     </section>

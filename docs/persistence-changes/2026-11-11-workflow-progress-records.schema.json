@@ -1,0 +1,27 @@
+{
+  "formatVersion": 2,
+  "roots": [
+    {"key":"event:tool-workflow/log","kind":"event","event":"tool-workflow/log","surface":false,"digest":"d1a76ca217758d3ffe98fa1a5edbe84d754b66228cd9436ef2fd8c4de38e1886"},
+    {"key":"event:tool-workflow/phase","kind":"event","event":"tool-workflow/phase","surface":false,"digest":"49d14928d15c22e1caaab450eb5e0df37bd0165d0c2d460cbff8cdea371aa28b"},
+    {"key":"event:tool-workflow/run-end","kind":"event","event":"tool-workflow/run-end","surface":false,"digest":"017d6e137661a7c636f963ecb82f2e27745205268733c3f4a2cc80c2e6a5cfba"}
+  ],
+  "types": [],
+  "nodes": {
+    "017d6e137661a7c6": {"kind":"object","properties":[{"name":"data","type":"8b25719027620560","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"fe792a6cd4304945","optional":false}],"indices":[]},
+    "0657d3ca5ac4e7bf": {"kind":"primitive","type":"number"},
+    "1ebc6f9ff3aa9e3a": {"kind":"literal","value":"completed"},
+    "2142e391b9ccb60d": {"kind":"literal","value":"cancelled"},
+    "49d14928d15c22e1": {"kind":"object","properties":[{"name":"data","type":"77c993b445bf2654","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"d3ceeabb961ef999","optional":false}],"indices":[]},
+    "4cd48f3e5108bd6e": {"kind":"primitive","type":"string"},
+    "77c993b445bf2654": {"kind":"object","properties":[{"name":"runId","type":"4cd48f3e5108bd6e","optional":false},{"name":"title","type":"4cd48f3e5108bd6e","optional":false}],"indices":[]},
+    "8465ece5e9d9007c": {"kind":"union","types":["1ebc6f9ff3aa9e3a","2142e391b9ccb60d","a2be0f0cb59f0d4a"]},
+    "8b25719027620560": {"kind":"object","properties":[{"name":"progressEventsDropped","type":"0657d3ca5ac4e7bf","optional":true},{"name":"runId","type":"4cd48f3e5108bd6e","optional":false},{"name":"stopReason","type":"8465ece5e9d9007c","optional":false}],"indices":[]},
+    "a2be0f0cb59f0d4a": {"kind":"literal","value":"error"},
+    "ce0391c7ed060f10": {"kind":"literal","value":"tool-workflow/log"},
+    "d1a76ca217758d3f": {"kind":"object","properties":[{"name":"data","type":"f708c8fe733e61b0","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"ce0391c7ed060f10","optional":false}],"indices":[]},
+    "d3ceeabb961ef999": {"kind":"literal","value":"tool-workflow/phase"},
+    "dacf3d5f3e4ff619": {"kind":"literal","value":true},
+    "f708c8fe733e61b0": {"kind":"object","properties":[{"name":"message","type":"4cd48f3e5108bd6e","optional":false},{"name":"runId","type":"4cd48f3e5108bd6e","optional":false}],"indices":[]},
+    "fe792a6cd4304945": {"kind":"literal","value":"tool-workflow/run-end"}
+  }
+}

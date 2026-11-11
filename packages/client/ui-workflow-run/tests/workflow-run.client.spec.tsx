@@ -2,7 +2,7 @@
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { GlobalStandardProps } from '@deepseek-ai/dsh-client-ui-slots'
 import { Context } from '@deepseek-ai/cordis'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   ConversationNodeAssembler, UiConversation,
@@ -145,17 +145,54 @@ describe('workflow-run Conversation Definition', () => {
       phases: [
         {
           key: 'value:0:', phase: '',
-          members: [{ seq: 1, label: 'first', childId: 'child-1', status: 'completed' }],
+          members: [{ seq: 1, label: 'first', childId: 'child-1', status: 'completed', startedAt: 400, endedAt: 600 }],
         },
         {
           key: 'missing', phase: null,
-          members: [{ seq: 2, label: 'second', childId: 'child-2', status: 'failed' }],
+          members: [{ seq: 2, label: 'second', childId: 'child-2', status: 'failed', startedAt: 500, endedAt: 700 }],
         },
       ],
+      startedAt: 300,
+      endedAt: 800,
+      activity: [],
+      progressEventsDropped: 0,
     })
     const node = [...(value.snapshot('chat') as ChatSnapshot).nodes.values()][0]!
     expect(node.anchorSeq).toBe(3)
     expect(node.kind).toBe('workflow-run')
+  })
+
+  it('folds phase and log records, timing, and the dropped count', () => {
+    const data = workflowData(assembler([
+      at(1, 'turn/start', { turn: 1 }),
+      at(2, 'step/start', { turn: 1, step: 1 }),
+      at(3, 'tool-workflow/run-start', { runId: 'run-1', name: 'audit' }),
+      at(4, 'tool-workflow/phase', { runId: 'run-1', title: 'Scan' }),
+      at(5, 'tool-workflow/log', { runId: 'run-1', message: '3/10' }),
+      at(6, 'tool-workflow/phase', { runId: 'run-1', title: 'Verify' }),
+      at(7, 'tool-workflow/log', { runId: 'run-1', message: 'done' }),
+      at(8, 'tool-workflow/run-end', { runId: 'run-1', stopReason: 'completed', progressEventsDropped: 4 }),
+    ]))
+    expect(data).toMatchObject({
+      currentPhase: 'Verify',
+      startedAt: 300,
+      endedAt: 800,
+      progressEventsDropped: 4,
+      activity: [
+        { seq: 4, kind: 'phase', text: 'Scan' },
+        { seq: 5, kind: 'log', text: '3/10' },
+        { seq: 6, kind: 'phase', text: 'Verify' },
+        { seq: 7, kind: 'log', text: 'done' },
+      ],
+    })
+  })
+
+  it('leaves the current phase absent when no phase was recorded', () => {
+    const data = workflowData(assembler([
+      at(3, 'tool-workflow/run-start', { runId: 'run-1', name: 'audit' }),
+      at(4, 'tool-workflow/log', { runId: 'run-1', message: 'only a log' }),
+    ]))
+    expect(data).not.toHaveProperty('currentPhase')
   })
 
   it('keeps an update-only tail pending until prepend supplies the unique start', () => {
@@ -225,7 +262,8 @@ describe('workflow-run Conversation Definition', () => {
       at(4, 'tool-workflow/run-end', { runId: 'empty', stopReason: 'completed' }),
     ])
     expect(workflowData(value)).toEqual({
-      name: 'empty', status: 'completed', phases: [],
+      name: 'empty', status: 'completed', phases: [], activity: [], progressEventsDropped: 0,
+      startedAt: 300, endedAt: 400,
     })
   })
 
@@ -297,7 +335,27 @@ describe('workflow-run Conversation Definition', () => {
   })
 })
 
-function node(data: WorkflowRunChatData): WorkflowRunPanelProps['node'] {
+type RunMember = WorkflowRunChatData['phases'][number]['members'][number]
+type TestMember = Omit<RunMember, 'startedAt'> & Partial<Pick<RunMember, 'startedAt'>>
+type TestPhase = Omit<WorkflowRunChatData['phases'][number], 'members'> & { readonly members: readonly TestMember[] }
+type TestRunData = Pick<WorkflowRunChatData, 'name' | 'status'>
+  & Partial<Pick<WorkflowRunChatData, 'startedAt' | 'endedAt' | 'currentPhase' | 'activity' | 'progressEventsDropped'>>
+  & { readonly phases: readonly TestPhase[] }
+
+function completeData(data: TestRunData): WorkflowRunChatData {
+  return {
+    activity: [],
+    progressEventsDropped: 0,
+    startedAt: 0,
+    ...data,
+    phases: data.phases.map(entry => ({
+      ...entry,
+      members: entry.members.map(member => ({ startedAt: 0, ...member })),
+    })),
+  }
+}
+
+function node(data: TestRunData): WorkflowRunPanelProps['node'] {
   return {
     key: '12:workflow-runrun-1',
     kind: 'workflow-run',
@@ -306,11 +364,11 @@ function node(data: WorkflowRunChatData): WorkflowRunPanelProps['node'] {
     anchorSeq: 3,
     location: { kind: 'unresolved' },
     visibility: 'visible',
-    data,
+    data: completeData(data),
   }
 }
 
-const phase = (overrides: Partial<WorkflowRunChatData['phases'][number]> = {}): WorkflowRunChatData['phases'][number] => ({
+const phase = (overrides: Partial<TestPhase> = {}): TestPhase => ({
   key: 'missing',
   phase: null,
   members: [{ seq: 1, label: 'worker', childId: 'child-1' as SessionId, status: 'running' }],
@@ -335,7 +393,7 @@ const listState = (overrides: Partial<SessionListState> = {}): SessionListState 
   ...overrides,
 })
 
-function panelProps(data: WorkflowRunChatData, sessions = listState(), openSession = vi.fn()): WorkflowRunPanelProps {
+function panelProps(data: TestRunData, sessions = listState(), openSession = vi.fn()): WorkflowRunPanelProps {
   return {
     node: node(data),
     sessionId: PARENT_ID,
@@ -376,8 +434,89 @@ function panelProps(data: WorkflowRunChatData, sessions = listState(), openSessi
 }
 
 describe('WorkflowRunPanel', () => {
+  describe('progress display', () => {
+    afterEach(() => { vi.useRealTimers() })
+    const settled = (member: Partial<TestMember> = {}): TestMember => ({
+      seq: 1, label: 'worker', childId: CHILD_ID, status: 'completed', startedAt: 1_000, endedAt: 66_000, ...member,
+    })
+
+    it('shows the current phase, counts, and recorded durations for a settled run', () => {
+      const { container } = render(<WorkflowRunPanel {...panelProps({
+        name: 'audit', status: 'completed', startedAt: 0, endedAt: 3_725_000, currentPhase: 'Verify',
+        phases: [phase({ phase: 'Scan', key: 'scan', members: [settled()] })],
+      })} />)
+      expect(container.querySelector('[data-run-summary]')?.textContent).toBe('Verify · 已完成 1 · 1 个成员')
+      expect(container.querySelector('[data-run-duration]')?.textContent).toBe('1小时2分')
+      fireEvent.click(screen.getByRole('button', { name: /audit/ }))
+      expect(container.querySelector('[data-phase-duration]')?.textContent).toBe('1分5秒')
+    })
+
+    it('ticks while live, stops at settlement, and shows seconds', () => {
+      vi.useFakeTimers({ now: 10_000 })
+      const running: TestRunData = {
+        name: 'audit', status: 'running', startedAt: 8_000,
+        phases: [phase({ members: [{ seq: 1, label: 'worker', childId: CHILD_ID, status: 'running', startedAt: 9_000 }] })],
+      }
+      const { container, rerender } = render(<WorkflowRunPanel {...panelProps(running)} />)
+      const duration = (): string | null | undefined => container.querySelector('[data-run-duration]')?.textContent
+      expect(duration()).toBe('2秒')
+      expect(container.querySelector('[data-member-duration]')?.textContent).toBe('1秒')
+      act(() => { vi.advanceTimersByTime(3_000) })
+      expect(duration()).toBe('5秒')
+      rerender(<WorkflowRunPanel {...panelProps({ ...running, status: 'completed', endedAt: 20_000 })} />)
+      act(() => { vi.advanceTimersByTime(60_000) })
+      expect(duration()).toBe('12秒')
+    })
+
+    it('shows no duration for an interrupted span without a recorded end', () => {
+      const { container } = render(<WorkflowRunPanel {...panelProps({
+        name: 'audit', status: 'interrupted', startedAt: 0,
+        phases: [phase({ members: [{ seq: 1, label: 'worker', childId: CHILD_ID, status: 'interrupted', startedAt: 0 }] })],
+      })} />)
+      expect(container.querySelector('[data-run-duration]')).toBeNull()
+      expect(container.querySelector('[data-phase-duration]')).toBeNull()
+      expect(container.querySelector('[data-member-duration]')).toBeNull()
+    })
+
+    it('discloses recorded activity and the dropped count on demand', () => {
+      const { container } = render(<WorkflowRunPanel {...panelProps({
+        name: 'audit', status: 'failed', startedAt: 0, endedAt: 1_000, progressEventsDropped: 2,
+        activity: [{ seq: 4, kind: 'phase', text: 'Scan' }, { seq: 5, kind: 'log', text: '3/10' }],
+        phases: [],
+      })} />)
+      expect(screen.queryByText('3/10')).toBeNull()
+      fireEvent.click(screen.getByRole('button', { name: /活动/ }))
+      expect(screen.getByText('3/10').getAttribute('data-activity-kind')).toBe('log')
+      expect(screen.getByText('Scan').getAttribute('data-activity-kind')).toBe('phase')
+      expect(screen.getByText('另有 2 条进度未记录')).toBeTruthy()
+      expect(container.querySelector('[data-workflow-activity]')).not.toBeNull()
+    })
+
+    it('discloses activity without a notice when nothing was dropped', () => {
+      render(<WorkflowRunPanel {...panelProps({
+        name: 'audit', status: 'failed', startedAt: 0, endedAt: 1_000,
+        activity: [{ seq: 4, kind: 'log', text: 'only' }], phases: [],
+      })} />)
+      fireEvent.click(screen.getByRole('button', { name: /活动/ }))
+      expect(screen.getByText('only')).toBeTruthy()
+      expect(screen.queryByText(/未记录/)).toBeNull()
+    })
+
+    it('shows a dropped-only notice and hides the section with no progress', () => {
+      const dropped = render(<WorkflowRunPanel {...panelProps({
+        name: 'audit', status: 'failed', startedAt: 0, endedAt: 1_000, progressEventsDropped: 1, phases: [],
+      })} />)
+      expect(dropped.container.querySelector('[data-workflow-activity]')).not.toBeNull()
+      dropped.unmount()
+      const empty = render(<WorkflowRunPanel {...panelProps({
+        name: 'audit', status: 'failed', startedAt: 0, endedAt: 1_000, phases: [],
+      })} />)
+      expect(empty.container.querySelector('[data-workflow-activity]')).toBeNull()
+    })
+  })
+
   it('keeps live run and phase controls manual across ordinary updates and outer hiding', () => {
-    const running: WorkflowRunChatData = {
+    const running: TestRunData = {
       name: 'audit', status: 'running', phases: [phase({ key: 'research', phase: 'Research' })],
     }
     const view = render(<WorkflowRunPanel {...panelProps(running)} />)
@@ -423,7 +562,7 @@ describe('WorkflowRunPanel', () => {
   })
 
   it('folds each normal completion once and opens a new same-key activity cycle', () => {
-    const running: WorkflowRunChatData = {
+    const running: TestRunData = {
       name: 'audit', status: 'running', phases: [phase()],
     }
     const view = render(<WorkflowRunPanel {...panelProps(running)} />)
@@ -432,7 +571,7 @@ describe('WorkflowRunPanel', () => {
     fireEvent.keyDown(runningPhase, { key: 'Enter' })
     expect(screen.getByText('worker')).toBeTruthy()
 
-    const phaseCompleted: WorkflowRunChatData = {
+    const phaseCompleted: TestRunData = {
       ...running,
       phases: [phase({
         members: [{
@@ -447,7 +586,7 @@ describe('WorkflowRunPanel', () => {
     fireEvent.click(phaseHeader)
     expect(screen.getByText('done')).toBeTruthy()
 
-    const cleanUpdate: WorkflowRunChatData = {
+    const cleanUpdate: TestRunData = {
       ...phaseCompleted,
       phases: [phase({
         members: [{
@@ -461,7 +600,7 @@ describe('WorkflowRunPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: /未分阶段/ }))
     const runHeader = screen.getByRole('button', { name: /^audit/ })
     fireEvent.click(runHeader)
-    const renewed: WorkflowRunChatData = {
+    const renewed: TestRunData = {
       name: 'audit', status: 'running',
       phases: [phase({
         members: [
@@ -475,7 +614,7 @@ describe('WorkflowRunPanel', () => {
     expect(screen.getByRole('button', { name: /未分阶段/ }).getAttribute('aria-expanded')).toBe('true')
     expect(screen.getByText('new')).toBeTruthy()
 
-    const renewedPhaseCompleted: WorkflowRunChatData = {
+    const renewedPhaseCompleted: TestRunData = {
       ...renewed,
       phases: [phase({
         members: [
@@ -502,7 +641,7 @@ describe('WorkflowRunPanel', () => {
     const firstMember = {
       seq: 1, label: 'first', childId: 'child-1' as SessionId, status: 'completed' as const,
     }
-    const phaseClean: WorkflowRunChatData = {
+    const phaseClean: TestRunData = {
       name: 'phase-cycle', status: 'running',
       phases: [phase({ members: [firstMember] })],
     }
@@ -537,7 +676,7 @@ describe('WorkflowRunPanel', () => {
   })
 
   it('initializes a newly observed phase before it becomes interactive', () => {
-    const running: WorkflowRunChatData = {
+    const running: TestRunData = {
       name: 'dynamic-phase', status: 'running',
       phases: [phase({ key: 'research', phase: 'Research' })],
     }
@@ -559,7 +698,7 @@ describe('WorkflowRunPanel', () => {
   })
 
   it('derives the zero-member running and completed states from the current run status', () => {
-    const running: WorkflowRunChatData = { name: 'empty', status: 'running', phases: [] }
+    const running: TestRunData = { name: 'empty', status: 'running', phases: [] }
     const view = render(<WorkflowRunPanel {...panelProps(running)} />)
     expect(screen.getByRole('button', { name: /^empty/ }).getAttribute('aria-expanded')).toBe('true')
     expect(screen.getByText('没有启动成员')).toBeTruthy()
@@ -592,14 +731,14 @@ describe('WorkflowRunPanel', () => {
   )
 
   it('opens the first abnormal edge once and preserves later abnormal choices', () => {
-    const running: WorkflowRunChatData = {
+    const running: TestRunData = {
       name: 'audit', status: 'running', phases: [phase()],
     }
     const view = render(<WorkflowRunPanel {...panelProps(running)} />)
     fireEvent.click(screen.getByRole('button', { name: /未分阶段/ }))
     fireEvent.click(screen.getByRole('button', { name: /^audit/ }))
 
-    const failed: WorkflowRunChatData = {
+    const failed: TestRunData = {
       name: 'audit', status: 'running',
       phases: [phase({
         members: [{ seq: 1, label: 'failed', childId: CHILD_ID, status: 'failed' }],
@@ -661,7 +800,7 @@ describe('WorkflowRunPanel', () => {
   })
 
   it('renders mixed and interrupted aggregate status while attention stays visible', () => {
-    const mixed: WorkflowRunChatData = {
+    const mixed: TestRunData = {
       name: 'repo-audit', status: 'failed',
       phases: [phase({
         members: [
@@ -707,7 +846,7 @@ describe('WorkflowRunPanel', () => {
         },
       },
     })
-    const running: WorkflowRunChatData = {
+    const running: TestRunData = {
       name: 'audit', status: 'running', phases: [phase({
         members: [
           { seq: 1, label: 'worker', childId: CHILD_ID, status: 'running' },
@@ -764,7 +903,7 @@ describe('WorkflowRunPanel', () => {
   })
 
   it('handles a pointer blur and header click as one pending-completion close', () => {
-    const running: WorkflowRunChatData = {
+    const running: TestRunData = {
       name: 'audit', status: 'running', phases: [phase()],
     }
     const view = render(<WorkflowRunPanel {...panelProps(running)} />)
@@ -793,7 +932,7 @@ describe('WorkflowRunPanel', () => {
   })
 
   it('settles pending completion when keyboard focus moves from content to its header', () => {
-    const running: WorkflowRunChatData = {
+    const running: TestRunData = {
       name: 'audit', status: 'running', phases: [phase()],
     }
     const view = render(<WorkflowRunPanel {...panelProps(running)} />)
@@ -827,7 +966,7 @@ describe('WorkflowRunPanel', () => {
   })
 
   it('settles a deferred phase close when the user hides the outer run', () => {
-    const running: WorkflowRunChatData = {
+    const running: TestRunData = {
       name: 'audit', status: 'running', phases: [phase()],
     }
     const view = render(<WorkflowRunPanel {...panelProps(running)} />)
@@ -848,7 +987,7 @@ describe('WorkflowRunPanel', () => {
   })
 
   it('reinitializes manual choices from durable facts after a renderer remount', () => {
-    const data: WorkflowRunChatData = {
+    const data: TestRunData = {
       name: 'audit', status: 'running', phases: [phase()],
     }
     const view = render(<WorkflowRunPanel {...panelProps(data)} />)
@@ -861,7 +1000,7 @@ describe('WorkflowRunPanel', () => {
   })
 
   it.each(['one-shot', 'continuable'] as const)('opens a running %s member from its own identity without a parent catalog', (mode) => {
-    const data: WorkflowRunChatData = {
+    const data: TestRunData = {
       name: 'audit', status: 'running', phases: [phase()],
     }
     const openSession = vi.fn()
@@ -878,7 +1017,7 @@ describe('WorkflowRunPanel', () => {
   })
 
   it('uses observed running state for a member absent from the visible list', () => {
-    const data: WorkflowRunChatData = { name: 'audit', status: 'running', phases: [phase()] }
+    const data: TestRunData = { name: 'audit', status: 'running', phases: [phase()] }
     const sessions = listState({
       ids: [PARENT_ID],
       byId: { ...listState().byId, [CHILD_ID]: { ...listState().byId[CHILD_ID]!, running: false } },
@@ -897,7 +1036,7 @@ describe('WorkflowRunPanel', () => {
   })
 
   it('promotes a running member when its own identity arrives', () => {
-    const data: WorkflowRunChatData = {
+    const data: TestRunData = {
       name: 'audit', status: 'running', phases: [phase()],
     }
     const view = render(<WorkflowRunPanel {...panelProps(data, listState({ projectionsBySession: {} }))} />)
@@ -914,7 +1053,7 @@ describe('WorkflowRunPanel', () => {
     ['child inactive', listState({ byId: { ...listState().byId, [CHILD_ID]: { ...listState().byId[CHILD_ID]!, running: false } } }), 'running'],
     ['member terminal', listState(), 'completed'],
   ] as const)('does not navigate when %s', (_name, sessions, memberStatus) => {
-    const data: WorkflowRunChatData = {
+    const data: TestRunData = {
       name: 'audit', status: 'running',
       phases: [phase({
         members: [{

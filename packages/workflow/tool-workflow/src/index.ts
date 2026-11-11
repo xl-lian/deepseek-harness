@@ -29,7 +29,7 @@ import { loadSavedWorkflows, readSavedScript, renderSavedWorkflowList } from './
 import type { SavedWorkflow } from './saved.ts'
 import type { WorkflowRecordMirror } from './record.ts'
 import type {
-  ToolWorkflowAgentEndData, ToolWorkflowAgentStartData,
+  ToolWorkflowAgentEndData, ToolWorkflowAgentStartData, ToolWorkflowLogData, ToolWorkflowPhaseData,
   ToolWorkflowRunEndData, ToolWorkflowRunStartData,
 } from './types.ts'
 
@@ -63,6 +63,12 @@ export interface Config {
    * resolve against the process working directory.
    */
   workflowDirs?: string[]
+  /** Maximum `log()` lines one top-level run writes to the Session log (default 500). */
+  maxRecordedLogLines?: number
+  /** Maximum `phase()` transitions one top-level run writes to the Session log (default 500). */
+  maxRecordedPhases?: number
+  /** Longest recorded log line or phase title in characters; longer text is clipped (default 2000). */
+  maxRecordedLineChars?: number
 }
 
 export const Config: z<Config> = z.object({
@@ -70,6 +76,9 @@ export const Config: z<Config> = z.object({
   maxResultChars: z.natural().min(1).default(50_000),
   enableRunInBackground: z.boolean().default(true),
   workflowDirs: z.array(z.string()).default([]),
+  maxRecordedLogLines: z.natural().default(500),
+  maxRecordedPhases: z.natural().default(500),
+  maxRecordedLineChars: z.natural().min(1).default(2_000),
 })
 
 type ResolvedConfig = Required<Config>
@@ -84,7 +93,24 @@ interface ToolWorkflowRecordEventMap {
   'tool-workflow/run-start': ToolWorkflowRunStartData
   'tool-workflow/agent-start': ToolWorkflowAgentStartData
   'tool-workflow/agent-end': ToolWorkflowAgentEndData
+  'tool-workflow/phase': ToolWorkflowPhaseData
+  'tool-workflow/log': ToolWorkflowLogData
   'tool-workflow/run-end': ToolWorkflowRunEndData
+}
+
+/** The caps applied to one run's recorded progress. */
+type WorkflowRecordingLimits = Pick<ResolvedConfig, 'maxRecordedLogLines' | 'maxRecordedPhases' | 'maxRecordedLineChars'>
+
+/** One run being recorded into its parent Session. */
+interface ActiveWorkflowRecord {
+  readonly session: Session
+  logLines: number
+  phases: number
+  dropped: number
+}
+
+function clipRecordedLine(text: string, maxChars: number): string {
+  return text.length <= maxChars ? text : `${text.slice(0, maxChars)}…`
 }
 
 /** Render a contained recording failure without trusting the thrown value. */
@@ -100,8 +126,8 @@ function renderRecordingError(error: unknown): string {
  * Project active top-level workflow runs into their parent Sessions without
  * letting recording failure affect tool execution.
  */
-function createWorkflowRecorder(ctx: Context): WorkflowRecorder {
-  const active = new Map<WorkflowRunId, Session>()
+function createWorkflowRecorder(ctx: Context, limits: WorkflowRecordingLimits): WorkflowRecorder {
+  const active = new Map<WorkflowRunId, ActiveWorkflowRecord>()
   const append = <Type extends keyof ToolWorkflowRecordEventMap>(
     session: Session,
     type: Type,
@@ -122,8 +148,30 @@ function createWorkflowRecorder(ctx: Context): WorkflowRecorder {
     }
   }
 
+  ctx.on('workflow/phase', (info, title) => {
+    const record = active.get(info.id)
+    if (record === undefined) return
+    if (record.phases >= limits.maxRecordedPhases) {
+      record.dropped += 1
+      return
+    }
+    record.phases += 1
+    const data: ToolWorkflowPhaseData = { runId: info.id, title: clipRecordedLine(title, limits.maxRecordedLineChars) }
+    if (!append(record.session, 'tool-workflow/phase', data)) active.delete(info.id)
+  })
+  ctx.on('workflow/log', (info, message) => {
+    const record = active.get(info.id)
+    if (record === undefined) return
+    if (record.logLines >= limits.maxRecordedLogLines) {
+      record.dropped += 1
+      return
+    }
+    record.logLines += 1
+    const data: ToolWorkflowLogData = { runId: info.id, message: clipRecordedLine(message, limits.maxRecordedLineChars) }
+    if (!append(record.session, 'tool-workflow/log', data)) active.delete(info.id)
+  })
   ctx.on('workflow/agent-start', (info, agent) => {
-    const session = active.get(info.id)
+    const session = active.get(info.id)?.session
     if (session === undefined) return
     const data: ToolWorkflowAgentStartData = {
       runId: info.id,
@@ -135,7 +183,7 @@ function createWorkflowRecorder(ctx: Context): WorkflowRecorder {
     if (!append(session, 'tool-workflow/agent-start', data)) active.delete(info.id)
   })
   ctx.on('workflow/agent-end', (info, agent) => {
-    const session = active.get(info.id)
+    const session = active.get(info.id)?.session
     if (session === undefined) return
     const data: ToolWorkflowAgentEndData = {
       runId: info.id,
@@ -153,12 +201,18 @@ function createWorkflowRecorder(ctx: Context): WorkflowRecorder {
         ...scriptSha256 === undefined ? {} : { scriptSha256 },
       }
       if (append(session, 'tool-workflow/run-start', data)) {
-        active.set(run.id, session)
+        active.set(run.id, { session, logLines: 0, phases: 0, dropped: 0 })
       }
     },
     finish(runId, stopReason) {
-      const session = active.get(runId)
-      if (session !== undefined) append(session, 'tool-workflow/run-end', { runId, stopReason })
+      const record = active.get(runId)
+      if (record !== undefined) {
+        append(record.session, 'tool-workflow/run-end', {
+          runId,
+          stopReason,
+          ...record.dropped === 0 ? {} : { progressEventsDropped: record.dropped },
+        })
+      }
       active.delete(runId)
     },
     abandon: (runId) => { active.delete(runId) },
@@ -377,12 +431,13 @@ function startBackgroundRun(
 export async function apply(ctx: Context, config: Config): Promise<void> {
   // schemastery (the exported Config schema) has already filled the defaulted
   // fields; the assertion records that resolution, not a hidden fallback.
-  const { toolName, maxResultChars, enableRunInBackground, workflowDirs } = config as ResolvedConfig
+  const resolved = config as ResolvedConfig
+  const { toolName, maxResultChars, enableRunInBackground, workflowDirs } = resolved
   const saved = await loadSavedWorkflows(workflowDirs)
   // With no saved workflows the schema and guidance stay exactly the inline form.
   const hasSaved = saved.size > 0
   const inlineRequirement: { required?: true } = hasSaved ? {} : { required: true }
-  const recorder = createWorkflowRecorder(ctx)
+  const recorder = createWorkflowRecorder(ctx, resolved)
   const mirror = createWorkflowRecordMirror(ctx)
   // Usage policy ships with the tool (the master convention: tool guidance
   // lives in tool plugins as prompt sections, not in the deployment persona).

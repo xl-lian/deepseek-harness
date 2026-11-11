@@ -1,0 +1,25 @@
+# Bilingual-pair consistency record for 2026-11-11-durable-workflow-progress.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-11-11-durable-workflow-progress.md
+/agent-note-durable-workflow-progress-and-saved-workflows:
+  en: 51d805c8167a2482
+  zh: d075aa10732c680c
+/agent-note-durable-workflow-progress-and-saved-workflows/problem:
+  en: 7c6dafe954dcd3a0
+  zh: e4f40bff507cb51f
+/agent-note-durable-workflow-progress-and-saved-workflows/decision:
+  en: 890b05fbced0520a
+  zh: 83176c1a7fc12565
+/agent-note-durable-workflow-progress-and-saved-workflows/alternatives-considered:
+  en: 8b3f616a05c25a02
+  zh: eab78a976069de81
+/agent-note-durable-workflow-progress-and-saved-workflows/consequences:
+  en: 599065b259117d95
+  zh: edb0e1551d710a15
+/agent-note-durable-workflow-progress-and-saved-workflows/testing:
+  en: 244cb32c54295b00
+  zh: 4aef9b57d7c43b68
+/agent-note-durable-workflow-progress-and-saved-workflows/related:
+  en: b9c9d4cb50dab4e7
+  zh: ec55bd04a787dea9
