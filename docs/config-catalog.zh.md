@@ -4311,7 +4311,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-tool-workflow`
 
 - `inject`: `tools` · `workflowEngine` · `systemPrompt`
-- `source`: [`packages/workflow/tool-workflow/src/index.ts:44`](../packages/workflow/tool-workflow/src/index.ts)
+- `source`: [`packages/workflow/tool-workflow/src/index.ts:46`](../packages/workflow/tool-workflow/src/index.ts)
 
 ```ts config-catalog
 /** Config: the model-facing tool name plus result rendering caps. */
@@ -4328,6 +4328,13 @@ export interface Config {
    * piece named.
    */
   enableRunInBackground?: boolean
+  /**
+   * Directories of saved workflows, each a `<name>.meta.json` beside a
+   * `<name>.js` script body (default none). While the list yields any workflow
+   * the tool accepts `name` in place of `script` and `meta`. Relative entries
+   * resolve against the process working directory.
+   */
+  workflowDirs?: string[]
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-tool-workflow -->
@@ -4624,7 +4631,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-workflow-ptc`
 
 - `inject`: `subagents` · `ptcRuntime` · `sandboxPolicy` · `workingDirectory`
-- `source`: [`packages/workflow/workflow-ptc/src/index.ts:33`](../packages/workflow/workflow-ptc/src/index.ts)
+- `source`: [`packages/workflow/workflow-ptc/src/index.ts:32`](../packages/workflow/workflow-ptc/src/index.ts)
 
 ```ts config-catalog
 /** Plugin config (all optional — `static Config` supplies the defaults). */

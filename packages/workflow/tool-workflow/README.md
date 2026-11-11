@@ -41,6 +41,13 @@ While the script runs, the parent turn waits: the tool starts the run, awaits it
 
 `run_in_background: true` returns `{ kind: 'background', jobId, runId }` immediately: the run is registered on `ctx.jobs` as an owned `workflow` job, so the session-header job list streams its `phase()`, `log()`, and member lifecycle lines live from the job's output ring, and the row's progress line tracks the current phase. No tool-step signal reaches the run — `job_kill`, the list's stop control, and owner teardown are what cancel it. Settlement is the job's settlement: a completed run carries the same rendered return value as the job's result (the completion notice announces it, the model's first `job_output` after settlement carries it once), a cancelled run settles `killed` with the kill reason, and a failed run settles `failed` with the script's failure message. Without a live job registry and a controller serving the caller the call fails, naming the missing composition pieces.
 
+<a id="saved-workflows"></a>
+### Saved workflows
+
+Set `workflowDirs` to let the model launch a deployment-owned script by name instead of re-emitting it. Each `<name>.meta.json` holds the same fields as the `meta` parameter, and its `name` must match the file name. While at least one saved workflow exists, the tool gains a `name` parameter, `script` and `meta` become optional, and the prompt guidance lists each workflow's name, description, and `whenToUse`. A call passes either `name` or both `script` and `meta`; `args` and `run_in_background` apply to both forms. With no saved workflow, the schema and guidance are the inline form.
+
+A missing directory, an invalid or unpaired meta file, a mismatched name, or a name defined twice fails plugin load. The catalog is fixed at load, while the script body is read at each launch, so an edited script applies to the next run and a changed description needs a plugin reload. The run-start record carries the SHA-256 of the script text that ran.
+
 ### Config
 
 | Field | Default | Meaning |
@@ -48,6 +55,7 @@ While the script runs, the parent turn waits: the tool starts the run, awaits it
 | `toolName` | `workflow` | The model-facing tool name to register. |
 | `maxResultChars` | `50000` | Rendered-result ceiling; longer JSON is truncated with a notice. |
 | `enableRunInBackground` | `true` | Expose `run_in_background`; disabled calls are also rejected. |
+| `workflowDirs` | `[]` | Directories of saved workflows, each a `<name>.meta.json` beside a `<name>.js` script body. |
 
 The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-tool-workflow) is the exhaustive source for every accepted field.
 
@@ -89,6 +97,7 @@ Decided up front per the [render-intent Agent Note](../../../.agents/notes/imple
 |---|---|
 | [`src/index.ts`](src/index.ts) | Plugin entry: tool registration, run lifecycle, background job registration, recorder wiring |
 | [`src/record.ts`](src/record.ts) | Background runs' live-progress mirror into the job's output ring |
+| [`src/saved.ts`](src/saved.ts) | Saved-workflow catalog loading, script reads, and the prompt listing |
 | [`src/types.ts`](src/types.ts) | The four log-only record event payloads and their `SessionEventMap` declaration |
 
 </details>
@@ -116,7 +125,7 @@ Read these pages when the tool-level contract is not enough. They move from the 
 
 #### What the model sees
 
-Every parent request in this plugin's registration scope receives the workflow guidance below. A scoped tool restriction can hide the schema without removing this independently registered guidance.
+Every parent request in this plugin's registration scope receives the workflow guidance below. A scoped tool restriction can hide the schema without removing this independently registered guidance. When saved workflows exist, a paragraph naming the `name` parameter and one `- <name>: <description> <whenToUse>` line per workflow follow this text.
 
 ##### Workflow guidance
 
@@ -126,7 +135,7 @@ Use the <toolName> tool ONLY when the user explicitly asks for a workflow or for
 
 #### Token effect
 
-Small fixed guidance cost per request while the plugin is active.
+Small fixed guidance cost per request while the plugin is active, plus one line per saved workflow when `workflowDirs` yields any.
 
 #### KV Cache effect
 
@@ -168,6 +177,7 @@ Append-only; newly visible content follows the reusable request prefix and does 
 These limits define what the tool does not yet support. They are current constraints, not a task backlog.
 
 - **A background run reports no intermediate value to the model** — `job_output` before settlement returns status only; the return value arrives whole at completion, and cancellation still discards partial output.
+- **Saved workflows are Host files** — `workflowDirs` is read with `node:fs` on the Host, even when a Session's filesystem is remote, and the catalog does not refresh until the plugin reloads.
 - **`args` must be an object and Native result text is bounded** — callers wrap top-level arrays and scalars in a field; the canonical workflow result stays complete, while JSON beyond `maxResultChars` is truncated in the model-facing projection rather than stored behind a retrieval handle.
 - **Workflow policy is fixed per tool registration** — provider selection, caps, and tool name are deployment config, not model-call arguments.
 - **Durable records are top-level and observational** — nested PTC mode dispatches are not recorded, and a recording failure intentionally degrades to an incomplete prefix rather than changing execution.

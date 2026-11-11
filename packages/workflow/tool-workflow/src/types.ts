@@ -14,6 +14,8 @@ import type {
 export interface ToolWorkflowRunStartData {
   readonly runId: WorkflowRunId
   readonly name: string
+  /** Lowercase hexadecimal SHA-256 of the script body, present for a saved workflow. */
+  readonly scriptSha256?: string
 }
 
 /** Records one workflow member after its child Session is published. */

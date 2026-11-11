@@ -22,9 +22,11 @@ import type { JobId, JobOutcome, JobToolCall } from '@deepseek-ai/dsh-jobs'
 import type { Session, SessionEventMap } from '@deepseek-ai/dsh-session'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import type {
-  WorkflowResult, WorkflowRun, WorkflowRunId, WorkflowStopReason,
+  WorkflowMeta, WorkflowResult, WorkflowRun, WorkflowRunId, WorkflowStopReason,
 } from '@deepseek-ai/dsh-workflow'
 import { createWorkflowRecordMirror } from './record.ts'
+import { loadSavedWorkflows, readSavedScript, renderSavedWorkflowList } from './saved.ts'
+import type { SavedWorkflow } from './saved.ts'
 import type { WorkflowRecordMirror } from './record.ts'
 import type {
   ToolWorkflowAgentEndData, ToolWorkflowAgentStartData,
@@ -54,18 +56,26 @@ export interface Config {
    * piece named.
    */
   enableRunInBackground?: boolean
+  /**
+   * Directories of saved workflows, each a `<name>.meta.json` beside a
+   * `<name>.js` script body (default none). While the list yields any workflow
+   * the tool accepts `name` in place of `script` and `meta`. Relative entries
+   * resolve against the process working directory.
+   */
+  workflowDirs?: string[]
 }
 
 export const Config: z<Config> = z.object({
   toolName: z.string().default('workflow'),
   maxResultChars: z.natural().min(1).default(50_000),
   enableRunInBackground: z.boolean().default(true),
+  workflowDirs: z.array(z.string()).default([]),
 })
 
 type ResolvedConfig = Required<Config>
 
 interface WorkflowRecorder {
-  start(session: Session, run: WorkflowRun): void
+  start(session: Session, run: WorkflowRun, scriptSha256: string | undefined): void
   finish(runId: WorkflowRunId, stopReason: WorkflowStopReason): void
   abandon(runId: WorkflowRunId): void
 }
@@ -136,8 +146,13 @@ function createWorkflowRecorder(ctx: Context): WorkflowRecorder {
   })
 
   return {
-    start(session, run) {
-      if (append(session, 'tool-workflow/run-start', { runId: run.id, name: run.meta.name })) {
+    start(session, run, scriptSha256) {
+      const data: ToolWorkflowRunStartData = {
+        runId: run.id,
+        name: run.meta.name,
+        ...scriptSha256 === undefined ? {} : { scriptSha256 },
+      }
+      if (append(session, 'tool-workflow/run-start', data)) {
         active.set(run.id, session)
       }
     },
@@ -166,8 +181,9 @@ Script-body hooks:
 Misused hooks (bad arguments, unknown options, unsupported schemas, tripped caps) end the whole script instead of producing \`null\`. The script has no filesystem, network, timer, or Node.js APIs; the agents do the work.`
 
 type WorkflowCallArgs = {
-  script: string
-  meta: {
+  name?: string
+  script?: string
+  meta?: {
     name: string
     description: string
     whenToUse?: string
@@ -177,12 +193,53 @@ type WorkflowCallArgs = {
   run_in_background?: boolean
 }
 
-/** The pending-state card: a generic card titled by the workflow's meta name. */
+/** One workflow call after `name` or `script` plus `meta` selected what runs. */
+interface ResolvedWorkflowCall {
+  readonly script: string
+  readonly meta: WorkflowMeta
+  /** Present for a saved workflow. */
+  readonly scriptSha256?: string
+}
+
+/** The display name of a call; a malformed call has neither source. */
+function callName(args: WorkflowCallArgs): string {
+  return args.name ?? args.meta?.name ?? 'unnamed'
+}
+
+/**
+ * Select what one validated call runs. This is the sole enforcement of the
+ * exactly-one-of rule: a parameter map cannot express it as a root `oneOf`.
+ * @param args - the tool call.
+ * @param saved - the load-time catalog.
+ * @returns the script, meta, and, for a saved workflow, the script digest.
+ * @throws a model-correctable error for a bad combination or unknown name.
+ */
+async function resolveWorkflowCall(
+  args: WorkflowCallArgs,
+  saved: ReadonlyMap<string, SavedWorkflow>,
+): Promise<ResolvedWorkflowCall> {
+  if (args.name !== undefined) {
+    if (args.script !== undefined || args.meta !== undefined) {
+      throw new Error('pass either `name` or `script` with `meta`, not both')
+    }
+    const entry = saved.get(args.name)
+    if (entry === undefined) {
+      throw new Error(`unknown saved workflow "${args.name}"; available: ${[...saved.keys()].join(', ')}`)
+    }
+    return { ...await readSavedScript(entry), meta: entry.meta }
+  }
+  if (args.script === undefined || args.meta === undefined) {
+    throw new Error('pass either `name` or both `script` and `meta`')
+  }
+  return { script: args.script, meta: args.meta }
+}
+
+/** The pending-state card: a generic card titled by the workflow's name. */
 function presentWorkflowCall(args: WorkflowCallArgs): ToolCallView {
   return {
     card: 'generic',
-    title: `workflow: ${args.meta.name}`,
-    rawInput: args.script,
+    title: `workflow: ${callName(args)}`,
+    ...args.script === undefined ? {} : { rawInput: args.script },
   }
 }
 
@@ -253,7 +310,8 @@ function renderResult(name: string, agentsStarted: number, value: JsonValue, max
  * stop reason onto the job outcome (a completed run's rendered return value
  * rides `result` to the model's first read after settlement).
  * @param ctx - plugin context (engine, optional jobs registry, logger).
- * @param args - the validated tool call.
+ * @param call - the resolved script and identity.
+ * @param scriptArgs - the call's optional `args` input.
  * @param parent - the calling agent; owns the job.
  * @param toolCall - creating invocation, including its root call.
  * @param recordsRun - whether this top-level call records durable run events.
@@ -262,7 +320,8 @@ function renderResult(name: string, agentsStarted: number, value: JsonValue, max
  */
 function startBackgroundRun(
   ctx: Context,
-  args: WorkflowCallArgs,
+  call: ResolvedWorkflowCall,
+  scriptArgs: Record<string, unknown> | undefined,
   parent: Agent,
   toolCall: JobToolCall,
   recordsRun: boolean,
@@ -275,7 +334,7 @@ function startBackgroundRun(
   let run!: WorkflowRun
   const jobId = jobs.start({
     kind: 'workflow',
-    label: args.meta.name,
+    label: call.meta.name,
     owner: parent.id,
     toolCall,
     run: (job) => {
@@ -283,13 +342,13 @@ function startBackgroundRun(
       // out of the starter, so the registry registers nothing and the model
       // sees the violation list as an ordinary tool error.
       run = ctx.workflowEngine.start({
-        script: args.script,
-        meta: args.meta,
-        ...args.args !== undefined ? { args: args.args } : {},
+        script: call.script,
+        meta: call.meta,
+        ...scriptArgs !== undefined ? { args: scriptArgs } : {},
         parent,
       })
       deps.mirror.start(run.id, job)
-      if (recordsRun) deps.recorder.start(parent.session, run)
+      if (recordsRun) deps.recorder.start(parent.session, run, call.scriptSha256)
       const done = run.result.then(async (result): Promise<JobOutcome> => {
         try {
           // Keep member listeners alive through disposal: an engine may
@@ -304,7 +363,7 @@ function startBackgroundRun(
           deps.recorder.finish(run.id, result.stopReason)
           deps.recorder.abandon(run.id)
         }
-        return jobOutcomeOf(result, args.meta.name, deps.maxResultChars)
+        return jobOutcomeOf(result, call.meta.name, deps.maxResultChars)
       })
       return {
         cancel: (reason?: string) => { run.cancel(reason ?? 'background workflow job killed') },
@@ -315,10 +374,14 @@ function startBackgroundRun(
   return { kind: 'background' as const, jobId, runId: run.id }
 }
 
-export function apply(ctx: Context, config: Config): void {
+export async function apply(ctx: Context, config: Config): Promise<void> {
   // schemastery (the exported Config schema) has already filled the defaulted
   // fields; the assertion records that resolution, not a hidden fallback.
-  const { toolName, maxResultChars, enableRunInBackground } = config as ResolvedConfig
+  const { toolName, maxResultChars, enableRunInBackground, workflowDirs } = config as ResolvedConfig
+  const saved = await loadSavedWorkflows(workflowDirs)
+  // With no saved workflows the schema and guidance stay exactly the inline form.
+  const hasSaved = saved.size > 0
+  const inlineRequirement: { required?: true } = hasSaved ? {} : { required: true }
   const recorder = createWorkflowRecorder(ctx)
   const mirror = createWorkflowRecordMirror(ctx)
   // Usage policy ships with the tool (the master convention: tool guidance
@@ -326,22 +389,31 @@ export function apply(ctx: Context, config: Config): void {
   ctx.systemPrompt.section({
     name: `tool:${toolName}`,
     order: ctx.systemPrompt.getSectionOrder('TOOL_WORKFLOW'),
-    text: `Use the ${toolName} tool ONLY when the user explicitly asks for a workflow or for large multi-agent orchestration: you write a JavaScript script (the tool description documents the exact format) that fans work out across many subagents with phases and structured results. For one or two delegations, prefer plain subagent calls.`,
+    text: `Use the ${toolName} tool ONLY when the user explicitly asks for a workflow or for large multi-agent orchestration: you write a JavaScript script (the tool description documents the exact format) that fans work out across many subagents with phases and structured results. For one or two delegations, prefer plain subagent calls.${hasSaved
+      ? '\n\nThe user may also ask for one of these saved workflows. Run it by passing `name` instead of `script` and `meta`; '
+        + `\`args\` still applies.\n${renderSavedWorkflowList(saved)}`
+      : ''}`,
   })
   ctx.tools.register(defineTool({
     name: toolName,
     description: DESCRIPTION,
     parameters: {
+      ...hasSaved ? {
+        name: {
+          type: 'string' as const,
+          description: 'Name of a saved workflow to run, in place of `script` and `meta`.',
+        },
+      } : {},
       script: {
         type: 'string',
-        required: true,
+        ...inlineRequirement,
         description: 'The plain JavaScript body, not TypeScript and without an `export const meta` statement; top-level await is allowed. '
           + 'End with `return <value>`; the JSON-serializable value is this tool\'s result.',
       },
       meta: {
         type: 'object',
         additionalProperties: true,
-        required: true,
+        ...inlineRequirement,
         description: 'The workflow identity as plain JSON, not code.',
         properties: {
           name: { type: 'string', required: true, description: 'Short kebab-case workflow name.' },
@@ -402,8 +474,8 @@ export function apply(ctx: Context, config: Config): void {
       render: (args, value) => [{
         type: 'text',
         text: value.kind === 'background'
-          ? `workflow "${args.meta.name}" started in the background as job ${value.jobId}. Its return value arrives with the completion notice; check on it with job_output, stop it with job_kill.`
-          : renderResult(args.meta.name, value.agentsStarted, value.result, maxResultChars),
+          ? `workflow "${callName(args)}" started in the background as job ${value.jobId}. Its return value arrives with the completion notice; check on it with job_output, stop it with job_kill.`
+          : renderResult(callName(args), value.agentsStarted, value.result, maxResultChars),
       }],
     },
     async execute(args, exec) {
@@ -414,16 +486,16 @@ export function apply(ctx: Context, config: Config): void {
         // parent to attribute the children to. Fail loud rather than guess.
         throw new Error('workflow tool requires a calling agent (exec.agent was undefined)')
       }
+      const call = await resolveWorkflowCall(args, saved)
       if (args.run_in_background === true) {
         if (!enableRunInBackground) {
           throw new Error('run_in_background is disabled for this tool')
         }
-        // No pre-abort check here, unlike bash/pwsh: ToolRuntime re-reads the
-        // caller signal right before execute(), and this branch reaches
-        // jobs.start synchronously from there. The shell tools await a
-        // sandbox escalation approval before registering, which is the window
-        // their check covers.
-        return startBackgroundRun(ctx, args, parent, { callId: exec.callId, rootCallId: exec.rootCallId }, exec.parent === undefined, {
+        // Reading a saved script is the only await between ToolRuntime's
+        // pre-execute signal check and jobs.start.
+        exec.signal.throwIfAborted()
+        const toolCall = { callId: exec.callId, rootCallId: exec.rootCallId }
+        return startBackgroundRun(ctx, call, args.args, parent, toolCall, exec.parent === undefined, {
           recorder,
           mirror,
           maxResultChars,
@@ -434,15 +506,15 @@ export function apply(ctx: Context, config: Config): void {
       // synchronously here and become isError results via the registry — the
       // model sees the violation list and can correct the call.
       const run = ctx.workflowEngine.start({
-        script: args.script,
-        meta: args.meta,
+        script: call.script,
+        meta: call.meta,
         ...args.args !== undefined ? { args: args.args } : {},
         parent,
         signal: exec.signal,
       })
       const recordsRun = exec.parent === undefined
       // The engine publishes member events after start() returns and this run record is active.
-      if (recordsRun) recorder.start(parent.session, run)
+      if (recordsRun) recorder.start(parent.session, run, call.scriptSha256)
 
       // Bridge the tool's abort signal to the run: if the parent step is aborted while the
       // script is in flight, cancel the whole run. The signal also enters the engine directly, but

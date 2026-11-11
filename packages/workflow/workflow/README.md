@@ -125,7 +125,7 @@ These limits define what the capability does not yet support. They are current c
 
 - **Foreground collection only** — the caller owns one live run and awaits it; background start/poll, spill handles, and detached collection are deferred.
 - **No journaling or resume** — scripts, child progress, and intermediate values are not checkpointed, so a process restart cannot continue a run.
-- **No saved or nested workflows** — the capability starts caller-supplied scripts only, and a workflow script receives no `workflow()` hook for recursive orchestration.
+- **No nested workflows** — a workflow script receives no `workflow()` hook for recursive orchestration. Saved scripts are a [workflow tool](../tool-workflow/README.md#saved-workflows) feature; the engine still receives script text.
 - **No token-budget vocabulary** — engines cap concurrency, items, and children, but neither the request nor the result accounts for model tokens across children.
 - **Runs are holder-owned, not service-tracked** — unloading the engine does not discover independent live handles; every consumer must dispose the run it started.
 
@@ -137,6 +137,6 @@ These limits define what the capability does not yet support. They are current c
 
 This Dev Note is working context for maintainers: open directions that are not decided. It is explicitly non-authoritative — shipped behavior, limits, and accepted rationale live in the sections above, the package code, and the linked Agent Notes.
 
-Deferred directions: a background start/poll API with spill handles and detached collection; saved and nested workflows; and a token-budget vocabulary across children.
+Deferred directions: a background start/poll API with spill handles and detached collection; nested workflows; and a token-budget vocabulary across children.
 
 </details>

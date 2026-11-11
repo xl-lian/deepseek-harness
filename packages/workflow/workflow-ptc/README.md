@@ -84,7 +84,6 @@ One self-contained guest program runs the existing VM and workflow helpers insid
 | [`src/guest-source.ts`](src/guest-source.ts) | Self-contained guest program source |
 | [`src/runtime.ts`](src/runtime.ts) | VM evaluation, helper contracts and combinators |
 | [`src/realm.ts`](src/realm.ts) | Lossless-JSON materialization across VM realms |
-| [`src/meta.ts`](src/meta.ts) | Metadata validation and normalization |
 
 ### Values and child ownership
 

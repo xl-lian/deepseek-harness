@@ -1,0 +1,15 @@
+{
+  "formatVersion": 2,
+  "roots": [
+    {"key":"event:tool-workflow/run-start","kind":"event","event":"tool-workflow/run-start","surface":false,"digest":"704de16b2cdb8e8533e321a589cfcb139ca32844220067822f06e029e3f055b3"}
+  ],
+  "types": [],
+  "nodes": {
+    "0657d3ca5ac4e7bf": {"kind":"primitive","type":"number"},
+    "1d75276f9496b06c": {"kind":"object","properties":[{"name":"name","type":"4cd48f3e5108bd6e","optional":false},{"name":"runId","type":"4cd48f3e5108bd6e","optional":false},{"name":"scriptSha256","type":"4cd48f3e5108bd6e","optional":true}],"indices":[]},
+    "4cd48f3e5108bd6e": {"kind":"primitive","type":"string"},
+    "704de16b2cdb8e85": {"kind":"object","properties":[{"name":"data","type":"1d75276f9496b06c","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"cdca80b8dad24d4e","optional":false}],"indices":[]},
+    "cdca80b8dad24d4e": {"kind":"literal","value":"tool-workflow/run-start"},
+    "dacf3d5f3e4ff619": {"kind":"literal","value":true}
+  }
+}

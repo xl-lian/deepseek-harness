@@ -41,6 +41,13 @@ kind: "package-reference"
 
 `run_in_background: true` 会立刻返回 `{ kind: 'background', jobId, runId }`：运行以自有 `workflow` 任务身份注册到 `ctx.jobs`，会话头部任务列表因此从该任务的输出环实时流式显示它的 `phase()`、`log()` 与成员生命周期行，行的进度行跟随当前阶段。没有任何工具步骤信号到达该运行——`job_kill`、列表里的停止控件与 owner 拆除才是取消它的途径。结算即任务的结算：完成的运行把同一份渲染后的返回值作为任务的 result 交出（完成通知宣布它，模型结算后的第一次 `job_output` 携带它一次），被取消的运行以 kill 原因结算为 `killed`，失败的运行以脚本的失败信息结算为 `failed`。没有活体任务注册表与服务于调用方的控制器时调用失败，并点名缺失的组合部件。
 
+<a id="saved-workflows"></a>
+### 已保存工作流
+
+设置 `workflowDirs` 后，模型可以按名称启动部署方提供的脚本，无需重新输出脚本全文。每个 `<name>.meta.json` 的字段与 `meta` 参数相同，其中的 `name` 必须与文件名一致。只要存在至少一个已保存工作流，工具就会增加 `name` 参数，`script` 和 `meta` 变为可选，提示词指导会列出每个工作流的名称、描述和 `whenToUse`。一次调用要么传 `name`，要么同时传 `script` 和 `meta`；`args` 和 `run_in_background` 对两种形式都适用。没有已保存工作流时，schema 和指导保持内联形式。
+
+目录缺失、meta 文件无效或缺少配对脚本、名称不一致或同一名称定义两次，都会使插件加载失败。目录清单在加载时固定，脚本体在每次启动时读取，因此编辑脚本会在下一次运行生效，修改描述则需要重新加载插件。运行开始记录保存实际运行脚本文本的 SHA-256。
+
 ### 配置
 
 | 字段 | 默认值 | 含义 |
@@ -48,6 +55,7 @@ kind: "package-reference"
 | `toolName` | `workflow` | 要注册的面向模型工具名称。 |
 | `maxResultChars` | `50000` | 渲染结果上限；更长的 JSON 会被截断并附上提示。 |
 | `enableRunInBackground` | `true` | 公开 `run_in_background`；关闭后调用同样会被拒绝。 |
+| `workflowDirs` | `[]` | 已保存工作流所在的目录，每个工作流由 `<name>.meta.json` 和同名的 `<name>.js` 脚本体组成。 |
 
 生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-tool-workflow)是每个受支持字段的穷尽式真源。
 
@@ -89,6 +97,7 @@ kind: "package-reference"
 |---|---|
 | [`src/index.ts`](src/index.ts) | 插件入口：工具注册、运行生命周期、后台任务注册、记录器接线 |
 | [`src/record.ts`](src/record.ts) | 后台运行进任务输出环的实时进度镜像 |
+| [`src/saved.ts`](src/saved.ts) | 已保存工作流的清单加载、脚本读取和提示词列表 |
 | [`src/types.ts`](src/types.ts) | 四个 log-only 记录事件 payload 及其 `SessionEventMap` 声明 |
 
 </details>
@@ -116,7 +125,7 @@ kind: "package-reference"
 
 #### 模型看到什么
 
-在该插件的注册作用域内，每个父级请求都会收到下方的工作流指导。作用域工具限制可以隐藏 schema，而不移除这段独立注册的指导。
+在该插件的注册作用域内，每个父级请求都会收到下方的工作流指导。作用域工具限制可以隐藏 schema，而不移除这段独立注册的指导。存在已保存工作流时，这段文字之后还有一段说明 `name` 参数的文字，以及每个工作流一行的 `- <name>: <description> <whenToUse>`。
 
 ##### 工作流指导
 
@@ -126,7 +135,7 @@ Use the <toolName> tool ONLY when the user explicitly asks for a workflow or for
 
 #### Token 影响
 
-插件启用期间，每个请求都会产生少量固定的指导 token 开销。
+插件启用期间，每个请求都会产生少量固定的指导 token 开销；`workflowDirs` 产生已保存工作流时，每个工作流再增加一行。
 
 #### KV Cache 影响
 
@@ -168,6 +177,7 @@ Use the <toolName> tool ONLY when the user explicitly asks for a workflow or for
 这些限制说明该工具尚未支持什么。它们是当前约束，不是任务积压。
 
 - **后台运行不向模型报告中间值**——结算前的 `job_output` 只返回状态；返回值在完成时整体送达，取消仍会丢弃局部输出。
+- **已保存工作流是 Host 文件**——即使 Session 的文件系统在远程，`workflowDirs` 也在 Host 上用 `node:fs` 读取，目录清单在插件重新加载前不会刷新。
 - **`args` 必须是对象，Native 结果文本有界**——调用方把顶层数组／标量包装到字段中；规范工作流结果保持完整，超过 `maxResultChars` 的 JSON 会在面向模型的投影中截断，而不是存储在检索句柄背后。
 - **每次工具注册的工作流策略固定**——提供方选择、上限与工具名称属于部署配置，不是模型调用参数。
 - **持久记录只覆盖顶层且只供观察**——嵌套 PTC mode dispatch 不记录；记录故障会刻意退化为不完整前缀，而不改变执行。
