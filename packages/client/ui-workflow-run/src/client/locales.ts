@@ -28,6 +28,13 @@ export const zh = {
   'duration.hours': '{hours}小时{minutes}分',
   'activity.title': '活动',
   'activity.dropped': '另有 {count} 条进度未记录',
+  'runs.tab': '运行',
+  'runs.empty': '此会话还没有工作流运行',
+  'runs.open': '比较运行',
+  'runs.column.run': '运行',
+  'runs.column.status': '状态',
+  'runs.column.duration': '时长',
+  'runs.column.members': '成员',
 }
 
 /** English dictionary (same key set). */
@@ -55,6 +62,13 @@ export const en: Record<WorkflowRunKey, string> = {
   'duration.hours': '{hours}h {minutes}m',
   'activity.title': 'Activity',
   'activity.dropped': '{count} more progress entries were not recorded',
+  'runs.tab': 'Runs',
+  'runs.empty': 'No workflow runs in this session',
+  'runs.open': 'Compare runs',
+  'runs.column.run': 'Run',
+  'runs.column.status': 'Status',
+  'runs.column.duration': 'Duration',
+  'runs.column.members': 'Members',
 }
 
 /** Union of this namespace's dictionary keys. */
@@ -85,6 +99,13 @@ export const ja = {
   'duration.hours': '{hours}時間 {minutes}分',
   'activity.title': 'アクティビティ',
   'activity.dropped': 'さらに {count} 件の進捗は記録されていません',
+  'runs.tab': '実行',
+  'runs.empty': 'このセッションにワークフローの実行はありません',
+  'runs.open': '実行を比較',
+  'runs.column.run': '実行',
+  'runs.column.status': '状態',
+  'runs.column.duration': '所要時間',
+  'runs.column.members': 'メンバー',
 } satisfies Record<keyof typeof en, string>
 
 /** Spanish dictionary, checked against the English keys. */
@@ -112,6 +133,13 @@ export const es = {
   'duration.hours': '{hours}h {minutes}m',
   'activity.title': 'Actividad',
   'activity.dropped': '{count} entradas de progreso más no se registraron',
+  'runs.tab': 'Ejecuciones',
+  'runs.empty': 'No hay ejecuciones de flujos de trabajo en esta sesión',
+  'runs.open': 'Comparar ejecuciones',
+  'runs.column.run': 'Ejecución',
+  'runs.column.status': 'Estado',
+  'runs.column.duration': 'Duración',
+  'runs.column.members': 'Miembros',
 } satisfies Record<keyof typeof en, string>
 
 /** French dictionary, checked against the English keys. */
@@ -139,6 +167,13 @@ export const fr = {
   'duration.hours': '{hours}h {minutes}m',
   'activity.title': 'Activité',
   'activity.dropped': '{count} entrées de progression supplémentaires non enregistrées',
+  'runs.tab': 'Exécutions',
+  'runs.empty': 'Aucune exécution de workflow dans cette session',
+  'runs.open': 'Comparer les exécutions',
+  'runs.column.run': 'Exécution',
+  'runs.column.status': 'État',
+  'runs.column.duration': 'Durée',
+  'runs.column.members': 'Membres',
 } satisfies Record<keyof typeof en, string>
 
 /** German dictionary, checked against the English keys. */
@@ -166,6 +201,13 @@ export const de = {
   'duration.hours': '{hours}h {minutes}m',
   'activity.title': 'Aktivität',
   'activity.dropped': '{count} weitere Fortschrittseinträge wurden nicht aufgezeichnet',
+  'runs.tab': 'Läufe',
+  'runs.empty': 'Keine Workflow-Läufe in dieser Sitzung',
+  'runs.open': 'Läufe vergleichen',
+  'runs.column.run': 'Lauf',
+  'runs.column.status': 'Status',
+  'runs.column.duration': 'Dauer',
+  'runs.column.members': 'Mitglieder',
 } satisfies Record<keyof typeof en, string>
 
 /** Russian dictionary, checked against the English keys. */
@@ -193,6 +235,13 @@ export const ru = {
   'duration.hours': '{hours}h {minutes}m',
   'activity.title': 'Активность',
   'activity.dropped': 'Ещё записей о ходе работы не сохранено: {count}',
+  'runs.tab': 'Запуски',
+  'runs.empty': 'В этом сеансе нет запусков рабочих процессов',
+  'runs.open': 'Сравнить запуски',
+  'runs.column.run': 'Запуск',
+  'runs.column.status': 'Статус',
+  'runs.column.duration': 'Длительность',
+  'runs.column.members': 'Участники',
 } satisfies Record<keyof typeof en, string>
 
 /** Portuguese dictionary, checked against the English keys. */
@@ -220,4 +269,11 @@ export const pt = {
   'duration.hours': '{hours}h {minutes}m',
   'activity.title': 'Atividade',
   'activity.dropped': 'Mais {count} entradas de progresso não foram registradas',
+  'runs.tab': 'Execuções',
+  'runs.empty': 'Nenhuma execução de fluxo de trabalho nesta sessão',
+  'runs.open': 'Comparar execuções',
+  'runs.column.run': 'Execução',
+  'runs.column.status': 'Status',
+  'runs.column.duration': 'Duração',
+  'runs.column.members': 'Membros',
 } satisfies Record<keyof typeof en, string>

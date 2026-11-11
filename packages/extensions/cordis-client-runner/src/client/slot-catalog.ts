@@ -3907,6 +3907,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       'client-ui-sidebar-right GuideBody',
       'client-ui-sidebar-terminal LazyTerminalBody',
       'client-ui-subagent SidebarChatTab',
+      'client-ui-workflow-run WorkflowRunsTab',
       'experimental-session-inspector SessionInspectorView',
     ],
     replaceRisk: 'none',

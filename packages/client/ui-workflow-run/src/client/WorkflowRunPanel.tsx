@@ -15,11 +15,13 @@ import type { WorkflowRunKey } from './locales.ts'
 import type {
   WorkflowRunActivityEntry, WorkflowRunMemberData, WorkflowRunPhaseData, WorkflowRunStatus,
 } from './workflow-definition.ts'
+import { formatDuration } from './format.ts'
 import css from './WorkflowRunPanel.module.css'
 
 /** Navigation action injected from the plugin's own Session Controller access. */
 export interface WorkflowRunInjected {
   readonly openSession: (target: SessionTarget) => void
+  readonly openRuns: () => void
 }
 
 /** Complete keyed Chat renderer props. */
@@ -46,15 +48,6 @@ function dotState(status: WorkflowRunStatus): StateDotState {
     /* v8 ignore next -- WorkflowRunStatus is closed and every variant is handled above. */
     default: return status satisfies never
   }
-}
-
-function formatDuration(elapsedMs: number, t: WorkflowRunPanelProps['t']): string {
-  const totalSeconds = Math.max(0, Math.floor(elapsedMs / 1000))
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-  if (hours > 0) return t('duration.hours', { hours, minutes })
-  return minutes > 0 ? t('duration.minutes', { minutes, seconds }) : t('duration.seconds', { seconds })
 }
 
 /**
@@ -424,7 +417,7 @@ function ActivitySection({ entries, dropped, t }: {
 }
 
 /** Render one durable workflow run with status-driven run and phase disclosure. */
-export function WorkflowRunPanel({ node, sessionId, useSessions, useSessionStatus, openSession, t }: WorkflowRunPanelProps) {
+export function WorkflowRunPanel({ node, sessionId, useSessions, useSessionStatus, openSession, openRuns, t }: WorkflowRunPanelProps) {
   const phaseFacts = useMemo(() => node.data.phases.map(phase => (
     [phase.key, phaseDisclosureFacts(phase)] as const
   )), [node.data.phases])
@@ -576,6 +569,7 @@ export function WorkflowRunPanel({ node, sessionId, useSessions, useSessionStatu
               )
             })}
           <ActivitySection entries={node.data.activity} dropped={node.data.progressEventsDropped} t={t} />
+          <button type="button" className={css.openRuns} onClick={openRuns}>{t('runs.open')}</button>
         </div>
       </RunHeader>
     </section>

@@ -521,6 +521,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 |---|---|---|
 | `@deepseek-ai/dsh-tool-workflow` | yes | Model-facing workflow tool: run a JavaScript orchestration script over ctx.workflowEngine |
 | `@deepseek-ai/dsh-workflow-ptc` | yes | Workflow orchestration in the shared sandboxed Node PTC runtime |
+| `@deepseek-ai/dsh-workflow-run-outline` | no | Whole-log workflow run outline projection (workflowRuns) for the DeepSeek Harness |
 
 ## workspace
 

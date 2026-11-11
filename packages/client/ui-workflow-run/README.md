@@ -31,6 +31,10 @@ A top-level workflow run through `dsh-tool-workflow` appears in the conversation
 
 Run and phase headers keep 6px gaps between their title, count, and status fields, with the status aligned to the right. The run uses a 32-pixel row with persistent chevrons, an inline state dot, and status text; phases use disclosure rows with title and member count in the main area and a fixed aggregate-status tail; members use a 16-pixel dot slot, a truncating name area, and a fixed status column. Opening a member's child Session requires both member and child to be running, with the current Session recorded as its parent and an available child identity projection. Navigation uses the child's own mode for both continuable and historical one-shot children; external executions have no local Session to open. Child activity uses the unified UI status, falling back to the Session summary when unknown. Workflow events establish membership; missing child identity, a different parent, or a terminal member keeps the row non-interactive.
 
+### Comparing runs
+
+Compare runs, at the end of an expanded run, opens the Runs tab in the right Sidebar. The tab has one row per workflow run in the Session, with status, latest phase, duration, and settled-of-started member counts. It reads the `workflowRuns` projection from [workflow-run-outline](../../workflow/workflow-run-outline/README.md), so it covers runs outside the loaded history.
+
 ### State and completion
 
 Completion updates the visible status immediately but delays its automatic close while focus remains inside the content. A run or member without terminal events stays running after its Turn or Step ends normally, because a background run outlives its Tool Step. It is presented as interrupted, without changing the tool result, once its Turn is closed after a crash or at a fork boundary.

@@ -429,6 +429,7 @@ function panelProps(data: TestRunData, sessions = listState(), openSession = vi.
     loadImage: () => Promise.reject(new Error('not used')),
     fileMentions: () => undefined,
     openSession,
+    openRuns: vi.fn(),
     t: makeTranslate(zh),
   }
 }
@@ -500,6 +501,13 @@ describe('WorkflowRunPanel', () => {
       fireEvent.click(screen.getByRole('button', { name: /活动/ }))
       expect(screen.getByText('only')).toBeTruthy()
       expect(screen.queryByText(/未记录/)).toBeNull()
+    })
+
+    it('opens the Runs tab from the expanded run', () => {
+      const props = panelProps({ name: 'audit', status: 'failed', startedAt: 0, endedAt: 1_000, phases: [] })
+      render(<WorkflowRunPanel {...props} />)
+      fireEvent.click(screen.getByRole('button', { name: '比较运行' }))
+      expect(props.openRuns).toHaveBeenCalledOnce()
     })
 
     it('shows a dropped-only notice and hides the section with no progress', () => {
@@ -1078,10 +1086,18 @@ describe('plugin lifecycle', () => {
     ctx.provide('sessions', sessions)
     const openSession = vi.fn(async () => {})
     ctx.provide('uiWorkspace', { openSession } as never)
+    const openTab = vi.fn()
+    const unregisterTab = vi.fn()
+    const registerTab = vi.fn((_definition: { readonly kind: string; readonly title: () => string }) => unregisterTab)
+    ctx.provide('sidebarRight', { openTab } as never)
+    ctx.provide('sidebarRightTabs', { register: registerTab } as never)
     const conversationEvents = new UiConversation(ctx, ctx.sessions).events
     ctx.slots.register({
       name: 'root',
-      children: { 'conversation.chat.node': { kind: 'keyed', scope: 'session' } },
+      children: {
+        'conversation.chat.node': { kind: 'keyed', scope: 'session' },
+        'sidebar.right.pane.tab': { kind: 'keyed', scope: 'session' },
+      },
     } as never, () => null)
     await ctx.plugin({ inject: localeInject, apply: applyLocale }).await()
     const fiber = ctx.plugin({ inject: [...inject], apply })
@@ -1092,9 +1108,16 @@ describe('plugin lifecycle', () => {
     const face = entry.inject?.() as unknown as WorkflowRunInjected
     face.openSession(CHILD_ID)
     expect(openSession).toHaveBeenCalledExactlyOnceWith(CHILD_ID)
+    face.openRuns()
+    expect(openTab).toHaveBeenCalledExactlyOnceWith('workflow-runs')
+    expect(registerTab.mock.calls[0]![0].kind).toBe('workflow-runs')
+    expect(registerTab.mock.calls[0]![0].title()).toBeTruthy()
+    expect(ctx.slots.entries('sidebar.right.pane.tab')).toHaveLength(1)
     await fiber.dispose()
     expect(conversationEvents.entries()).toEqual([])
     expect(ctx.slots.entries('conversation.chat.node')).toEqual([])
+    expect(ctx.slots.entries('sidebar.right.pane.tab')).toEqual([])
+    expect(unregisterTab).toHaveBeenCalledOnce()
 
     const replacement = ctx.plugin({ inject: [...inject], apply })
     await replacement.await()

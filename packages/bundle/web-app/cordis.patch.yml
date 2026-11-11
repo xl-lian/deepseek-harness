@@ -99,6 +99,11 @@
     - id: session-turn-outline
       name: '@deepseek-ai/dsh-session-turn-outline'
 
+    # Whole-log workflow run outline for the Runs tab (the workflowRuns
+    # projection key). Host-plane because tool-workflow mounts per preset.
+    - id: workflow-run-outline
+      name: '@deepseek-ai/dsh-workflow-run-outline'
+
     # Resolve bind host, SSH launch, and display once at boot, then mount the
     # matching dual-face directory picker. Mount -native or -browse directly in
     # an overlay to pin the interaction.

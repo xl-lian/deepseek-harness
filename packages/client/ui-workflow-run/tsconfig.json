@@ -49,6 +49,12 @@
     },
     {
       "path": "../../workflow/tool-workflow"
+    },
+    {
+      "path": "../ui-sidebar-right"
+    },
+    {
+      "path": "../../workflow/workflow-run-outline"
     }
   ]
 }
