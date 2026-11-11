@@ -116,7 +116,7 @@ describe.skipIf(MODE === 'record')('web e2e: durable workflow run in Chat', () =
     expect(await runDisclosure.getAttribute('aria-expanded')).toBe('false')
     expect(await disclosures.count()).toBe(1)
     await runDisclosure.press('Space')
-    expect(await disclosures.count()).toBe(2)
+    expect(await disclosures.count()).toBe(3)
     expect(await phaseDisclosure.getAttribute('aria-expanded')).toBe('true')
     const lightColor = await member.locator('[data-member-label]').evaluate(element => getComputedStyle(element).color)
     await page.setViewportSize({ width: 560, height: 800 })

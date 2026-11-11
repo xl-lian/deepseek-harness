@@ -1,2 +1,3 @@
-- button "snapshot-flow 1 member Running" [expanded]
-- button "Run 1 member Running 1"
+- button "snapshot-flow Run · Running 1 · 1 member {{duration}} Running" [expanded]
+- button "Run 1 member {{duration}} Running 1"
+- button "Activity"
