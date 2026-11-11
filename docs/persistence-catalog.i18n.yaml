@@ -9,8 +9,8 @@
   en: 1387c4505dde2faf
   zh: 48570fa1c13d6910
 /session-persistence-event-catalog/persistence-type-fingerprints:
-  en: ec859300ecdf5cea
-  zh: 3c580b5c34e30a2b
+  en: 06d4f26eda760de5
+  zh: f3af951cff96745c
 /session-persistence-event-catalog/event-envelope:
   en: 56414ffd00cdc32a
   zh: 6dc11eb013e95e41
@@ -261,26 +261,29 @@
   en: 1eac7deac6af15f3
   zh: 1eac7deac6af15f3
 /session-persistence-event-catalog/events/tool-workflow/tool-workflow-agent-end-log-only:
-  en: 39ac82007d74c695
-  zh: 695a8048a81b57c6
+  en: 217e789dead609d3
+  zh: 44c811efc6a81ed0
 /session-persistence-event-catalog/events/tool-workflow/tool-workflow-agent-start-log-only:
-  en: b44e87c6f4faba01
-  zh: 39c9659efdcc644c
+  en: 61cce6c72b02ee16
+  zh: 7bbff6e3bccd662a
+/session-persistence-event-catalog/events/tool-workflow/tool-workflow-artifact-log-only:
+  en: ad3eb3b36b22b401
+  zh: 47c1b2e505b989fd
 /session-persistence-event-catalog/events/tool-workflow/tool-workflow-log-log-only:
-  en: cadb7cf0ff627709
-  zh: 6eeced489180f232
+  en: 9324537441f30a79
+  zh: 2ed74c1b514d869e
 /session-persistence-event-catalog/events/tool-workflow/tool-workflow-metric-log-only:
-  en: a8306af70b6cf4e0
-  zh: b1da37132ed24b45
+  en: 09d9f791ece942d0
+  zh: 13667ddc3bff94cc
 /session-persistence-event-catalog/events/tool-workflow/tool-workflow-phase-log-only:
-  en: a3ae0b46dc303757
-  zh: 24c05e20c36b41a7
+  en: 9127e54e1bc4ecb4
+  zh: 456d7d094336db3d
 /session-persistence-event-catalog/events/tool-workflow/tool-workflow-run-end-log-only:
-  en: 0fef6986933d9392
-  zh: 1b8e5325992d5cf8
+  en: f100ddfc78b79b26
+  zh: 6eb2406ee901fad3
 /session-persistence-event-catalog/events/tool-workflow/tool-workflow-run-start-log-only:
-  en: 5d06376b23e8a5a1
-  zh: 99bc2a192c78a1b6
+  en: 114d86a5ba3c2cd1
+  zh: 2151284082248ece
 /session-persistence-event-catalog/events/turn:
   en: d7e8c999a0851a0c
   zh: d7e8c999a0851a0c
@@ -882,8 +885,11 @@
   en: 2f748dc5ac5f1d00
   zh: 2f748dc5ac5f1d00
 /session-persistence-event-catalog/resolved-persistence-types/tool-workflow-agent-start:
-  en: b48d0e9b92f1e8cf
-  zh: b48d0e9b92f1e8cf
+  en: 0c6f80896da69c2a
+  zh: 0c6f80896da69c2a
+/session-persistence-event-catalog/resolved-persistence-types/tool-workflow-artifact:
+  en: 33faace65be38df7
+  zh: 33faace65be38df7
 /session-persistence-event-catalog/resolved-persistence-types/tool-workflow-log:
   en: bba1ae2c65d61795
   zh: bba1ae2c65d61795
@@ -1323,8 +1329,11 @@
   en: 8f327cc1f9f2474c
   zh: 812e74404c278beb
 /session-persistence-event-catalog/resolved-persistence-types/toolworkflowagentstartdata:
-  en: bbf1a7ef151cec45
-  zh: f119c08fb8d3c3c7
+  en: 0dd0fa400bb50454
+  zh: 4de43fb7e80fa94e
+/session-persistence-event-catalog/resolved-persistence-types/toolworkflowartifactdata:
+  en: af0843177cbe16b4
+  zh: 67166a0b157875bc
 /session-persistence-event-catalog/resolved-persistence-types/toolworkflowlogdata:
   en: 32da364f4722b44f
   zh: ba0d14ba39d910b6
@@ -1335,8 +1344,8 @@
   en: b3133a057783fd8e
   zh: fad3a9d7240e3bfb
 /session-persistence-event-catalog/resolved-persistence-types/toolworkflowrunenddata:
-  en: 4f8cfcb84d6637c9
-  zh: 0835932e790ec247
+  en: 58d38d08e416c5fe
+  zh: 3a8aba7500b22ffc
 /session-persistence-event-catalog/resolved-persistence-types/toolworkflowrunstartdata:
   en: 4f35e6f62a76e397
   zh: c64e05a60782993a
@@ -1353,8 +1362,8 @@
   en: 8e699c0217638bbe
   zh: a2047db24c25217b
 /session-persistence-event-catalog/resolved-persistence-types/workflowagentoutcome:
-  en: c956a3a30e46c97d
-  zh: 1e4b55c5ecbeaae4
+  en: 4f1c9f9eb2c5c187
+  zh: c8c3649cb5cdf19f
 /session-persistence-event-catalog/resolved-persistence-types/workflowstopreason:
   en: a0d0018c68abc564
   zh: 299d86dbba56b528
@@ -2151,8 +2160,11 @@
   en: 8eb5e1eb95722bc7
   zh: 8dd5980029600648
 /session-persistence-event-catalog/resolved-persistence-types/type-tool-workflow-agent-start:
-  en: 0397a3c08c31c145
-  zh: cf170ee7bc1013d8
+  en: 9d4e0c4a45968b21
+  zh: 57adb25ac60cc0b5
+/session-persistence-event-catalog/resolved-persistence-types/type-tool-workflow-artifact:
+  en: 941c6422c5056c6d
+  zh: 880a66479fd0cb69
 /session-persistence-event-catalog/resolved-persistence-types/type-tool-workflow-log:
   en: 8018b36b009d4b8b
   zh: 6569c31afae11dbc

@@ -74,6 +74,7 @@
 | `event:todo/write` | event | `b978cff734e62143eb56c9125423ec275405eda969802d42aaf73ecb987d3b26` | [`{ type: "todo/write" }`](#persistence-type-sha256-b978cff734e62143eb56c9125423ec275405eda969802d42aaf73ecb987d3b26) |
 | `event:tool-workflow/agent-end` | event | `babf9ee4d1af62bf6c3a8103737f7a5e4e78ce179be835ce05a38803e15884b7` | [`{ type: "tool-workflow/agent-end" }`](#persistence-type-sha256-babf9ee4d1af62bf6c3a8103737f7a5e4e78ce179be835ce05a38803e15884b7) |
 | `event:tool-workflow/agent-start` | event | `5f26a6c20b37632f8f57729d171c671def4683d994ac6257a8dffcd855101627` | [`{ type: "tool-workflow/agent-start" }`](#persistence-type-sha256-5f26a6c20b37632f8f57729d171c671def4683d994ac6257a8dffcd855101627) |
+| `event:tool-workflow/artifact` | event | `9a874c5ff852f7580dfb80f926ee02972b9f6c7ba75477c05c14c5f611d8d8e6` | [`{ type: "tool-workflow/artifact" }`](#persistence-type-sha256-9a874c5ff852f7580dfb80f926ee02972b9f6c7ba75477c05c14c5f611d8d8e6) |
 | `event:tool-workflow/log` | event | `d1a76ca217758d3ffe98fa1a5edbe84d754b66228cd9436ef2fd8c4de38e1886` | [`{ type: "tool-workflow/log" }`](#persistence-type-sha256-d1a76ca217758d3ffe98fa1a5edbe84d754b66228cd9436ef2fd8c4de38e1886) |
 | `event:tool-workflow/metric` | event | `f2a41cf1ae424449a020d1af3ec264e9c44e76471bba1553ca91b2b29c7576b6` | [`{ type: "tool-workflow/metric" }`](#persistence-type-sha256-f2a41cf1ae424449a020d1af3ec264e9c44e76471bba1553ca91b2b29c7576b6) |
 | `event:tool-workflow/phase` | event | `49d14928d15c22e1caaab450eb5e0df37bd0165d0c2d460cbff8cdea371aa28b` | [`{ type: "tool-workflow/phase" }`](#persistence-type-sha256-49d14928d15c22e1caaab450eb5e0df37bd0165d0c2d460cbff8cdea371aa28b) |
@@ -1195,7 +1196,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'tool-workflow/agent-end': ToolWorkflowAgentEndData
 ```
 
-来源：[`packages/workflow/tool-workflow/src/types.ts:82`](../packages/workflow/tool-workflow/src/types.ts)
+来源：[`packages/workflow/tool-workflow/src/types.ts:90`](../packages/workflow/tool-workflow/src/types.ts)
 
 <a id="tool-workflowagent-start--log-only"></a>
 
@@ -1209,7 +1210,21 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'tool-workflow/agent-start': ToolWorkflowAgentStartData
 ```
 
-来源：[`packages/workflow/tool-workflow/src/types.ts:77`](../packages/workflow/tool-workflow/src/types.ts)
+来源：[`packages/workflow/tool-workflow/src/types.ts:85`](../packages/workflow/tool-workflow/src/types.ts)
+
+<a id="tool-workflowartifact--log-only"></a>
+
+#### `tool-workflow/artifact` — log-only
+
+```ts persistence-catalog
+/**
+ * Records one output file named by the script.
+ * @param data - run identity, path as given, and optional description.
+ */
+'tool-workflow/artifact': ToolWorkflowArtifactData
+```
+
+来源：[`packages/workflow/tool-workflow/src/types.ts:110`](../packages/workflow/tool-workflow/src/types.ts)
 
 <a id="tool-workflowlog--log-only"></a>
 
@@ -1223,7 +1238,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'tool-workflow/log': ToolWorkflowLogData
 ```
 
-来源：[`packages/workflow/tool-workflow/src/types.ts:92`](../packages/workflow/tool-workflow/src/types.ts)
+来源：[`packages/workflow/tool-workflow/src/types.ts:100`](../packages/workflow/tool-workflow/src/types.ts)
 
 <a id="tool-workflowmetric--log-only"></a>
 
@@ -1237,7 +1252,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'tool-workflow/metric': ToolWorkflowMetricData
 ```
 
-来源：[`packages/workflow/tool-workflow/src/types.ts:97`](../packages/workflow/tool-workflow/src/types.ts)
+来源：[`packages/workflow/tool-workflow/src/types.ts:105`](../packages/workflow/tool-workflow/src/types.ts)
 
 <a id="tool-workflowphase--log-only"></a>
 
@@ -1251,7 +1266,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'tool-workflow/phase': ToolWorkflowPhaseData
 ```
 
-来源：[`packages/workflow/tool-workflow/src/types.ts:87`](../packages/workflow/tool-workflow/src/types.ts)
+来源：[`packages/workflow/tool-workflow/src/types.ts:95`](../packages/workflow/tool-workflow/src/types.ts)
 
 <a id="tool-workflowrun-end--log-only"></a>
 
@@ -1265,7 +1280,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'tool-workflow/run-end': ToolWorkflowRunEndData
 ```
 
-来源：[`packages/workflow/tool-workflow/src/types.ts:102`](../packages/workflow/tool-workflow/src/types.ts)
+来源：[`packages/workflow/tool-workflow/src/types.ts:115`](../packages/workflow/tool-workflow/src/types.ts)
 
 <a id="tool-workflowrun-start--log-only"></a>
 
@@ -1279,7 +1294,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'tool-workflow/run-start': ToolWorkflowRunStartData
 ```
 
-来源：[`packages/workflow/tool-workflow/src/types.ts:72`](../packages/workflow/tool-workflow/src/types.ts)
+来源：[`packages/workflow/tool-workflow/src/types.ts:80`](../packages/workflow/tool-workflow/src/types.ts)
 
 ### `turn/*`
 
@@ -2905,6 +2920,14 @@ SHA-256: `5d17f27a1ef9f7026c0232714adf7573961536d75f3303ca97973975f5af170e`
 SHA-256: `ad92f473a03ae72599ff26c86e897c25e16269519ad2a87340f0bea946517af8`
 
 `"tool-workflow/agent-start"`
+
+<a id="persistence-type-sha256-1ed793c28ee2616e7d6c06a8f943fe34f4c1ea99f0ada54f2526f1a0ef69576d"></a>
+
+### `"tool-workflow/artifact"`
+
+SHA-256: `1ed793c28ee2616e7d6c06a8f943fe34f4c1ea99f0ada54f2526f1a0ef69576d`
+
+`"tool-workflow/artifact"`
 
 <a id="persistence-type-sha256-ce0391c7ed060f10f5162bd217d9245dd02c08737684bc0591510ed38dc1d058"></a>
 
@@ -5374,6 +5397,24 @@ SHA-256: `9a410ddf56792b2b7cd4a224a2e54dc4dee30a8e8e6b1c2b9a1d19992b217adc`
 | `runId` | 必需 | `string` |
 | `seq` | 必需 | `number` |
 
+<a id="persistence-type-sha256-97205bd728b48ccc0025a87bb85128dcfa41408a1c93c7627404bdbc6f30333a"></a>
+
+<a id="persistence-type-packagesworkflowtool-workflowsrctypeststoolworkflowartifactdata"></a>
+
+<a id="persistence-type-toolworkflowartifactdata"></a>
+
+### `ToolWorkflowArtifactData`
+
+SHA-256: `97205bd728b48ccc0025a87bb85128dcfa41408a1c93c7627404bdbc6f30333a`
+
+来源：[`packages/workflow/tool-workflow/src/types.ts:59`](../packages/workflow/tool-workflow/src/types.ts)
+
+| 属性 | 存在性 | 类型 |
+|---|---|---|
+| `description` | 可选 | `string` |
+| `path` | 必需 | `string` |
+| `runId` | 必需 | `string` |
+
 <a id="persistence-type-sha256-f708c8fe733e61b0df925cfc6bc650859a248ee57078313f589ca63af21ff62b"></a>
 
 <a id="persistence-type-packagesworkflowtool-workflowsrctypeststoolworkflowlogdata"></a>
@@ -5437,7 +5478,7 @@ SHA-256: `77c993b445bf2654a9e7146d704c691e98920922f8c7467e8d0ee845ec45f562`
 
 SHA-256: `8b25719027620560e479ee08246427cd184a26ef4fb93e391394ed14e79c4962`
 
-来源：[`packages/workflow/tool-workflow/src/types.ts:59`](../packages/workflow/tool-workflow/src/types.ts)
+来源：[`packages/workflow/tool-workflow/src/types.ts:67`](../packages/workflow/tool-workflow/src/types.ts)
 
 | 属性 | 存在性 | 类型 |
 |---|---|---|
@@ -5546,7 +5587,7 @@ SHA-256: `5d00abf938272f22eb47199e9d40801e8d8ec4c88e2b138b15aa2a5a5bf87520`
 
 SHA-256: `c2deb7c9183735d4e0fffddf5c623f4e34daa1c8e96b111982e957dfcbbcf896`
 
-来源：[`packages/workflow/workflow/src/types.ts:120`](../packages/workflow/workflow/src/types.ts)
+来源：[`packages/workflow/workflow/src/types.ts:128`](../packages/workflow/workflow/src/types.ts)
 
 以下类型之一：
 
@@ -9121,6 +9162,22 @@ SHA-256: `5f26a6c20b37632f8f57729d171c671def4683d994ac6257a8dffcd855101627`
 | `seq` | 必需 | `number` |
 | `time` | 必需 | `number` |
 | `type` | 必需 | `"tool-workflow/agent-start"` |
+
+<a id="persistence-type-sha256-9a874c5ff852f7580dfb80f926ee02972b9f6c7ba75477c05c14c5f611d8d8e6"></a>
+
+<a id="persistence-type-eventtool-workflowartifact"></a>
+
+### `{ type: "tool-workflow/artifact" }`
+
+SHA-256: `9a874c5ff852f7580dfb80f926ee02972b9f6c7ba75477c05c14c5f611d8d8e6`
+
+| 属性 | 存在性 | 类型 |
+|---|---|---|
+| `data` | 必需 | [`ToolWorkflowArtifactData`](#persistence-type-sha256-97205bd728b48ccc0025a87bb85128dcfa41408a1c93c7627404bdbc6f30333a) |
+| `ignorable` | 可选 | `true` |
+| `seq` | 必需 | `number` |
+| `time` | 必需 | `number` |
+| `type` | 必需 | `"tool-workflow/artifact"` |
 
 <a id="persistence-type-sha256-d1a76ca217758d3ffe98fa1a5edbe84d754b66228cd9436ef2fd8c4de38e1886"></a>
 

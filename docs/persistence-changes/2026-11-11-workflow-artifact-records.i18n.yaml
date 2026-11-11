@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-11-11-workflow-artifact-records.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/persistence-changes/2026-11-11-workflow-artifact-records.md
+/:
+  en: 3d5a424ae7d7e46b
+  zh: c22a8e4a62d8cc1a
+/2026-11-11-workflow-artifact-records:
+  en: c4b7a2603cfe2edf
+  zh: 25e11dac884c4759
+/2026-11-11-workflow-artifact-records/summary:
+  en: 3eb8ac3c8f011578
+  zh: 80930ec7aa3f33b6
+/2026-11-11-workflow-artifact-records/table-of-contents:
+  en: 6cf314a069ceb451
+  zh: 9adff678e9ecab3b
+/2026-11-11-workflow-artifact-records/declaration:
+  en: 6907136f28e48c90
+  zh: 02f8298485f3d8e7
+/2026-11-11-workflow-artifact-records/compatibility:
+  en: 129663a129f2f8e3
+  zh: 1283d9ba8e911575
+/2026-11-11-workflow-artifact-records/verification:
+  en: 9c7b0dc705f82bbf
+  zh: ab17701f3a445ff9
+/2026-11-11-workflow-artifact-records/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

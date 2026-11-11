@@ -3,7 +3,7 @@ import {
   type FocusEvent, type MouseEvent, type ReactNode,
 } from 'react'
 import {
-  DisclosureRow, IconChevronRightOutlineRegular, StateDot,
+  DisclosureRow, FileTypeIcon, IconChevronRightOutlineRegular, StateDot,
   type DisclosureRowProps, type StateDotState,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -13,7 +13,7 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SessionStatusSnapshot } from '@deepseek-ai/dsh-client-ui-session/client'
 import type { WorkflowRunKey } from './locales.ts'
 import type {
-  WorkflowRunActivityEntry, WorkflowRunMemberData, WorkflowRunMetricData, WorkflowRunPhaseData, WorkflowRunStatus,
+  WorkflowRunActivityEntry, WorkflowRunArtifactData, WorkflowRunMemberData, WorkflowRunMetricData, WorkflowRunPhaseData, WorkflowRunStatus,
 } from './workflow-definition.ts'
 import { formatDuration, formatMetric } from './format.ts'
 import css from './WorkflowRunPanel.module.css'
@@ -412,6 +412,35 @@ function MetricsTable({ metrics, t }: {
   )
 }
 
+function OutputsSection({ artifacts, openFile, t }: {
+  readonly artifacts: readonly WorkflowRunArtifactData[]
+  readonly openFile: WorkflowRunPanelProps['openFile']
+  readonly t: WorkflowRunPanelProps['t']
+}) {
+  if (artifacts.length === 0) return null
+  return (
+    <ul className={css.outputs} aria-label={t('outputs.title')} data-workflow-outputs>
+      {artifacts.map(artifact => (
+        <li key={artifact.path}>
+          <button
+            type="button"
+            className={css.output}
+            title={artifact.path}
+            aria-label={t('outputs.open', { path: artifact.path })}
+            onClick={() => { openFile(artifact.path) }}
+          >
+            <FileTypeIcon path={artifact.path} size={16} />
+            <span className={css.outputPath}>{artifact.path}</span>
+            {artifact.description === undefined
+              ? null
+              : <span className={css.outputDescription}>{artifact.description}</span>}
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 function ActivitySection({ entries, dropped, t }: {
   readonly entries: readonly WorkflowRunActivityEntry[]
   readonly dropped: number
@@ -446,7 +475,9 @@ function ActivitySection({ entries, dropped, t }: {
 }
 
 /** Render one durable workflow run with status-driven run and phase disclosure. */
-export function WorkflowRunPanel({ node, sessionId, useSessions, useSessionStatus, openSession, openRuns, t }: WorkflowRunPanelProps) {
+export function WorkflowRunPanel({
+  node, sessionId, useSessions, useSessionStatus, openSession, openRuns, openFile, t,
+}: WorkflowRunPanelProps) {
   const phaseFacts = useMemo(() => node.data.phases.map(phase => (
     [phase.key, phaseDisclosureFacts(phase)] as const
   )), [node.data.phases])
@@ -597,6 +628,7 @@ export function WorkflowRunPanel({ node, sessionId, useSessions, useSessionStatu
                 />
               )
             })}
+          <OutputsSection artifacts={node.data.artifacts} openFile={openFile} t={t} />
           <MetricsTable metrics={node.data.metrics} t={t} />
           <ActivitySection entries={node.data.activity} dropped={node.data.progressEventsDropped} t={t} />
           <button type="button" className={css.openRuns} onClick={openRuns}>{t('runs.open')}</button>

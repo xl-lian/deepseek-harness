@@ -40,6 +40,8 @@ export const zh = {
   'metrics.min': '最小',
   'metrics.max': '最大',
   'runs.trend': '{name} 的趋势',
+  'outputs.title': '输出文件',
+  'outputs.open': '打开 {path}',
 }
 
 /** English dictionary (same key set). */
@@ -79,6 +81,8 @@ export const en: Record<WorkflowRunKey, string> = {
   'metrics.min': 'Min',
   'metrics.max': 'Max',
   'runs.trend': 'Trend of {name}',
+  'outputs.title': 'Output files',
+  'outputs.open': 'Open {path}',
 }
 
 /** Union of this namespace's dictionary keys. */
@@ -121,6 +125,8 @@ export const ja = {
   'metrics.min': '最小',
   'metrics.max': '最大',
   'runs.trend': '{name} の傾向',
+  'outputs.title': '出力ファイル',
+  'outputs.open': '{path} を開く',
 } satisfies Record<keyof typeof en, string>
 
 /** Spanish dictionary, checked against the English keys. */
@@ -160,6 +166,8 @@ export const es = {
   'metrics.min': 'Mín.',
   'metrics.max': 'Máx.',
   'runs.trend': 'Tendencia de {name}',
+  'outputs.title': 'Archivos de salida',
+  'outputs.open': 'Abrir {path}',
 } satisfies Record<keyof typeof en, string>
 
 /** French dictionary, checked against the English keys. */
@@ -199,6 +207,8 @@ export const fr = {
   'metrics.min': 'Min',
   'metrics.max': 'Max',
   'runs.trend': 'Tendance de {name}',
+  'outputs.title': 'Fichiers de sortie',
+  'outputs.open': 'Ouvrir {path}',
 } satisfies Record<keyof typeof en, string>
 
 /** German dictionary, checked against the English keys. */
@@ -238,6 +248,8 @@ export const de = {
   'metrics.min': 'Min.',
   'metrics.max': 'Max.',
   'runs.trend': 'Verlauf von {name}',
+  'outputs.title': 'Ausgabedateien',
+  'outputs.open': '{path} öffnen',
 } satisfies Record<keyof typeof en, string>
 
 /** Russian dictionary, checked against the English keys. */
@@ -277,6 +289,8 @@ export const ru = {
   'metrics.min': 'Мин.',
   'metrics.max': 'Макс.',
   'runs.trend': 'Динамика {name}',
+  'outputs.title': 'Выходные файлы',
+  'outputs.open': 'Открыть {path}',
 } satisfies Record<keyof typeof en, string>
 
 /** Portuguese dictionary, checked against the English keys. */
@@ -316,4 +330,6 @@ export const pt = {
   'metrics.min': 'Mín.',
   'metrics.max': 'Máx.',
   'runs.trend': 'Tendência de {name}',
+  'outputs.title': 'Arquivos de saída',
+  'outputs.open': 'Abrir {path}',
 } satisfies Record<keyof typeof en, string>

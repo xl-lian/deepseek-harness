@@ -60,6 +60,7 @@ A missing directory, an invalid or unpaired meta file, a mismatched name, or a n
 | `maxRecordedPhases` | `500` | `phase()` transitions one top-level run writes to the Session log. |
 | `maxRecordedLineChars` | `2000` | Longest recorded log line or phase title; longer text is clipped. |
 | `maxRecordedMetrics` | `4096` | `metric()` values one top-level run writes to the Session log. |
+| `maxRecordedArtifacts` | `64` | `artifact()` files one top-level run writes to the Session log. |
 
 The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-tool-workflow) is the exhaustive source for every accepted field.
 
@@ -87,7 +88,7 @@ A background call registers the run through `jobs.start` inside the job starter,
 
 ### Durable session records
 
-For a root transport execution (`exec.parent` absent), the tool projects the run into the calling Agent's Session with log-only events: run-start after `start()` returns, phase, log, and metric records and member starts and endings filtered by `run.id`, then run-end only after the result is available and disposal reaches quiescence. Nested transport calls execute normally but write no record. The first failed Session append disables later recording for that run with one warning, leaving either no record or a legal continuous prefix without changing the tool result or cleanup.
+For a root transport execution (`exec.parent` absent), the tool projects the run into the calling Agent's Session with log-only events: run-start after `start()` returns, phase, log, metric, and artifact records and member starts and endings filtered by `run.id`, then run-end only after the result is available and disposal reaches quiescence. Nested transport calls execute normally but write no record. The first failed Session append disables later recording for that run with one warning, leaving either no record or a legal continuous prefix without changing the tool result or cleanup.
 
 Phase and log records are narration and imply no execution structure. Each run's records are capped by `maxRecordedPhases` and `maxRecordedLogLines`, each text is clipped to `maxRecordedLineChars`, and run-end reports how many records the caps skipped. A background run's lines also reach the job's output ring, which is transient by design.
 

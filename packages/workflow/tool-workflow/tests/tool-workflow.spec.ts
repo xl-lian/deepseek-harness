@@ -92,6 +92,13 @@ class StubEngine extends WorkflowEngine {
     }, { name, value, ...step === undefined ? {} : { step } })
   }
 
+  artifact(id: WorkflowRunIdType, path: string, description?: string): void {
+    this.emitWorkflowEvent('workflow/artifact', {
+      id,
+      meta: this.requests[Number(String(id).slice(4)) - 1]!.meta,
+    }, { path, ...description === undefined ? {} : { description } })
+  }
+
   phase(id: WorkflowRunIdType, title: string): void {
     this.emitWorkflowEvent('workflow/phase', {
       id,
@@ -114,6 +121,7 @@ async function setup(config?: {
   maxRecordedPhases?: number
   maxRecordedLineChars?: number
   maxRecordedMetrics?: number
+  maxRecordedArtifacts?: number
 }) {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
@@ -203,6 +211,26 @@ describe('dsh-tool-workflow', () => {
     ])
   })
 
+  it('records artifacts verbatim, clips descriptions, and counts what it skips', async () => {
+    const { ctx, engine, parent, session } = await setup({ maxRecordedArtifacts: 2, maxRecordedLineChars: 6 })
+    const pending = execute(ctx, { script: SCRIPT, meta: META }, { agent: parent })
+    await vi.waitFor(() => { expect(engine.requests).toHaveLength(1) })
+    const runId = WorkflowRunId('run-1')
+    engine.artifact(runId, 'a.md')
+    engine.artifact(runId, 'toolongpath.md')
+    engine.artifact(runId, 'b.md', 'description')
+    engine.artifact(runId, 'c.md')
+    engine.settleRun(runId, { value: 1, stopReason: 'completed', agentsStarted: 0 })
+    await pending
+    engine.artifact(runId, 'late.md')
+    expect(session.snapshotEvents().map(event => [event.type, event.data])).toEqual([
+      ['tool-workflow/run-start', { runId, name: 'audit' }],
+      ['tool-workflow/artifact', { runId, path: 'a.md' }],
+      ['tool-workflow/artifact', { runId, path: 'b.md', description: 'descri…' }],
+      ['tool-workflow/run-end', { runId, stopReason: 'completed', progressEventsDropped: 2 }],
+    ])
+  })
+
   it('records a line of exactly the character limit verbatim', async () => {
     const { ctx, engine, parent, session } = await setup({ maxRecordedLineChars: 4 })
     const pending = execute(ctx, { script: SCRIPT, meta: META }, { agent: parent })
@@ -218,6 +246,7 @@ describe('dsh-tool-workflow', () => {
     ['phase', 'tool-workflow/phase', (engine: StubEngine) => { engine.phase(WorkflowRunId('run-1'), 'Scan') }],
     ['log', 'tool-workflow/log', (engine: StubEngine) => { engine.logLine(WorkflowRunId('run-1'), 'line') }],
     ['metric', 'tool-workflow/metric', (engine: StubEngine) => { engine.metric(WorkflowRunId('run-1'), 'loss', 1) }],
+    ['artifact', 'tool-workflow/artifact', (engine: StubEngine) => { engine.artifact(WorkflowRunId('run-1'), 'a.md') }],
   ] as const)('stops recording after a failed %s append without failing the run', async (_label, type, emit) => {
     const { ctx, engine, parent, session } = await setup()
     const pending = execute(ctx, { script: SCRIPT, meta: META }, { agent: parent })

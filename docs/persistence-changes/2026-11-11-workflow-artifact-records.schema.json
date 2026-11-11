@@ -1,0 +1,15 @@
+{
+  "formatVersion": 2,
+  "roots": [
+    {"key":"event:tool-workflow/artifact","kind":"event","event":"tool-workflow/artifact","surface":false,"digest":"9a874c5ff852f7580dfb80f926ee02972b9f6c7ba75477c05c14c5f611d8d8e6"}
+  ],
+  "types": [],
+  "nodes": {
+    "0657d3ca5ac4e7bf": {"kind":"primitive","type":"number"},
+    "1ed793c28ee2616e": {"kind":"literal","value":"tool-workflow/artifact"},
+    "4cd48f3e5108bd6e": {"kind":"primitive","type":"string"},
+    "97205bd728b48ccc": {"kind":"object","properties":[{"name":"description","type":"4cd48f3e5108bd6e","optional":true},{"name":"path","type":"4cd48f3e5108bd6e","optional":false},{"name":"runId","type":"4cd48f3e5108bd6e","optional":false}],"indices":[]},
+    "9a874c5ff852f758": {"kind":"object","properties":[{"name":"data","type":"97205bd728b48ccc","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"1ed793c28ee2616e","optional":false}],"indices":[]},
+    "dacf3d5f3e4ff619": {"kind":"literal","value":true}
+  }
+}

@@ -55,11 +55,19 @@ export interface ToolWorkflowMetricData {
   readonly step?: number
 }
 
+/** Records one output file a top-level run named. */
+export interface ToolWorkflowArtifactData {
+  readonly runId: WorkflowRunId
+  /** The path as the script gave it, resolved against the Session working directory when opened. */
+  readonly path: string
+  readonly description?: string
+}
+
 /** Settles one workflow run after its live resources reach quiescence. */
 export interface ToolWorkflowRunEndData {
   readonly runId: WorkflowRunId
   readonly stopReason: WorkflowStopReason
-  /** Phase, log, and metric records skipped by the recording caps; absent when none were. */
+  /** Phase, log, metric, and artifact records skipped by the recording caps; absent when none were. */
   readonly progressEventsDropped?: number
 }
 
@@ -95,6 +103,11 @@ declare module '@deepseek-ai/dsh-session/types' {
      * @param data - run identity, series name, finite value, and optional step.
      */
     'tool-workflow/metric': ToolWorkflowMetricData
+    /**
+     * Records one output file named by the script.
+     * @param data - run identity, path as given, and optional description.
+     */
+    'tool-workflow/artifact': ToolWorkflowArtifactData
     /**
      * Closes one workflow record after cleanup.
      * @param data - stable run identity, terminal reason, and any dropped progress count.

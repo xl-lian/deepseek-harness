@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Use `dsh-client-ui-workflow-run` to inspect each durable top-level workflow run as an independent Chat node. Expand a run to see its phases and expand a phase to see members; running, failed, cancelled, and interrupted levels open by default, while completed levels remain closed. A running member can open its child Session only when it belongs to the current Session and is available locally. The header shows the latest phase, member counts, and elapsed time, each level shows its recorded duration, and an Activity disclosure lists recorded phase and log lines. Scripts, outputs, errors, usage, topology, and controls remain outside this surface.
+Use `dsh-client-ui-workflow-run` to inspect each durable top-level workflow run as an independent Chat node. Expand a run to see its phases and expand a phase to see members; running, failed, cancelled, and interrupted levels open by default, while completed levels remain closed. A running member can open its child Session only when it belongs to the current Session and is available locally. The run shows its latest phase, member counts, durations, metrics, output files, and recorded progress lines. Scripts, return values, errors, usage, and controls remain outside this surface.
 
 ## Table of Contents
 
@@ -30,6 +30,10 @@ A top-level workflow run through `dsh-tool-workflow` appears in the conversation
 ### Navigating the node
 
 Run and phase headers keep 6px gaps between their title, count, and status fields, with the status aligned to the right. The run uses a 32-pixel row with persistent chevrons, an inline state dot, and status text; phases use disclosure rows with title and member count in the main area and a fixed aggregate-status tail; members use a 16-pixel dot slot, a truncating name area, and a fixed status column. Opening a member's child Session requires both member and child to be running, with the current Session recorded as its parent and an available child identity projection. Navigation uses the child's own mode for both continuable and historical one-shot children; external executions have no local Session to open. Child activity uses the unified UI status, falling back to the Session summary when unknown. Workflow events establish membership; missing child identity, a different parent, or a terminal member keeps the row non-interactive.
+
+### Output files
+
+Files a run names with `artifact()` appear in the expanded run; selecting one opens it in the right Sidebar. The path is recorded as given and resolved when opened, so a file that no longer exists shows the preview's not-found state.
 
 ### Comparing runs
 
@@ -92,7 +96,7 @@ These limits define which runs produce records and what the node exposes; they a
 - **Only top-level calls through `dsh-tool-workflow` produce these records** — nested PTC mode calls and direct `WorkflowEngine` consumers do not.
 - **A run lost without terminal events in a normally ended Turn stays running** — for example a background run whose process crashed during a later Turn, or a run whose recording stopped after a failed append; the session log carries no fact that marks it stopped.
 - **Navigation is intentionally live-only** — terminal members remain visible for review but never expose a cold-session opener from this node.
-- **The node shows recorded progress only** — scripts, outputs, errors, usage, static topology, and controls remain outside this surface, and an interrupted span has no duration because no end was recorded.
+- **The node shows recorded progress only** — scripts, return values, errors, usage, static topology, and controls remain outside this surface, and an interrupted span has no duration because no end was recorded.
 
 <a id="dev-note"></a>
 ### Dev Note

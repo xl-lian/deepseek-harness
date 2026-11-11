@@ -104,6 +104,14 @@ export interface WorkflowMetricInfo {
   step?: number
 }
 
+/** One `artifact()` call of a run (the `workflow/artifact` payload). */
+export interface WorkflowArtifactInfo {
+  /** File path as the script gave it; relative paths use the Session working directory. */
+  path: string
+  /** Optional one-line description. */
+  description?: string
+}
+
 /** One `agent()` call's identity within a run (the `workflow/agent-start` payload). */
 export interface WorkflowAgentInfo {
   /** 1-based sequence number of this `agent()` call within the run. */

@@ -9,6 +9,7 @@ import { HarnessError } from '@deepseek-ai/dsh-llm'
 import type {
   WorkflowAgentEndInfo,
   WorkflowAgentInfo,
+  WorkflowArtifactInfo,
   WorkflowMetricInfo,
   WorkflowResultInfo,
   WorkflowRunInfo,
@@ -21,6 +22,7 @@ export type {
   WorkflowAgentEndInfo,
   WorkflowAgentInfo,
   WorkflowAgentOutcome,
+  WorkflowArtifactInfo,
   WorkflowMeta,
   WorkflowMetricInfo,
   WorkflowPhase,
@@ -67,6 +69,13 @@ declare module '@deepseek-ai/cordis' {
      */
     'workflow/metric'(info: WorkflowRunInfo, metric: WorkflowMetricInfo): void
     /**
+     * The script named one output file (an `artifact(path, description)` call).
+     * @param info - the run's identity snapshot.
+     * @param artifact - the path as given and an optional description.
+     * @mode emit
+     */
+    'workflow/artifact'(info: WorkflowRunInfo, artifact: WorkflowArtifactInfo): void
+    /**
      * One `agent()` call established a published child run. Paired with
      * {@link Events['workflow/agent-end']} by `agent.seq`. A call that never
      * receives a published run from the provider emits neither
@@ -106,6 +115,7 @@ export type WorkflowEventName =
   | 'workflow/phase'
   | 'workflow/log'
   | 'workflow/metric'
+  | 'workflow/artifact'
   | 'workflow/agent-start'
   | 'workflow/agent-end'
   | 'workflow/end'

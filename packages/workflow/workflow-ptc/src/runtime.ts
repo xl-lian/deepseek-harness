@@ -16,7 +16,7 @@ import type {
   WorkflowAgentEndInfo,
   WorkflowAgentInfo,
   WorkflowMeta,
-  WorkflowResult, WorkflowMetricInfo,
+  WorkflowResult, WorkflowMetricInfo, WorkflowArtifactInfo,
 } from '@deepseek-ai/dsh-workflow'
 import { materializeFromRealm, MaterializeError, renderThrown } from './realm.ts'
 import type { ChildHandle, ChildPort, WorkerLimits } from './types.ts'
@@ -26,6 +26,7 @@ export interface ExecutionObserver {
   phase(title: string): void
   log(message: string): void
   metric(metric: WorkflowMetricInfo): void
+  artifact(artifact: WorkflowArtifactInfo): void
   agentStart(info: WorkflowAgentInfo): void
   agentEnd(info: WorkflowAgentEndInfo): void
 }
@@ -90,6 +91,7 @@ export class WorkflowExecution {
       phase: (title: unknown) => { this.phase(title) },
       log: (message: unknown) => { this.log(message) },
       metric: (name: unknown, value: unknown, opts?: unknown) => { this.metric(name, value, opts) },
+      artifact: (path: unknown, description?: unknown) => { this.artifact(path, description) },
       // PTC has already copied these inputs through its JSON channel.
       args,
     }
@@ -365,6 +367,17 @@ export class WorkflowExecution {
       throw new WorkflowError('log() requires a message string', 'INVALID_ARGUMENT')
     }
     this.observer.log(message)
+  }
+
+  /** The `artifact(path, description?)` hook: names one output file for observers. */
+  private artifact(path: unknown, description: unknown): void {
+    if (typeof path !== 'string' || path.length === 0) {
+      throw new WorkflowError('artifact() requires a non-empty path string', 'INVALID_ARGUMENT')
+    }
+    if (description !== undefined && typeof description !== 'string') {
+      throw new WorkflowError('artifact() description must be a string', 'INVALID_ARGUMENT')
+    }
+    this.observer.artifact({ path, ...description === undefined ? {} : { description } })
   }
 
   /** The `metric(name, value, opts?)` hook: one numeric value for observers. */

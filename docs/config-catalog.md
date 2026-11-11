@@ -4309,7 +4309,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-tool-workflow`
 
 - `inject`: `tools` · `workflowEngine` · `systemPrompt`
-- `source`: [`packages/workflow/tool-workflow/src/index.ts:46`](../packages/workflow/tool-workflow/src/index.ts)
+- `source`: [`packages/workflow/tool-workflow/src/index.ts:47`](../packages/workflow/tool-workflow/src/index.ts)
 
 ```ts config-catalog
 /** Config: the model-facing tool name plus result rendering caps. */
@@ -4341,6 +4341,8 @@ export interface Config {
   maxRecordedLineChars?: number
   /** Maximum `metric()` values one top-level run writes to the Session log (default 4096). */
   maxRecordedMetrics?: number
+  /** Maximum `artifact()` files one top-level run writes to the Session log (default 64). */
+  maxRecordedArtifacts?: number
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-tool-workflow -->

@@ -4841,6 +4841,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'info', description: 'the run\'s identity snapshot.' }, { name: 'agent', description: 'the call\'s sequence number, label, phase, and child id.' }],
   },
   {
+    name: 'workflow/artifact',
+    mode: 'emit',
+    signature: '\'workflow/artifact\'(info: WorkflowRunInfo, artifact: WorkflowArtifactInfo): void',
+    summary: 'The script named one output file (an `artifact(path, description)` call).',
+    description: 'The script named one output file (an `artifact(path, description)` call).',
+    parameters: [{ name: 'info', description: 'the run\'s identity snapshot.' }, { name: 'artifact', description: 'the path as given and an optional description.' }],
+  },
+  {
     name: 'workflow/end',
     mode: 'emit',
     signature: '\'workflow/end\'(info: WorkflowRunInfo, result: WorkflowResultInfo): void',
@@ -9119,6 +9127,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkflowAgentOutcome',
     declaration: 'export type WorkflowAgentOutcome = \'completed\' | \'failed\' | \'cancelled\';',
+  },
+  {
+    name: 'WorkflowArtifactInfo',
+    declaration: 'export interface WorkflowArtifactInfo {\n    path: string;\n    description?: string;\n}',
   },
   {
     name: 'WorkflowMeta',

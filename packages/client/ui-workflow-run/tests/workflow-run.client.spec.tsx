@@ -156,6 +156,7 @@ describe('workflow-run Conversation Definition', () => {
       endedAt: 800,
       activity: [],
       metrics: [],
+      artifacts: [],
       progressEventsDropped: 0,
     })
     const node = [...(value.snapshot('chat') as ChatSnapshot).nodes.values()][0]!
@@ -199,6 +200,19 @@ describe('workflow-run Conversation Definition', () => {
     expect(data?.metrics).toEqual([
       { name: 'loss', latest: 3, min: 1, max: 3 },
       { name: 'acc', latest: 0.5, min: 0.5, max: 0.5 },
+    ])
+  })
+
+  it('folds artifacts by path in first-named order, keeping the newest description', () => {
+    const data = workflowData(assembler([
+      at(3, 'tool-workflow/run-start', { runId: 'run-1', name: 'audit' }),
+      at(4, 'tool-workflow/artifact', { runId: 'run-1', path: 'report.md' }),
+      at(5, 'tool-workflow/artifact', { runId: 'run-1', path: 'plot.png', description: 'loss' }),
+      at(6, 'tool-workflow/artifact', { runId: 'run-1', path: 'report.md', description: 'final' }),
+    ]))
+    expect(data?.artifacts).toEqual([
+      { path: 'report.md', description: 'final' },
+      { path: 'plot.png', description: 'loss' },
     ])
   })
 
@@ -277,7 +291,7 @@ describe('workflow-run Conversation Definition', () => {
       at(4, 'tool-workflow/run-end', { runId: 'empty', stopReason: 'completed' }),
     ])
     expect(workflowData(value)).toEqual({
-      name: 'empty', status: 'completed', phases: [], activity: [], metrics: [], progressEventsDropped: 0,
+      name: 'empty', status: 'completed', phases: [], activity: [], metrics: [], artifacts: [], progressEventsDropped: 0,
       startedAt: 300, endedAt: 400,
     })
   })
@@ -354,13 +368,14 @@ type RunMember = WorkflowRunChatData['phases'][number]['members'][number]
 type TestMember = Omit<RunMember, 'startedAt'> & Partial<Pick<RunMember, 'startedAt'>>
 type TestPhase = Omit<WorkflowRunChatData['phases'][number], 'members'> & { readonly members: readonly TestMember[] }
 type TestRunData = Pick<WorkflowRunChatData, 'name' | 'status'>
-  & Partial<Pick<WorkflowRunChatData, 'startedAt' | 'endedAt' | 'currentPhase' | 'activity' | 'metrics' | 'progressEventsDropped'>>
+  & Partial<Pick<WorkflowRunChatData, 'startedAt' | 'endedAt' | 'currentPhase' | 'activity' | 'metrics' | 'artifacts' | 'progressEventsDropped'>>
   & { readonly phases: readonly TestPhase[] }
 
 function completeData(data: TestRunData): WorkflowRunChatData {
   return {
     activity: [],
     metrics: [],
+    artifacts: [],
     progressEventsDropped: 0,
     startedAt: 0,
     ...data,
@@ -532,6 +547,24 @@ describe('WorkflowRunPanel', () => {
         name: 'audit', status: 'failed', startedAt: 0, endedAt: 1_000, phases: [],
       })} />)
       expect(none.container.querySelector('[data-workflow-metrics]')).toBeNull()
+    })
+
+    it('opens an output file through the Chat owner prop', () => {
+      const props = { ...panelProps({
+        name: 'audit', status: 'failed', startedAt: 0, endedAt: 1_000, phases: [],
+        artifacts: [{ path: 'report.md', description: 'final' }, { path: 'plot.png' }],
+      }), openFile: vi.fn() }
+      render(<WorkflowRunPanel {...props} />)
+      expect(screen.getByText('final')).toBeTruthy()
+      fireEvent.click(screen.getByRole('button', { name: '打开 report.md' }))
+      expect(props.openFile).toHaveBeenCalledExactlyOnceWith('report.md')
+    })
+
+    it('renders no output list without artifacts', () => {
+      const { container } = render(<WorkflowRunPanel {...panelProps({
+        name: 'audit', status: 'failed', startedAt: 0, endedAt: 1_000, phases: [],
+      })} />)
+      expect(container.querySelector('[data-workflow-outputs]')).toBeNull()
     })
 
     it('opens the Runs tab from the expanded run', () => {

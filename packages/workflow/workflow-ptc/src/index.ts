@@ -168,6 +168,7 @@ class PtcWorkflowEngine extends WorkflowEngine {
         phase: (title) => { this.emitWorkflowEvent('workflow/phase', info, title) },
         log: (message) => { this.emitWorkflowEvent('workflow/log', info, message) },
         metric: (metric) => { this.emitWorkflowEvent('workflow/metric', info, metric) },
+        artifact: (artifact) => { this.emitWorkflowEvent('workflow/artifact', info, artifact) },
         agentStart: (agent) => { this.emitWorkflowEvent('workflow/agent-start', info, agent) },
         agentEnd: (agent) => { this.emitWorkflowEvent('workflow/agent-end', info, agent) },
       },

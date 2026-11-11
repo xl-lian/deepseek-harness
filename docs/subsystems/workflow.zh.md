@@ -200,6 +200,24 @@ One `agent()` call established a published child run. Paired with Events['workfl
 
 Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
 
+<a id="workflowartifact--emit"></a>
+
+#### `workflow/artifact` — emit
+
+The script named one output file (an `artifact(path, description)` call).
+
+```ts cordis-catalog
+/**
+ * The script named one output file (an `artifact(path, description)` call).
+ * @param info - the run's identity snapshot.
+ * @param artifact - the path as given and an optional description.
+ * @mode emit
+ */
+'workflow/artifact'(info: WorkflowRunInfo, artifact: WorkflowArtifactInfo): void
+```
+
+Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
+
 <a id="workflowend--emit"></a>
 
 #### `workflow/end` — emit

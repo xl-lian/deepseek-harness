@@ -253,6 +253,25 @@ describe('workflow child results', () => {
     ])
   })
 
+  it('forwards artifacts with and without a description', async () => {
+    const test = fixture('artifact(\'report.md\'); artifact(\'plot.png\', \'loss\'); return 1')
+    await expect(runWorkflowGuest(test.host)).resolves.toMatchObject({ stopReason: 'completed' })
+    expect(test.events).toEqual([
+      { type: 'artifact', artifact: { path: 'report.md' } },
+      { type: 'artifact', artifact: { path: 'plot.png', description: 'loss' } },
+    ])
+  })
+
+  it.each([
+    ['an empty path', 'artifact(\'\')', 'non-empty path'],
+    ['a path that is not a string', 'artifact(1)', 'non-empty path'],
+    ['a description that is not a string', 'artifact(\'a\', 1)', 'description must be a string'],
+  ])('fails the run on artifact() with %s', async (_label, body, message) => {
+    const result = await runWorkflowGuest(fixture(body).host)
+    expect(result.stopReason).toBe('error')
+    expect(result.error).toContain(message)
+  })
+
   it('forwards metrics with and without a step', async () => {
     const test = fixture('metric(\'loss\', 0.5); metric(\'loss\', 0.25, { step: 1 }); metric(\'zero\', 0, {}); return 1')
     await expect(runWorkflowGuest(test.host)).resolves.toMatchObject({ stopReason: 'completed' })
