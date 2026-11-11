@@ -155,6 +155,7 @@ describe('workflow-run Conversation Definition', () => {
       startedAt: 300,
       endedAt: 800,
       activity: [],
+      metrics: [],
       progressEventsDropped: 0,
     })
     const node = [...(value.snapshot('chat') as ChatSnapshot).nodes.values()][0]!
@@ -185,6 +186,20 @@ describe('workflow-run Conversation Definition', () => {
         { seq: 7, kind: 'log', text: 'done' },
       ],
     })
+  })
+
+  it('folds metrics into latest, min, and max per name in first-recorded order', () => {
+    const data = workflowData(assembler([
+      at(3, 'tool-workflow/run-start', { runId: 'run-1', name: 'audit' }),
+      at(4, 'tool-workflow/metric', { runId: 'run-1', name: 'loss', value: 2 }),
+      at(5, 'tool-workflow/metric', { runId: 'run-1', name: 'acc', value: 0.5 }),
+      at(6, 'tool-workflow/metric', { runId: 'run-1', name: 'loss', value: 1, step: 1 }),
+      at(7, 'tool-workflow/metric', { runId: 'run-1', name: 'loss', value: 3, step: 2 }),
+    ]))
+    expect(data?.metrics).toEqual([
+      { name: 'loss', latest: 3, min: 1, max: 3 },
+      { name: 'acc', latest: 0.5, min: 0.5, max: 0.5 },
+    ])
   })
 
   it('leaves the current phase absent when no phase was recorded', () => {
@@ -262,7 +277,7 @@ describe('workflow-run Conversation Definition', () => {
       at(4, 'tool-workflow/run-end', { runId: 'empty', stopReason: 'completed' }),
     ])
     expect(workflowData(value)).toEqual({
-      name: 'empty', status: 'completed', phases: [], activity: [], progressEventsDropped: 0,
+      name: 'empty', status: 'completed', phases: [], activity: [], metrics: [], progressEventsDropped: 0,
       startedAt: 300, endedAt: 400,
     })
   })
@@ -339,12 +354,13 @@ type RunMember = WorkflowRunChatData['phases'][number]['members'][number]
 type TestMember = Omit<RunMember, 'startedAt'> & Partial<Pick<RunMember, 'startedAt'>>
 type TestPhase = Omit<WorkflowRunChatData['phases'][number], 'members'> & { readonly members: readonly TestMember[] }
 type TestRunData = Pick<WorkflowRunChatData, 'name' | 'status'>
-  & Partial<Pick<WorkflowRunChatData, 'startedAt' | 'endedAt' | 'currentPhase' | 'activity' | 'progressEventsDropped'>>
+  & Partial<Pick<WorkflowRunChatData, 'startedAt' | 'endedAt' | 'currentPhase' | 'activity' | 'metrics' | 'progressEventsDropped'>>
   & { readonly phases: readonly TestPhase[] }
 
 function completeData(data: TestRunData): WorkflowRunChatData {
   return {
     activity: [],
+    metrics: [],
     progressEventsDropped: 0,
     startedAt: 0,
     ...data,
@@ -501,6 +517,21 @@ describe('WorkflowRunPanel', () => {
       fireEvent.click(screen.getByRole('button', { name: /活动/ }))
       expect(screen.getByText('only')).toBeTruthy()
       expect(screen.queryByText(/未记录/)).toBeNull()
+    })
+
+    it('shows a metrics table only when metrics exist, with exact values in titles', () => {
+      const { container } = render(<WorkflowRunPanel {...panelProps({
+        name: 'audit', status: 'failed', startedAt: 0, endedAt: 1_000, phases: [],
+        metrics: [{ name: 'loss', latest: 0.123456789, min: 0.1, max: 2 }],
+      })} />)
+      const cell = screen.getByText('0.123457')
+      expect(cell.getAttribute('title')).toBe('0.123456789')
+      expect(container.querySelector('[data-workflow-metrics]')).not.toBeNull()
+      cleanup()
+      const none = render(<WorkflowRunPanel {...panelProps({
+        name: 'audit', status: 'failed', startedAt: 0, endedAt: 1_000, phases: [],
+      })} />)
+      expect(none.container.querySelector('[data-workflow-metrics]')).toBeNull()
     })
 
     it('opens the Runs tab from the expanded run', () => {

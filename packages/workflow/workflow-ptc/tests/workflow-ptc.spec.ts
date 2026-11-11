@@ -692,6 +692,28 @@ describe('dsh-workflow-ptc', { timeout: 120_000 }, () => {
       await handle.dispose()
     })
 
+    it('emits script metrics with and without a step', async () => {
+      const { ctx, parent } = await setup()
+      const metrics: unknown[] = []
+      ctx.on('workflow/metric', (_info, metric) => { metrics.push(metric) })
+      const handle = ctx.workflowEngine.start({
+        ...scripted(`
+          metric('loss', 0.5)
+          metric('loss', 0.25, { step: 1 })
+          metric('zero', 0, {})
+          return 'done'
+        `),
+        parent,
+      })
+      expect((await handle.result).stopReason).toBe('completed')
+      await handle.dispose()
+      expect(metrics).toEqual([
+        { name: 'loss', value: 0.5 },
+        { name: 'loss', value: 0.25, step: 1 },
+        { name: 'zero', value: 0 },
+      ])
+    })
+
     it('post-cancel narration is suppressed host-side, and completion racing a cancel reports cancelled', async () => {
       const { ctx, parent } = await setup()
       const narration: string[] = []

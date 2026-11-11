@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-11-11-workflow-metric-records.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/persistence-changes/2026-11-11-workflow-metric-records.md
+/:
+  en: 3d5a424ae7d7e46b
+  zh: c22a8e4a62d8cc1a
+/2026-11-11-workflow-metric-records:
+  en: fd6ab13237d9ff9f
+  zh: 307f6b85159ea066
+/2026-11-11-workflow-metric-records/summary:
+  en: be95514a2e34e052
+  zh: bc2ff2b184da315a
+/2026-11-11-workflow-metric-records/table-of-contents:
+  en: 6cf314a069ceb451
+  zh: 9adff678e9ecab3b
+/2026-11-11-workflow-metric-records/declaration:
+  en: 6907136f28e48c90
+  zh: 02f8298485f3d8e7
+/2026-11-11-workflow-metric-records/compatibility:
+  en: 11c7c5b8e055640a
+  zh: 549f2569ee85b660
+/2026-11-11-workflow-metric-records/verification:
+  en: 9c7b0dc705f82bbf
+  zh: ab17701f3a445ff9
+/2026-11-11-workflow-metric-records/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

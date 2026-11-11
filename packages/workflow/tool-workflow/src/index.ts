@@ -29,7 +29,7 @@ import { loadSavedWorkflows, readSavedScript, renderSavedWorkflowList } from './
 import type { SavedWorkflow } from './saved.ts'
 import type { WorkflowRecordMirror } from './record.ts'
 import type {
-  ToolWorkflowAgentEndData, ToolWorkflowAgentStartData, ToolWorkflowLogData, ToolWorkflowPhaseData,
+  ToolWorkflowAgentEndData, ToolWorkflowAgentStartData, ToolWorkflowLogData, ToolWorkflowMetricData, ToolWorkflowPhaseData,
   ToolWorkflowRunEndData, ToolWorkflowRunStartData,
 } from './types.ts'
 
@@ -69,6 +69,8 @@ export interface Config {
   maxRecordedPhases?: number
   /** Longest recorded log line or phase title in characters; longer text is clipped (default 2000). */
   maxRecordedLineChars?: number
+  /** Maximum `metric()` values one top-level run writes to the Session log (default 4096). */
+  maxRecordedMetrics?: number
 }
 
 export const Config: z<Config> = z.object({
@@ -79,6 +81,7 @@ export const Config: z<Config> = z.object({
   maxRecordedLogLines: z.natural().default(500),
   maxRecordedPhases: z.natural().default(500),
   maxRecordedLineChars: z.natural().min(1).default(2_000),
+  maxRecordedMetrics: z.natural().default(4096),
 })
 
 type ResolvedConfig = Required<Config>
@@ -95,17 +98,19 @@ interface ToolWorkflowRecordEventMap {
   'tool-workflow/agent-end': ToolWorkflowAgentEndData
   'tool-workflow/phase': ToolWorkflowPhaseData
   'tool-workflow/log': ToolWorkflowLogData
+  'tool-workflow/metric': ToolWorkflowMetricData
   'tool-workflow/run-end': ToolWorkflowRunEndData
 }
 
 /** The caps applied to one run's recorded progress. */
-type WorkflowRecordingLimits = Pick<ResolvedConfig, 'maxRecordedLogLines' | 'maxRecordedPhases' | 'maxRecordedLineChars'>
+type WorkflowRecordingLimits = Pick<ResolvedConfig, 'maxRecordedLogLines' | 'maxRecordedPhases' | 'maxRecordedLineChars' | 'maxRecordedMetrics'>
 
 /** One run being recorded into its parent Session. */
 interface ActiveWorkflowRecord {
   readonly session: Session
   logLines: number
   phases: number
+  metrics: number
   dropped: number
 }
 
@@ -170,6 +175,17 @@ function createWorkflowRecorder(ctx: Context, limits: WorkflowRecordingLimits): 
     const data: ToolWorkflowLogData = { runId: info.id, message: clipRecordedLine(message, limits.maxRecordedLineChars) }
     if (!append(record.session, 'tool-workflow/log', data)) active.delete(info.id)
   })
+  ctx.on('workflow/metric', (info, metric) => {
+    const record = active.get(info.id)
+    if (record === undefined) return
+    if (record.metrics >= limits.maxRecordedMetrics) {
+      record.dropped += 1
+      return
+    }
+    record.metrics += 1
+    const data: ToolWorkflowMetricData = { runId: info.id, ...metric }
+    if (!append(record.session, 'tool-workflow/metric', data)) active.delete(info.id)
+  })
   ctx.on('workflow/agent-start', (info, agent) => {
     const session = active.get(info.id)?.session
     if (session === undefined) return
@@ -201,7 +217,7 @@ function createWorkflowRecorder(ctx: Context, limits: WorkflowRecordingLimits): 
         ...scriptSha256 === undefined ? {} : { scriptSha256 },
       }
       if (append(session, 'tool-workflow/run-start', data)) {
-        active.set(run.id, { session, logLines: 0, phases: 0, dropped: 0 })
+        active.set(run.id, { session, logLines: 0, phases: 0, metrics: 0, dropped: 0 })
       }
     },
     finish(runId, stopReason) {
@@ -231,6 +247,7 @@ Script-body hooks:
 - \`pipeline(items, ...stages): Promise<any[]>\` — run each item through the stages independently with NO barrier between stages (prefer this for multi-stage work). Each stage receives \`(prev, item, index)\`. A stage throw drops that ITEM to \`null\` and skips its remaining stages.
 - \`parallel(thunks): Promise<any[]>\` — run zero-argument functions concurrently and await ALL of them (a barrier; use only when a stage genuinely needs every prior result together). A throwing thunk resolves to \`null\`.
 - \`phase(title)\` — start a progress phase; \`log(message)\` — narrate progress; \`args\` — the tool call's \`args\` input, verbatim.
+- \`metric(name, value, opts?)\` — record one finite number for comparison across runs; \`opts.step\` is an optional non-negative integer position in the series.
 
 Misused hooks (bad arguments, unknown options, unsupported schemas, tripped caps) end the whole script instead of producing \`null\`. The script has no filesystem, network, timer, or Node.js APIs; the agents do the work.`
 

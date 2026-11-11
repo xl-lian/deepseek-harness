@@ -13,9 +13,9 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SessionStatusSnapshot } from '@deepseek-ai/dsh-client-ui-session/client'
 import type { WorkflowRunKey } from './locales.ts'
 import type {
-  WorkflowRunActivityEntry, WorkflowRunMemberData, WorkflowRunPhaseData, WorkflowRunStatus,
+  WorkflowRunActivityEntry, WorkflowRunMemberData, WorkflowRunMetricData, WorkflowRunPhaseData, WorkflowRunStatus,
 } from './workflow-definition.ts'
-import { formatDuration } from './format.ts'
+import { formatDuration, formatMetric } from './format.ts'
 import css from './WorkflowRunPanel.module.css'
 
 /** Navigation action injected from the plugin's own Session Controller access. */
@@ -383,6 +383,35 @@ function PhaseSection({
   )
 }
 
+function MetricsTable({ metrics, t }: {
+  readonly metrics: readonly WorkflowRunMetricData[]
+  readonly t: WorkflowRunPanelProps['t']
+}) {
+  if (metrics.length === 0) return null
+  return (
+    <table className={css.metrics} data-workflow-metrics>
+      <thead>
+        <tr>
+          <th scope="col">{t('metrics.name')}</th>
+          <th scope="col">{t('metrics.latest')}</th>
+          <th scope="col">{t('metrics.min')}</th>
+          <th scope="col">{t('metrics.max')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {metrics.map(metric => (
+          <tr key={metric.name}>
+            <th scope="row">{metric.name}</th>
+            <td title={String(metric.latest)}>{formatMetric(metric.latest)}</td>
+            <td title={String(metric.min)}>{formatMetric(metric.min)}</td>
+            <td title={String(metric.max)}>{formatMetric(metric.max)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
 function ActivitySection({ entries, dropped, t }: {
   readonly entries: readonly WorkflowRunActivityEntry[]
   readonly dropped: number
@@ -568,6 +597,7 @@ export function WorkflowRunPanel({ node, sessionId, useSessions, useSessionStatu
                 />
               )
             })}
+          <MetricsTable metrics={node.data.metrics} t={t} />
           <ActivitySection entries={node.data.activity} dropped={node.data.progressEventsDropped} t={t} />
           <button type="button" className={css.openRuns} onClick={openRuns}>{t('runs.open')}</button>
         </div>

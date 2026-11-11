@@ -43,6 +43,7 @@ export async function runWorkflowGuest(host: WorkflowGuestHost): Promise<Workflo
   const observer: ExecutionObserver = {
     phase: (title) => { send({ type: 'phase', title }) },
     log: (message) => { send({ type: 'log', message }) },
+    metric: (metric) => { send({ type: 'metric', metric }) },
     agentStart: (info) => { send({ type: 'agent-start', info }) },
     agentEnd: (info) => { send({ type: 'agent-end', info }) },
   }

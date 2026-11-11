@@ -33,7 +33,7 @@ kind: "package-reference"
 
 ### 比较运行
 
-展开的运行末尾的“比较运行”会在右侧栏打开“运行”标签页。标签页中 Session 的每个工作流运行占一行，显示状态、最新阶段、时长以及已完成与已启动的成员数。它读取 [workflow-run-outline](../../workflow/workflow-run-outline/README.zh.md) 的 `workflowRuns` 投影，因此也覆盖不在已加载历史中的运行。
+展开的运行末尾的“比较运行”会在右侧栏打开“运行”标签页。标签页中 Session 的每个工作流运行占一行，显示状态、最新阶段、时长、已完成与已启动的成员数，每个指标占一列，显示最新值、相对最近一次记录该指标的运行的变化，以及跨运行的趋势线。它读取 [workflow-run-outline](../../workflow/workflow-run-outline/README.zh.md) 的 `workflowRuns` 投影，因此也覆盖不在已加载历史中的运行。
 
 ### 状态与完成
 

@@ -239,6 +239,24 @@ The script emitted a narration line (a `log(message)` call).
 
 Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
 
+<a id="workflowmetric--emit"></a>
+
+#### `workflow/metric` — emit
+
+The script recorded one numeric value (a `metric(name, value, opts)` call).
+
+```ts cordis-catalog
+/**
+ * The script recorded one numeric value (a `metric(name, value, opts)` call).
+ * @param info - the run's identity snapshot.
+ * @param metric - the series name, finite value, and optional step.
+ * @mode emit
+ */
+'workflow/metric'(info: WorkflowRunInfo, metric: WorkflowMetricInfo): void
+```
+
+Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
+
 <a id="workflowphase--emit"></a>
 
 #### `workflow/phase` — emit

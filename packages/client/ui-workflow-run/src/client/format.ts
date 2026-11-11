@@ -3,6 +3,15 @@ import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 type Translate = PropsLocale<'workflowRun'>['t']
 
 /**
+ * Render a metric value for a table cell, keeping six significant digits.
+ * @param value - a finite number.
+ * @returns compact digits; the exact value belongs in the cell's title.
+ */
+export function formatMetric(value: number): string {
+  return String(Number(value.toPrecision(6)))
+}
+
+/**
  * Render an elapsed time with the coarsest two units.
  * @param elapsedMs - elapsed milliseconds; negative clock skew renders as zero.
  * @param t - this namespace's translate.

@@ -4857,6 +4857,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'info', description: 'the run\'s identity snapshot.' }, { name: 'message', description: 'the logged message, verbatim.' }],
   },
   {
+    name: 'workflow/metric',
+    mode: 'emit',
+    signature: '\'workflow/metric\'(info: WorkflowRunInfo, metric: WorkflowMetricInfo): void',
+    summary: 'The script recorded one numeric value (a `metric(name, value, opts)` call).',
+    description: 'The script recorded one numeric value (a `metric(name, value, opts)` call).',
+    parameters: [{ name: 'info', description: 'the run\'s identity snapshot.' }, { name: 'metric', description: 'the series name, finite value, and optional step.' }],
+  },
+  {
     name: 'workflow/phase',
     mode: 'emit',
     signature: '\'workflow/phase\'(info: WorkflowRunInfo, title: string): void',
@@ -9115,6 +9123,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkflowMeta',
     declaration: 'export interface WorkflowMeta {\n    name: string;\n    description: string;\n    whenToUse?: string;\n    phases?: WorkflowPhase[];\n}',
+  },
+  {
+    name: 'WorkflowMetricInfo',
+    declaration: 'export interface WorkflowMetricInfo {\n    name: string;\n    value: number;\n    step?: number;\n}',
   },
   {
     name: 'WorkflowPhase',

@@ -4,7 +4,7 @@ import type {
 import type { ChatConversationViewNode } from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {
-  ToolWorkflowAgentEndData, ToolWorkflowAgentStartData, ToolWorkflowLogData, ToolWorkflowPhaseData,
+  ToolWorkflowAgentEndData, ToolWorkflowAgentStartData, ToolWorkflowLogData, ToolWorkflowMetricData, ToolWorkflowPhaseData,
 } from '@deepseek-ai/dsh-tool-workflow/types'
 import type { WorkflowAgentOutcome, WorkflowStopReason } from '@deepseek-ai/dsh-workflow/types'
 
@@ -31,6 +31,14 @@ export interface WorkflowRunActivityEntry {
   readonly text: string
 }
 
+/** One metric series of a run. */
+export interface WorkflowRunMetricData {
+  readonly name: string
+  readonly latest: number
+  readonly min: number
+  readonly max: number
+}
+
 /** Final renderer data for one exact phase identity. */
 export interface WorkflowRunPhaseData {
   readonly key: string
@@ -51,6 +59,7 @@ export interface WorkflowRunChatData {
   /** Title of the latest recorded `phase()` call. */
   readonly currentPhase?: string
   readonly activity: readonly WorkflowRunActivityEntry[]
+  readonly metrics: readonly WorkflowRunMetricData[]
   /** Progress records the Host skipped under its recording caps. */
   readonly progressEventsDropped: number
 }
@@ -75,6 +84,7 @@ interface WorkflowState {
   readonly startedAt: number
   readonly endedAt?: number
   readonly activity: readonly WorkflowRunActivityEntry[]
+  readonly metrics: readonly WorkflowRunMetricData[]
   readonly progressEventsDropped: number
 }
 
@@ -162,6 +172,7 @@ function projectWorkflow(
     ...state.endedAt === undefined ? {} : { endedAt: state.endedAt },
     ...currentPhase === undefined ? {} : { currentPhase: currentPhase.text },
     activity: state.activity,
+    metrics: state.metrics,
     progressEventsDropped: state.progressEventsDropped,
   }
 }
@@ -186,6 +197,20 @@ function updateProgress(
   return { ...state, activity: [...state.activity, { seq, kind, text: 'title' in data ? data.title : data.message }] }
 }
 
+function updateMetric(state: WorkflowState, data: ToolWorkflowMetricData): WorkflowState {
+  const existing = state.metrics.find(metric => metric.name === data.name)
+  if (existing === undefined) {
+    return { ...state, metrics: [...state.metrics, { name: data.name, latest: data.value, min: data.value, max: data.value }] }
+  }
+  const updated = {
+    name: data.name,
+    latest: data.value,
+    min: Math.min(existing.min, data.value),
+    max: Math.max(existing.max, data.value),
+  }
+  return { ...state, metrics: state.metrics.map(metric => metric === existing ? updated : metric) }
+}
+
 function updateAgentEnd(state: WorkflowState, data: ToolWorkflowAgentEndData, time: number): WorkflowState {
   return {
     ...state,
@@ -205,6 +230,7 @@ export const workflowRunDefinition: ConversationNodeDefinition<WorkflowState> = 
       || event.type === 'tool-workflow/agent-end'
       || event.type === 'tool-workflow/phase'
       || event.type === 'tool-workflow/log'
+      || event.type === 'tool-workflow/metric'
       || event.type === 'tool-workflow/run-end') {
       return { id: String(event.data.runId), role: 'update' }
     }
@@ -219,6 +245,7 @@ export const workflowRunDefinition: ConversationNodeDefinition<WorkflowState> = 
       members: [],
       startedAt: match.event.time,
       activity: [],
+      metrics: [],
       progressEventsDropped: 0,
     }
   },
@@ -234,6 +261,9 @@ export const workflowRunDefinition: ConversationNodeDefinition<WorkflowState> = 
     }
     if (match.event.type === 'tool-workflow/log') {
       return updateProgress(context.state, match.event.seq, 'log', match.event.data)
+    }
+    if (match.event.type === 'tool-workflow/metric') {
+      return updateMetric(context.state, match.event.data)
     }
     if (match.event.type === 'tool-workflow/run-end') {
       return {

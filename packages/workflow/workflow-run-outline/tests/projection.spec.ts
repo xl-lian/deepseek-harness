@@ -43,6 +43,26 @@ describe('workflowRuns projection', () => {
     })
   })
 
+  it('updates only the addressed run', () => {
+    const second = WorkflowRunId('run-2')
+    const state = fold([
+      ...started(),
+      event('tool-workflow/run-start', { runId: second, name: 'next' }),
+      event('tool-workflow/phase', { runId: second, title: 'Scan' }),
+    ])
+    expect(state.runs.map(entry => entry.currentPhase)).toEqual([undefined, 'Scan'])
+  })
+
+  it('summarizes each metric series', () => {
+    const state = fold([
+      ...started(),
+      event('tool-workflow/metric', { runId: RUN, name: 'loss', value: 2 }),
+      event('tool-workflow/metric', { runId: RUN, name: 'loss', value: 1, step: 1 }),
+      event('tool-workflow/metric', { runId: RUN, name: 'loss', value: 3, step: 2 }),
+    ])
+    expect(state.runs[0]!.metrics).toEqual({ loss: { latest: 3, min: 1, max: 3, count: 3 } })
+  })
+
   it('keeps the rows identity across unrelated events and Turn starts', () => {
     const state = fold(started())
     expect(unit.apply(state, event('step/start', { turn: 1, step: 1 }))).toBe(state)

@@ -14,7 +14,7 @@ import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import type {} from '@deepseek-ai/dsh-tool-workflow/types'
 import { WorkflowRunId } from '@deepseek-ai/dsh-workflow/types'
 import type { WorkflowRunId as WorkflowRunIdType } from '@deepseek-ai/dsh-workflow/types'
-import type { WorkflowRunOutlineEntry, WorkflowRunsState } from './types.ts'
+import type { WorkflowRunOutlineEntry, WorkflowRunOutlineMetric, WorkflowRunsState } from './types.ts'
 
 const count = z.number().int().nonnegative()
 
@@ -28,6 +28,7 @@ const entriesSchema: ZodType<readonly WorkflowRunOutlineEntry[]> = z.array(z.obj
   interrupted: z.boolean(),
   members: z.object({ started: count, completed: count, failed: count, cancelled: count }).strict(),
   currentPhase: z.string().exactOptional(),
+  metrics: z.record(z.string(), z.object({ latest: z.number(), min: z.number(), max: z.number(), count }).strict()),
   turn: count,
 }).strict())
 
@@ -45,10 +46,20 @@ function updateRun(
   return { ...state, runs: state.runs.map(entry => entry === target ? update(entry) : entry) }
 }
 
+function foldMetric(previous: WorkflowRunOutlineMetric | undefined, value: number): WorkflowRunOutlineMetric {
+  if (previous === undefined) return { latest: value, min: value, max: value, count: 1 }
+  return {
+    latest: value,
+    min: Math.min(previous.min, value),
+    max: Math.max(previous.max, value),
+    count: previous.count + 1,
+  }
+}
+
 /** The `workflowRuns` unit registered on `ctx.sessionProjections` (exported for the unit spec). */
 export const workflowRunsProjectionDefinition = {
   key: 'workflowRuns',
-  stateVersion: 1,
+  stateVersion: 2,
   stateSchema,
   init: () => EMPTY,
   apply: (state, event) => {
@@ -73,11 +84,17 @@ export const workflowRunsProjectionDefinition = {
             startedAt: event.time,
             interrupted: false,
             members: { started: 0, completed: 0, failed: 0, cancelled: 0 },
+            metrics: {},
             turn: state.turn,
           }],
         }
       case 'tool-workflow/phase':
         return updateRun(state, event.data.runId, entry => ({ ...entry, currentPhase: event.data.title }))
+      case 'tool-workflow/metric':
+        return updateRun(state, event.data.runId, entry => ({
+          ...entry,
+          metrics: { ...entry.metrics, [event.data.name]: foldMetric(entry.metrics[event.data.name], event.data.value) },
+        }))
       case 'tool-workflow/agent-start':
         return updateRun(state, event.data.runId, entry => ({
           ...entry,

@@ -334,3 +334,30 @@
   outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
   outline-offset: -2px;
 }
+
+.metrics {
+  width: 100%;
+  margin-top: 4px;
+  border-collapse: collapse;
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  font-variant-numeric: tabular-nums;
+  line-height: calc(18px + var(--dsh-content-font-delta-secondary, 0px));
+}
+
+.metrics th,
+.metrics td {
+  padding: 2px 8px;
+  color: var(--dsw-alias-label-secondary);
+  font-weight: 400;
+  text-align: right;
+}
+
+.metrics thead th {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.metrics th:first-child {
+  color: var(--dsw-alias-label-primary);
+  overflow-wrap: anywhere;
+  text-align: left;
+}

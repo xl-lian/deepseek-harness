@@ -4339,6 +4339,8 @@ export interface Config {
   maxRecordedPhases?: number
   /** Longest recorded log line or phase title in characters; longer text is clipped (default 2000). */
   maxRecordedLineChars?: number
+  /** Maximum `metric()` values one top-level run writes to the Session log (default 4096). */
+  maxRecordedMetrics?: number
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-tool-workflow -->

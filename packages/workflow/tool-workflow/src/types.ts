@@ -46,11 +46,20 @@ export interface ToolWorkflowLogData {
   readonly message: string
 }
 
+/** Records one `metric()` call of a top-level run. */
+export interface ToolWorkflowMetricData {
+  readonly runId: WorkflowRunId
+  readonly name: string
+  readonly value: number
+  /** Non-negative position in the series, when the script gave one. */
+  readonly step?: number
+}
+
 /** Settles one workflow run after its live resources reach quiescence. */
 export interface ToolWorkflowRunEndData {
   readonly runId: WorkflowRunId
   readonly stopReason: WorkflowStopReason
-  /** Phase and log records skipped by the recording caps; absent when none were. */
+  /** Phase, log, and metric records skipped by the recording caps; absent when none were. */
   readonly progressEventsDropped?: number
 }
 
@@ -81,6 +90,11 @@ declare module '@deepseek-ai/dsh-session/types' {
      * @param data - run identity and verbatim or clipped message.
      */
     'tool-workflow/log': ToolWorkflowLogData
+    /**
+     * Records one numeric value reported by the script.
+     * @param data - run identity, series name, finite value, and optional step.
+     */
+    'tool-workflow/metric': ToolWorkflowMetricData
     /**
      * Closes one workflow record after cleanup.
      * @param data - stable run identity, terminal reason, and any dropped progress count.

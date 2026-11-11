@@ -135,6 +135,8 @@ describe('workflow host callback validation', () => {
     ['progress', [{ type: 'phase', title: null }], 'phase must be a string'],
     ['progress', [{ type: 'agent-start', info: { seq: 0 } }], 'sequence must be a positive integer'],
     ['progress', [{ type: 'agent-end', info: { outcome: 'unknown' } }], 'invalid workflow agent outcome'],
+    ['progress', [{ type: 'metric', metric: { name: 'loss', value: 'x' } }], 'value must be a finite number'],
+    ['progress', [{ type: 'metric', metric: { name: 'loss', value: 1, step: -1 } }], 'step must be a non-negative integer'],
     ['progress', [{ type: 'unknown' }], 'invalid workflow progress event'],
     ['childResult', { callId: '1' }, 'call id must be an integer'],
     ['disposeChild', { callId: 99 }, 'child call is not active'],

@@ -35,6 +35,11 @@ export const zh = {
   'runs.column.status': '状态',
   'runs.column.duration': '时长',
   'runs.column.members': '成员',
+  'metrics.name': '指标',
+  'metrics.latest': '最新',
+  'metrics.min': '最小',
+  'metrics.max': '最大',
+  'runs.trend': '{name} 的趋势',
 }
 
 /** English dictionary (same key set). */
@@ -69,6 +74,11 @@ export const en: Record<WorkflowRunKey, string> = {
   'runs.column.status': 'Status',
   'runs.column.duration': 'Duration',
   'runs.column.members': 'Members',
+  'metrics.name': 'Metric',
+  'metrics.latest': 'Latest',
+  'metrics.min': 'Min',
+  'metrics.max': 'Max',
+  'runs.trend': 'Trend of {name}',
 }
 
 /** Union of this namespace's dictionary keys. */
@@ -106,6 +116,11 @@ export const ja = {
   'runs.column.status': '状態',
   'runs.column.duration': '所要時間',
   'runs.column.members': 'メンバー',
+  'metrics.name': '指標',
+  'metrics.latest': '最新',
+  'metrics.min': '最小',
+  'metrics.max': '最大',
+  'runs.trend': '{name} の傾向',
 } satisfies Record<keyof typeof en, string>
 
 /** Spanish dictionary, checked against the English keys. */
@@ -140,6 +155,11 @@ export const es = {
   'runs.column.status': 'Estado',
   'runs.column.duration': 'Duración',
   'runs.column.members': 'Miembros',
+  'metrics.name': 'Métrica',
+  'metrics.latest': 'Último',
+  'metrics.min': 'Mín.',
+  'metrics.max': 'Máx.',
+  'runs.trend': 'Tendencia de {name}',
 } satisfies Record<keyof typeof en, string>
 
 /** French dictionary, checked against the English keys. */
@@ -174,6 +194,11 @@ export const fr = {
   'runs.column.status': 'État',
   'runs.column.duration': 'Durée',
   'runs.column.members': 'Membres',
+  'metrics.name': 'Métrique',
+  'metrics.latest': 'Dernière',
+  'metrics.min': 'Min',
+  'metrics.max': 'Max',
+  'runs.trend': 'Tendance de {name}',
 } satisfies Record<keyof typeof en, string>
 
 /** German dictionary, checked against the English keys. */
@@ -208,6 +233,11 @@ export const de = {
   'runs.column.status': 'Status',
   'runs.column.duration': 'Dauer',
   'runs.column.members': 'Mitglieder',
+  'metrics.name': 'Metrik',
+  'metrics.latest': 'Aktuell',
+  'metrics.min': 'Min.',
+  'metrics.max': 'Max.',
+  'runs.trend': 'Verlauf von {name}',
 } satisfies Record<keyof typeof en, string>
 
 /** Russian dictionary, checked against the English keys. */
@@ -242,6 +272,11 @@ export const ru = {
   'runs.column.status': 'Статус',
   'runs.column.duration': 'Длительность',
   'runs.column.members': 'Участники',
+  'metrics.name': 'Метрика',
+  'metrics.latest': 'Последнее',
+  'metrics.min': 'Мин.',
+  'metrics.max': 'Макс.',
+  'runs.trend': 'Динамика {name}',
 } satisfies Record<keyof typeof en, string>
 
 /** Portuguese dictionary, checked against the English keys. */
@@ -276,4 +311,9 @@ export const pt = {
   'runs.column.status': 'Status',
   'runs.column.duration': 'Duração',
   'runs.column.members': 'Membros',
+  'metrics.name': 'Métrica',
+  'metrics.latest': 'Último',
+  'metrics.min': 'Mín.',
+  'metrics.max': 'Máx.',
+  'runs.trend': 'Tendência de {name}',
 } satisfies Record<keyof typeof en, string>

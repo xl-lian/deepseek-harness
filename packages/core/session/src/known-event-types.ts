@@ -71,6 +71,7 @@ export const KNOWN_SESSION_EVENT_TYPES: ReadonlySet<string> = new Set([
   'tool-workflow/agent-end',
   'tool-workflow/agent-start',
   'tool-workflow/log',
+  'tool-workflow/metric',
   'tool-workflow/phase',
   'tool-workflow/run-end',
   'tool-workflow/run-start',

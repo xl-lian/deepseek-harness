@@ -1,6 +1,6 @@
 /** JSON callbacks between one workflow guest and its owning host run. */
 
-import type { WorkflowAgentEndInfo, WorkflowAgentInfo } from '@deepseek-ai/dsh-workflow'
+import type { WorkflowAgentEndInfo, WorkflowAgentInfo, WorkflowMetricInfo } from '@deepseek-ai/dsh-workflow'
 import type { ChildResult, ChildStartRequest, WorkerInit } from './types.ts'
 
 /** The host-allocated reference to one published child. */
@@ -21,6 +21,7 @@ export interface WorkflowChildRequest {
 export type WorkflowProgress =
   | { type: 'phase'; title: string }
   | { type: 'log'; message: string }
+  | { type: 'metric'; metric: WorkflowMetricInfo }
   | { type: 'agent-start'; info: WorkflowAgentInfo }
   | { type: 'agent-end'; info: WorkflowAgentEndInfo }
 

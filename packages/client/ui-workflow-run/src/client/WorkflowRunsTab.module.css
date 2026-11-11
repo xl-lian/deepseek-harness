@@ -56,3 +56,20 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+.metricHeader {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sparkline {
+  width: 48px;
+  height: 14px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.delta {
+  margin-left: 6px;
+  color: var(--dsw-alias-label-tertiary);
+}

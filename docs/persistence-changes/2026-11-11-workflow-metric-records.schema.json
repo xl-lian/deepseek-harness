@@ -1,0 +1,15 @@
+{
+  "formatVersion": 2,
+  "roots": [
+    {"key":"event:tool-workflow/metric","kind":"event","event":"tool-workflow/metric","surface":false,"digest":"f2a41cf1ae424449a020d1af3ec264e9c44e76471bba1553ca91b2b29c7576b6"}
+  ],
+  "types": [],
+  "nodes": {
+    "0657d3ca5ac4e7bf": {"kind":"primitive","type":"number"},
+    "168e44c0150b1c58": {"kind":"object","properties":[{"name":"name","type":"4cd48f3e5108bd6e","optional":false},{"name":"runId","type":"4cd48f3e5108bd6e","optional":false},{"name":"step","type":"0657d3ca5ac4e7bf","optional":true},{"name":"value","type":"0657d3ca5ac4e7bf","optional":false}],"indices":[]},
+    "33c80dc755f4689e": {"kind":"literal","value":"tool-workflow/metric"},
+    "4cd48f3e5108bd6e": {"kind":"primitive","type":"string"},
+    "dacf3d5f3e4ff619": {"kind":"literal","value":true},
+    "f2a41cf1ae424449": {"kind":"object","properties":[{"name":"data","type":"168e44c0150b1c58","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"33c80dc755f4689e","optional":false}],"indices":[]}
+  }
+}

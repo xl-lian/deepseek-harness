@@ -16,7 +16,7 @@ import type {
   WorkflowAgentEndInfo,
   WorkflowAgentInfo,
   WorkflowMeta,
-  WorkflowResult,
+  WorkflowResult, WorkflowMetricInfo,
 } from '@deepseek-ai/dsh-workflow'
 import { materializeFromRealm, MaterializeError, renderThrown } from './realm.ts'
 import type { ChildHandle, ChildPort, WorkerLimits } from './types.ts'
@@ -25,6 +25,7 @@ import type { ChildHandle, ChildPort, WorkerLimits } from './types.ts'
 export interface ExecutionObserver {
   phase(title: string): void
   log(message: string): void
+  metric(metric: WorkflowMetricInfo): void
   agentStart(info: WorkflowAgentInfo): void
   agentEnd(info: WorkflowAgentEndInfo): void
 }
@@ -88,6 +89,7 @@ export class WorkflowExecution {
       pipeline: (items: unknown, ...stages: unknown[]) => this.contain(this.pipeline(items, stages)),
       phase: (title: unknown) => { this.phase(title) },
       log: (message: unknown) => { this.log(message) },
+      metric: (name: unknown, value: unknown, opts?: unknown) => { this.metric(name, value, opts) },
       // PTC has already copied these inputs through its JSON channel.
       args,
     }
@@ -363,5 +365,35 @@ export class WorkflowExecution {
       throw new WorkflowError('log() requires a message string', 'INVALID_ARGUMENT')
     }
     this.observer.log(message)
+  }
+
+  /** The `metric(name, value, opts?)` hook: one numeric value for observers. */
+  private metric(name: unknown, value: unknown, opts: unknown): void {
+    if (typeof name !== 'string' || name.length === 0) {
+      throw new WorkflowError('metric() requires a non-empty name string', 'INVALID_ARGUMENT')
+    }
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      throw new WorkflowError('metric() requires a finite number value', 'INVALID_ARGUMENT')
+    }
+    if (opts === undefined) {
+      this.observer.metric({ name, value })
+      return
+    }
+    if (typeof opts !== 'object' || opts === null || Array.isArray(opts)) {
+      throw new WorkflowError('metric() options must be an object', 'INVALID_ARGUMENT')
+    }
+    const { step, ...rest } = opts as { step?: unknown }
+    const unknownKey = Object.keys(rest)[0]
+    if (unknownKey !== undefined) {
+      throw new WorkflowError(`metric() option "${unknownKey}" is not recognized (supported: step)`, 'UNSUPPORTED_OPTION')
+    }
+    if (step === undefined) {
+      this.observer.metric({ name, value })
+      return
+    }
+    if (typeof step !== 'number' || !Number.isSafeInteger(step) || step < 0) {
+      throw new WorkflowError('metric() step must be a non-negative integer', 'INVALID_ARGUMENT')
+    }
+    this.observer.metric({ name, value, step })
   }
 }

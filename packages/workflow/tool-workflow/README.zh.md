@@ -59,6 +59,7 @@ kind: "package-reference"
 | `maxRecordedLogLines` | `500` | 一次顶层运行写入 Session 日志的 `log()` 行数上限。 |
 | `maxRecordedPhases` | `500` | 一次顶层运行写入 Session 日志的 `phase()` 切换次数上限。 |
 | `maxRecordedLineChars` | `2000` | 记录的日志行或阶段标题的最大长度，超出部分被截断。 |
+| `maxRecordedMetrics` | `4096` | 一次顶层运行写入 Session 日志的 `metric()` 值数量上限。 |
 
 生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-tool-workflow)是每个受支持字段的穷尽式真源。
 
@@ -86,7 +87,7 @@ kind: "package-reference"
 
 ### 持久会话记录
 
-对于根 transport 执行（`exec.parent` 缺省），工具会用 log-only 事件把运行投影到调用方 agent 的会话：`start()` 返回后写 run-start，只记录 `run.id` 匹配的阶段、日志以及成员开始与结束，并且只在结果可用且 dispose 完全停稳后写 run-end。嵌套 transport 调用照常执行，但不写任何记录。会话追加操作首次失败后，本运行会停止后续记录并只告警一次，留下空记录或合法连续前缀，同时不改变工具结果和清理。
+对于根 transport 执行（`exec.parent` 缺省），工具会用 log-only 事件把运行投影到调用方 agent 的会话：`start()` 返回后写 run-start，只记录 `run.id` 匹配的阶段、日志、指标以及成员开始与结束，并且只在结果可用且 dispose 完全停稳后写 run-end。嵌套 transport 调用照常执行，但不写任何记录。会话追加操作首次失败后，本运行会停止后续记录并只告警一次，留下空记录或合法连续前缀，同时不改变工具结果和清理。
 
 阶段和日志记录属于叙述信息，不代表任何执行结构。每次运行的记录数量受 `maxRecordedPhases` 和 `maxRecordedLogLines` 限制，每段文本按 `maxRecordedLineChars` 截断，run-end 会报告上限跳过了多少条记录。后台运行的这些行还会进入任务的输出环，而输出环的瞬态是设计使然。
 

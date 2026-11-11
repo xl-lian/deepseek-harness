@@ -10,7 +10,7 @@ import type { SubagentActivation } from '@deepseek-ai/dsh-subagent'
 import { assertObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import { assertNever, snapshotJsonValue } from '@deepseek-ai/dsh-util-values'
-import type { WorkflowAgentEndInfo, WorkflowAgentInfo, WorkflowMeta, WorkflowResult, WorkflowRun, WorkflowRunId } from '@deepseek-ai/dsh-workflow'
+import type { WorkflowAgentEndInfo, WorkflowAgentInfo, WorkflowMeta, WorkflowMetricInfo, WorkflowResult, WorkflowRun, WorkflowRunId } from '@deepseek-ai/dsh-workflow'
 import { WORKFLOW_GUEST_SOURCE } from './guest-source.ts'
 import type { WorkflowProgress } from './guest-types.ts'
 import { renderThrown } from './realm.ts'
@@ -72,11 +72,25 @@ function agentInfo(value: unknown): WorkflowAgentInfo {
   }
 }
 
+function metricInfo(value: unknown): WorkflowMetricInfo {
+  const metric = object(value)
+  if (typeof metric.value !== 'number' || !Number.isFinite(metric.value)) throw new Error('workflow metric value must be a finite number')
+  if (metric.step !== undefined && (!Number.isSafeInteger(metric.step) || (metric.step as number) < 0)) {
+    throw new Error('workflow metric step must be a non-negative integer')
+  }
+  return {
+    name: text(metric.name, 'metric name'),
+    value: metric.value,
+    ...metric.step === undefined ? {} : { step: metric.step as number },
+  }
+}
+
 function progress(value: unknown): WorkflowProgress {
   const event = object(value)
   switch (event.type) {
     case 'phase': return { type: 'phase', title: text(event.title, 'phase') }
     case 'log': return { type: 'log', message: text(event.message, 'log') }
+    case 'metric': return { type: 'metric', metric: metricInfo(event.metric) }
     case 'agent-start': return { type: 'agent-start', info: agentInfo(event.info) }
     case 'agent-end': {
       const info = object(event.info)
@@ -260,6 +274,7 @@ export class PtcWorkflowRun implements WorkflowRun {
     switch (event.type) {
       case 'phase': this.observer.phase(event.title); break
       case 'log': this.observer.log(event.message); break
+      case 'metric': this.observer.metric(event.metric); break
       case 'agent-start':
         this.liveAgents.set(event.info.seq, event.info)
         this.observer.agentStart(event.info)

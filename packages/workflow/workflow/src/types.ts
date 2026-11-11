@@ -94,6 +94,16 @@ export interface WorkflowRunInfo {
   meta: WorkflowMeta
 }
 
+/** One `metric()` call of a run (the `workflow/metric` payload). */
+export interface WorkflowMetricInfo {
+  /** The series name, verbatim. */
+  name: string
+  /** The finite recorded value. */
+  value: number
+  /** Optional non-negative position in the series. */
+  step?: number
+}
+
 /** One `agent()` call's identity within a run (the `workflow/agent-start` payload). */
 export interface WorkflowAgentInfo {
   /** 1-based sequence number of this `agent()` call within the run. */

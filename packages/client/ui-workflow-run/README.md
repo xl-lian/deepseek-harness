@@ -33,7 +33,7 @@ Run and phase headers keep 6px gaps between their title, count, and status field
 
 ### Comparing runs
 
-Compare runs, at the end of an expanded run, opens the Runs tab in the right Sidebar. The tab has one row per workflow run in the Session, with status, latest phase, duration, and settled-of-started member counts. It reads the `workflowRuns` projection from [workflow-run-outline](../../workflow/workflow-run-outline/README.md), so it covers runs outside the loaded history.
+Compare runs, at the end of an expanded run, opens the Runs tab in the right Sidebar. The tab has one row per workflow run in the Session, with status, latest phase, duration, completed-of-started member counts, and one column per metric showing the latest value, its change from the nearest earlier run with that metric, and a trend line across runs. It reads the `workflowRuns` projection from [workflow-run-outline](../../workflow/workflow-run-outline/README.md), so it covers runs outside the loaded history.
 
 ### State and completion
 

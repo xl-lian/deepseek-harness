@@ -19,6 +19,14 @@ export interface WorkflowRunOutlineMembers {
   readonly cancelled: number
 }
 
+/** Summary of one metric series of a run. */
+export interface WorkflowRunOutlineMetric {
+  readonly latest: number
+  readonly min: number
+  readonly max: number
+  readonly count: number
+}
+
 /** One workflow run's outline facts, independent of what a client has paged in. */
 export interface WorkflowRunOutlineEntry {
   readonly runId: WorkflowRunId
@@ -36,6 +44,8 @@ export interface WorkflowRunOutlineEntry {
   readonly members: WorkflowRunOutlineMembers
   /** Title of the latest recorded phase. */
   readonly currentPhase?: string
+  /** Metric series by name, in first-recorded order. */
+  readonly metrics: Readonly<Record<string, WorkflowRunOutlineMetric>>
   /** Turn that started the run. */
   readonly turn: number
 }

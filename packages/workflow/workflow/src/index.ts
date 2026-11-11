@@ -9,6 +9,7 @@ import { HarnessError } from '@deepseek-ai/dsh-llm'
 import type {
   WorkflowAgentEndInfo,
   WorkflowAgentInfo,
+  WorkflowMetricInfo,
   WorkflowResultInfo,
   WorkflowRunInfo,
 } from './types.ts'
@@ -21,6 +22,7 @@ export type {
   WorkflowAgentInfo,
   WorkflowAgentOutcome,
   WorkflowMeta,
+  WorkflowMetricInfo,
   WorkflowPhase,
   WorkflowResult,
   WorkflowResultInfo,
@@ -57,6 +59,13 @@ declare module '@deepseek-ai/cordis' {
      * @mode emit
      */
     'workflow/log'(info: WorkflowRunInfo, message: string): void
+    /**
+     * The script recorded one numeric value (a `metric(name, value, opts)` call).
+     * @param info - the run's identity snapshot.
+     * @param metric - the series name, finite value, and optional step.
+     * @mode emit
+     */
+    'workflow/metric'(info: WorkflowRunInfo, metric: WorkflowMetricInfo): void
     /**
      * One `agent()` call established a published child run. Paired with
      * {@link Events['workflow/agent-end']} by `agent.seq`. A call that never
@@ -96,6 +105,7 @@ export type WorkflowEventName =
   | 'workflow/start'
   | 'workflow/phase'
   | 'workflow/log'
+  | 'workflow/metric'
   | 'workflow/agent-start'
   | 'workflow/agent-end'
   | 'workflow/end'

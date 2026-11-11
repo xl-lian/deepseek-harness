@@ -253,6 +253,34 @@ describe('workflow child results', () => {
     ])
   })
 
+  it('forwards metrics with and without a step', async () => {
+    const test = fixture('metric(\'loss\', 0.5); metric(\'loss\', 0.25, { step: 1 }); metric(\'zero\', 0, {}); return 1')
+    await expect(runWorkflowGuest(test.host)).resolves.toMatchObject({ stopReason: 'completed' })
+    expect(test.events).toEqual([
+      { type: 'metric', metric: { name: 'loss', value: 0.5 } },
+      { type: 'metric', metric: { name: 'loss', value: 0.25, step: 1 } },
+      { type: 'metric', metric: { name: 'zero', value: 0 } },
+    ])
+  })
+
+  it.each([
+    ['an empty name', 'metric(\'\', 1)', 'non-empty name'],
+    ['a name that is not a string', 'metric(1, 1)', 'non-empty name'],
+    ['a non-finite value', 'metric(\'loss\', Infinity)', 'finite number'],
+    ['a value that is not a number', 'metric(\'loss\', \'1\')', 'finite number'],
+    ['options that are not an object', 'metric(\'loss\', 1, 2)', 'options must be an object'],
+    ['null options', 'metric(\'loss\', 1, null)', 'options must be an object'],
+    ['array options', 'metric(\'loss\', 1, [])', 'options must be an object'],
+    ['an unknown option', 'metric(\'loss\', 1, { unit: \'s\' })', 'option "unit" is not recognized'],
+    ['a negative step', 'metric(\'loss\', 1, { step: -1 })', 'non-negative integer'],
+    ['a fractional step', 'metric(\'loss\', 1, { step: 0.5 })', 'non-negative integer'],
+    ['a step that is not a number', 'metric(\'loss\', 1, { step: \'1\' })', 'non-negative integer'],
+  ])('fails the run on metric() with %s', async (_label, body, message) => {
+    const result = await runWorkflowGuest(fixture(body).host)
+    expect(result.stopReason).toBe('error')
+    expect(result.error).toContain(message)
+  })
+
   it('propagates child-start infrastructure failure through a combinator', async () => {
     const test = fixture('return await parallel([() => agent("work")])', {
       startChild: async () => { throw new Error('provider unavailable') },

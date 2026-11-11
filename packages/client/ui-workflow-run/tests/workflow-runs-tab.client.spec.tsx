@@ -19,6 +19,7 @@ function entry(overrides: Partial<WorkflowRunOutlineEntry> = {}): WorkflowRunOut
     startedAt: 1_000,
     interrupted: false,
     members: { started: 3, completed: 2, failed: 1, cancelled: 0 },
+    metrics: {},
     turn: 1,
     ...overrides,
   } as WorkflowRunOutlineEntry
@@ -56,6 +57,24 @@ describe('WorkflowRunsTab', () => {
     expect(row('stopped').getAttribute('data-run-state')).toBe('cancelled')
     expect(row('lost').getAttribute('data-run-state')).toBe('interrupted')
     expect(row('lost').textContent).toContain('–')
+  })
+
+  it('compares metrics across runs with deltas and a trend per name', () => {
+    const metric = (latest: number) => ({ latest, min: latest, max: latest, count: 1 })
+    const { container } = render(<WorkflowRunsTab {...props([
+      entry({ runId: 'a' as never, name: 'first', stopReason: 'completed', endedAt: 2_000, metrics: { loss: metric(2), flat: metric(1) } }),
+      entry({ runId: 'b' as never, name: 'second', stopReason: 'completed', endedAt: 2_000, metrics: { once: metric(9) } }),
+      entry({ runId: 'c' as never, name: 'third', stopReason: 'completed', endedAt: 2_000, metrics: { loss: metric(1.5), flat: metric(1) } }),
+      entry({ runId: 'd' as never, name: 'fourth', stopReason: 'completed', endedAt: 2_000, metrics: { loss: metric(4) } }),
+    ])} />)
+    expect(screen.getAllByRole('columnheader').map(cell => cell.textContent)).toEqual(['运行', '状态', '时长', '成员', 'loss', 'flat', 'once'])
+    expect(row('third').textContent).toContain('1.5-0.5')
+    expect(row('fourth').textContent).toContain('4+2.5')
+    expect(row('second').textContent).toContain('9')
+    expect(row('first').querySelector('[title="2"]')).not.toBeNull()
+    expect(screen.getByRole('img', { name: 'loss 的趋势' })).toBeTruthy()
+    expect(container.querySelectorAll('[data-metric-sparkline]')).toHaveLength(2)
+    expect(container.querySelector('[aria-label="flat 的趋势"] polyline')?.getAttribute('points')).toBe('0.0,7.0 48.0,7.0')
   })
 
   it('ticks while a run is live', () => {
