@@ -1,0 +1,28 @@
+{
+  "description": "Protect the science-agent ledger, artifact store, hidden holdout, verifier, and submission gate under dsh tool names.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "write|edit|bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/synced/hooks/guard.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/synced/hooks/round_trigger.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

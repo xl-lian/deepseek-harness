@@ -1,0 +1,27 @@
+{
+  "name": "kaggle-round",
+  "description": "One auditable science-agent round driven by a domain pack: scout, independent hypothesis lenses, selection, batch registration, sandboxed runs, adversarial verification, and L3 review",
+  "whenToUse": "Run one round in a locked science-agent workspace (any domain pack: predictive, scored, equation). Usually invoked by the science-campaign workflow; call it directly for a single round after `sagent round begin`. Returns evidence only; `sagent round close <round_id>` decides, writes claims and the report, and ends the round.",
+  "phases": [
+    {
+      "title": "Scout",
+      "detail": "domain pack, data/metric/risk profile, prior state"
+    },
+    {
+      "title": "Hypotheses",
+      "detail": "independent lenses (mode-dependent)"
+    },
+    {
+      "title": "Select",
+      "detail": "code ranks value, calibration, novelty and diversity; batch registration"
+    },
+    {
+      "title": "Implement & Execute",
+      "detail": "one engineer per candidate; multi-seed packs screen on one seed, then confirm the promoted"
+    },
+    {
+      "title": "Verify",
+      "detail": "L0-L3 per run with suspicion reruns, then an L3 review when something looks off"
+    }
+  ]
+}

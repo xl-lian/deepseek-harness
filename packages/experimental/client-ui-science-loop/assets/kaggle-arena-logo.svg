@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512" role="img" aria-label="Kaggle Arena">
+  <defs>
+    <linearGradient id="ka-peak" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#14532d"/>
+      <stop offset="55%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#86efac"/>
+    </linearGradient>
+  </defs>
+  <rect x="3" y="3" width="58" height="58" rx="15" fill="#211d19" stroke="#22c55e" stroke-opacity="0.8" stroke-width="2"/>
+  <path d="M8 51 L25 23 L33 34 L43 15 L56 51 Z" fill="url(#ka-peak)"/>
+  <path d="M39.2 21.6 L43 15 L46.8 21.6 L45 23.2 L43.4 21.4 L41.6 23.4 Z" fill="#d1fae5"/>
+  <path d="M43 15 L43 6.6" stroke="#d1fae5" stroke-width="2" stroke-linecap="round"/>
+  <path d="M43 6.6 L50 9.2 L43 11.8 Z" fill="#4ade80"/>
+</svg>

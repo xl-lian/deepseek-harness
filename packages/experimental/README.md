@@ -61,6 +61,8 @@ Promotion requires a named product role, documented public behavior and limitati
 | [`translator`](translator/README.md) | Anonymous Google and Bing text translation | `ctx.translator` |
 | [`client-ui-cot-translation`](client-ui-cot-translation/README.md) | Expanded reasoning translation and original-text controls | `ctx.cotTranslation` |
 | [`cot-translation-bundle`](cot-translation-bundle/README.md) | Default-disabled reasoning translation composition | — |
+| [`science-agent-bundle`](science-agent-bundle/README.md) | Science Agent profile layer: locked research preset, role subagents, saved campaign workflows, guard hooks, and content synced from science-agent | — |
+| [`client-ui-science-loop`](client-ui-science-loop/README.md) | Live science-agent loop projection, view, dock, and Kaggle Arena skin | — |
 | [`speech-to-text`](speech-to-text/README.md) | Named speech recognition providers | `ctx.speechToText` |
 | [`speech-to-text-sensevoice`](speech-to-text-sensevoice/README.md) | Managed local SenseVoice inference | — |
 | [`api-speech-to-text`](api-speech-to-text/README.md) | Authenticated transient transcription Remote | `ctx.speechController` |

@@ -1,0 +1,415 @@
+# Science Agent role presets: one Agent preset per delegated science-agent role. The
+# persona text is read from synced/personas/, refreshed by scripts/sync.ts.
+
+- insert:
+    - id: preset-sa-scout
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: sa-scout
+        name: sa-scout
+        description: "Read-only reconnaissance: data profile, metric, CV, leakage, baseline status."
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: !!js "process.getBuiltinModule('node:fs').readFileSync(process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/personas/sa-scout.md'), 'utf8').trimEnd()"
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              write: false
+              edit: false
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+            config:
+              includeDefaultRoots: false
+              customSkillDirs:
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'skills')"
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/skills')"
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: mcp-science-agent
+            name: '@deepseek-ai/dsh-mcp-client'
+            config:
+              serverName: science-agent
+              transport: stdio
+              command: bash
+              args:
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/scripts/mcp-server.sh')"
+              cwd: !!js process.cwd()
+              env:
+                SA_WORKSPACE: !!js process.cwd()
+              toolCallTimeoutMs: 120000
+          - id: hooks-science-agent
+            name: '@deepseek-ai/dsh-hooks-claude-code'
+            config:
+              configPath: !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'hooks/hooks.json')"
+              pluginRoot: !!js "process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json'))"
+              projectDir: !!js process.cwd()
+              defaultTimeoutMs: 600000
+    - id: preset-sa-hypothesis
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: sa-hypothesis
+        name: sa-hypothesis
+        description: "Proposes falsifiable hypotheses from one lens; never executes."
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: !!js "process.getBuiltinModule('node:fs').readFileSync(process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/personas/sa-hypothesis.md'), 'utf8').trimEnd()"
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              write: false
+              edit: false
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+            config:
+              includeDefaultRoots: false
+              customSkillDirs:
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'skills')"
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/skills')"
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: mcp-science-agent
+            name: '@deepseek-ai/dsh-mcp-client'
+            config:
+              serverName: science-agent
+              transport: stdio
+              command: bash
+              args:
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/scripts/mcp-server.sh')"
+              cwd: !!js process.cwd()
+              env:
+                SA_WORKSPACE: !!js process.cwd()
+              toolCallTimeoutMs: 120000
+          - id: hooks-science-agent
+            name: '@deepseek-ai/dsh-hooks-claude-code'
+            config:
+              configPath: !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'hooks/hooks.json')"
+              pluginRoot: !!js "process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json'))"
+              projectDir: !!js process.cwd()
+              defaultTimeoutMs: 600000
+    - id: preset-sa-engineer
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: sa-engineer
+        name: sa-engineer
+        description: "Implements and executes one hypothesis through `sagent run execute`; cannot verify."
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: !!js "process.getBuiltinModule('node:fs').readFileSync(process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/personas/sa-engineer.md'), 'utf8').trimEnd()"
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+            config:
+              includeDefaultRoots: false
+              customSkillDirs:
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'skills')"
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/skills')"
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: mcp-science-agent
+            name: '@deepseek-ai/dsh-mcp-client'
+            config:
+              serverName: science-agent
+              transport: stdio
+              command: bash
+              args:
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/scripts/mcp-server.sh')"
+              cwd: !!js process.cwd()
+              env:
+                SA_WORKSPACE: !!js process.cwd()
+              toolCallTimeoutMs: 120000
+          - id: hooks-science-agent
+            name: '@deepseek-ai/dsh-hooks-claude-code'
+            config:
+              configPath: !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'hooks/hooks.json')"
+              pluginRoot: !!js "process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json'))"
+              projectDir: !!js process.cwd()
+              defaultTimeoutMs: 600000
+    - id: preset-sa-verifier
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: sa-verifier
+        name: sa-verifier
+        description: "Runs the package-owned L0-L4 verifier; never edits."
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: !!js "process.getBuiltinModule('node:fs').readFileSync(process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/personas/sa-verifier.md'), 'utf8').trimEnd()"
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              write: false
+              edit: false
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+            config:
+              includeDefaultRoots: false
+              customSkillDirs:
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'skills')"
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/skills')"
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: mcp-science-agent
+            name: '@deepseek-ai/dsh-mcp-client'
+            config:
+              serverName: science-agent
+              transport: stdio
+              command: bash
+              args:
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/scripts/mcp-server.sh')"
+              cwd: !!js process.cwd()
+              env:
+                SA_WORKSPACE: !!js process.cwd()
+              toolCallTimeoutMs: 120000
+          - id: hooks-science-agent
+            name: '@deepseek-ai/dsh-hooks-claude-code'
+            config:
+              configPath: !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'hooks/hooks.json')"
+              pluginRoot: !!js "process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json'))"
+              projectDir: !!js process.cwd()
+              defaultTimeoutMs: 600000
+    - id: preset-sa-statistician
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: sa-statistician
+        name: sa-statistician
+        description: "Round-level statistical review; a soft signal only."
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: !!js "process.getBuiltinModule('node:fs').readFileSync(process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/personas/sa-statistician.md'), 'utf8').trimEnd()"
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              write: false
+              edit: false
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+            config:
+              includeDefaultRoots: false
+              customSkillDirs:
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'skills')"
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/skills')"
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: mcp-science-agent
+            name: '@deepseek-ai/dsh-mcp-client'
+            config:
+              serverName: science-agent
+              transport: stdio
+              command: bash
+              args:
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/scripts/mcp-server.sh')"
+              cwd: !!js process.cwd()
+              env:
+                SA_WORKSPACE: !!js process.cwd()
+              toolCallTimeoutMs: 120000
+          - id: hooks-science-agent
+            name: '@deepseek-ai/dsh-hooks-claude-code'
+            config:
+              configPath: !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'hooks/hooks.json')"
+              pluginRoot: !!js "process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json'))"
+              projectDir: !!js process.cwd()
+              defaultTimeoutMs: 600000
+    - id: preset-sa-reporter
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: sa-reporter
+        name: sa-reporter
+        description: "Builds and audits the traceable report; never invents numbers."
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: !!js "process.getBuiltinModule('node:fs').readFileSync(process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/personas/sa-reporter.md'), 'utf8').trimEnd()"
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              write: false
+              edit: false
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+            config:
+              includeDefaultRoots: false
+              customSkillDirs:
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'skills')"
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/skills')"
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: mcp-science-agent
+            name: '@deepseek-ai/dsh-mcp-client'
+            config:
+              serverName: science-agent
+              transport: stdio
+              command: bash
+              args:
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/scripts/mcp-server.sh')"
+              cwd: !!js process.cwd()
+              env:
+                SA_WORKSPACE: !!js process.cwd()
+              toolCallTimeoutMs: 120000
+          - id: hooks-science-agent
+            name: '@deepseek-ai/dsh-hooks-claude-code'
+            config:
+              configPath: !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'hooks/hooks.json')"
+              pluginRoot: !!js "process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json'))"
+              projectDir: !!js process.cwd()
+              defaultTimeoutMs: 600000

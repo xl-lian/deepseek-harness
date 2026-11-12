@@ -1,0 +1,27 @@
+{
+  "name": "science-campaign",
+  "description": "Top-level science-agent campaign: deterministic preflight, then plan -> round -> close -> stop-rule gate until a stop rule fires, then a traceable wrap-up",
+  "whenToUse": "Call when the user asks to run experiments, continue, improve the score, run overnight/until target, or run N rounds in a locked science-agent workspace (any domain pack). The campaign owns every round and its bookkeeping: mode choice, round begin/close, stop rules, and the campaign record all come from `sagent`. It never submits or reveals the holdout.",
+  "phases": [
+    {
+      "title": "Preflight",
+      "detail": "doctor, campaign begin, domain pack, stop-rule check"
+    },
+    {
+      "title": "Plan",
+      "detail": "round begin in the mode chosen by campaign check"
+    },
+    {
+      "title": "Round",
+      "detail": "science-round: scout, hypotheses, select, execute, verify"
+    },
+    {
+      "title": "Close",
+      "detail": "round close: decide, claims, report, outcome, stop rules"
+    },
+    {
+      "title": "Wrap-up",
+      "detail": "campaign end and read-only summary"
+    }
+  ]
+}

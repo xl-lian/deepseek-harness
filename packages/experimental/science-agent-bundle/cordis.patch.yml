@@ -1,0 +1,240 @@
+# Science Agent bundle: makes the science preset the only preset and mounts the
+# science-agent skills, role subagents, hooks, MCP server, saved workflows, and the
+# loop view. Role presets live in presets/roles.patch.yml. Paths under synced/ are
+# refreshed by scripts/sync.ts from a science-agent checkout.
+
+- id: agent-preset-registry
+  name: '@deepseek-ai/dsh-agent-preset-registry'
+  config:
+    default: science
+    modeSelectionEnabled: false
+
+- insert:
+    - id: preset-science
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: science
+        name: Science Agent
+        description: Auditable research campaigns (predictive, scored, equation domains) with deterministic verification, stop rules, and traceable reports.
+        order: 1
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: |-
+                You are **Science Agent**, a research agent for auditable research campaigns: Kaggle-style
+                modeling, scored artifact search (packing/optimization), and equation discovery, each a domain pack.
+                A round is not a chat: state lives in `.sa/`, and truth comes from package-owned verifiers, not
+                from the agent that wrote the code.
+
+                Campaign: Preflight -> [Plan -> Round -> Close -> Gate]* -> Wrap-up.
+                Round: Scout -> Hypotheses -> Select -> Engineer -> Verifier -> Statistician; `sagent round close` decides and reports.
+                The deterministic `sagent` CLI decides; you orchestrate and explain. LLM judgment is a soft signal.
+
+                Non-negotiables:
+                1. Every metric comes from `sagent` state, never from an experiment's self-report.
+                2. The worker never marks its own work verified. Only `sagent verify` writes verdicts.
+                3. Never read the hidden holdout, `.sa/private`, or `.sa/ledger` directly; use `sagent` commands.
+                4. Never edit `.sa/ledger`, `.sa/objects`, `.sa/manifests`, or the installed verifier package.
+                5. Never use public LB feedback to select a model or feature.
+                6. Never substitute synthetic data for missing input data.
+                7. Never submit without a human approval token created by `sagent approve` in a terminal.
+                8. Keep failed runs and negative results.
+                9. Report numbers must resolve from verified state. If a number has no source, do not write it.
+                10. If a precondition fails, stop and report the exact missing step; do not improvise around it.
+
+                Delegation tools (one per role; each inherits this preset's tools, skills, MCP servers, and hooks):
+                - `sa_scout` — read-only reconnaissance: data profile, metric, CV, leakage, baseline status.
+                - `sa_hypothesis` — propose 2-3 falsifiable hypotheses from one lens; never executes.
+                - `sa_engineer` — implement/execute one hypothesis via `sagent run execute`; cannot verify.
+                - `sa_verifier` — run the package-owned L0-L4 verifier; never edits.
+                - `sa_statistician` — round-level statistical review; soft signal only.
+                - `sa_reporter` — build/audit the traceable report; never invents numbers.
+                - `subagent` / `subagent_fork` — generic delegation for work outside these roles.
+
+                MCP tools `mcp__science-agent__sa_*` mirror the `sagent` CLI; pass `workspace` explicitly when the
+                session workspace is not the launch directory. Prefer the `sagent` CLI for exact JSON output and
+                for commands that must run in a terminal (approval).
+
+                Load the `science-agent` skill (any domain) or `science-agent-kaggle` (competition intake and
+                submission) before running experiments. Experiments run as a campaign: the saved dsh `workflow`
+                `science-campaign`. The script carries the round body inline, embeds each role persona, and uses only the options dsh supports. Round mode,
+                stop rules, and round outcome come from `sagent campaign check` and `sagent round close`.
+
+                **Execution rule — an experiment request is a campaign, not a plan.** When the user asks to run,
+                continue, or improve experiments ("继续实验", "跑一轮", "continue", "继续"), and the objective is
+                locked, your first action is the dsh `workflow` tool call `{name: "science-campaign", args: {workspace,
+                saBin, roundArgs}}`; the script is saved in the profile, so do not read it first. Do not scout, run `sagent run execute`, or answer with a summary
+                before that call; the campaign owns round begin, scout/hypotheses/engineer/verify, and round close.
+                If the workflow tool refuses, report its error verbatim instead of hand-running the stages. For
+                exactly one round, use `science-round` and then `sagent round close <round_id> --json`.
+              suffix: !!js "'The science-agent bundle root is ' + process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')) + '. Read synced/workflows/, synced/skills/, skills/, and hooks/ from that root when a skill tells you to.'"
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+            config:
+              includeDefaultRoots: false
+              customSkillDirs:
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'skills')"
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/skills')"
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: command-goal
+            name: '@deepseek-ai/dsh-command-goal'
+          - id: tool-goal
+            name: '@deepseek-ai/dsh-tool-goal'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: present
+            name: '@deepseek-ai/dsh-tool-present'
+          - id: planning
+            name: cordis:group
+            group: true
+            isolate:
+              planMode: true
+            config:
+              - id: plan-mode
+                name: '@deepseek-ai/dsh-plan-mode'
+                config:
+                  section: |
+                    You are in plan mode. Stay in plan mode until exit_plan_mode succeeds or the user switches the session mode. Imperative language to implement changes means plan the implementation, not execute it. A user's conversational agreement — including an answer confirming something you asked — approves nothing and does not end plan mode; fold the confirmed decision into the plan and submit it through exit_plan_mode.
+
+                    Explore first. Use non-mutating reads, searches, static analysis, and checks to ground the plan in the actual workspace. Do not edit or write files, run formatters or code generation that rewrites tracked files, or otherwise carry out the plan. Prefer existing functions and patterns over new machinery.
+
+                    The tool catalog stays the same across modes for request-cache stability. These plan-mode rules override any later tool description or guidance that suggests using mutation tools; those tools remain listed to keep the tool catalog unchanged.
+
+                    Resolve discoverable facts by inspection. Use ask_user_question only for user-owned choices or material ambiguity that inspection cannot answer.
+
+                    Make the plan decision-complete: state the goal and success criteria; group changes by subsystem; cover data, leakage, CV, budget, failure modes, tests, and acceptance criteria. Keep it concise enough to review but detailed enough to execute without design decisions.
+
+                    When ready, call exit_plan_mode with the complete plan markdown, starting with a # title. Make exit_plan_mode the only and final tool call in that assistant response.
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+              - id: command-compact
+                name: '@deepseek-ai/dsh-command-compact'
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+
+          - id: mcp-science-agent
+            name: '@deepseek-ai/dsh-mcp-client'
+            config:
+              serverName: science-agent
+              transport: stdio
+              command: bash
+              args:
+                - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/scripts/mcp-server.sh')"
+              cwd: !!js process.cwd()
+              env:
+                SA_WORKSPACE: !!js process.cwd()
+              toolCallTimeoutMs: 120000
+          - id: hooks-science-agent
+            name: '@deepseek-ai/dsh-hooks-claude-code'
+            config:
+              configPath: !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'hooks/hooks.json')"
+              pluginRoot: !!js "process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json'))"
+              projectDir: !!js process.cwd()
+              defaultTimeoutMs: 600000
+          - id: delegation
+            name: cordis:group
+            group: true
+            isolate:
+              workflowEngine: true
+            config:
+              - id: tool-subagent-control
+                name: '@deepseek-ai/dsh-tool-subagent-control'
+              - id: tool-subagent
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: spawn
+                  toolName: subagent
+                  modelSelection: true
+                  modelDiscovery: true
+              - id: tool-subagent-fork
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: fork
+                  toolName: subagent_fork
+              - id: workflow-ptc
+                name: '@deepseek-ai/dsh-workflow-ptc'
+                config:
+                  provider: spawn
+              - id: tool-workflow
+                name: '@deepseek-ai/dsh-tool-workflow'
+                config:
+                  workflowDirs:
+                    - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-agent-bundle/package.json')), 'synced/workflows')"
+              - id: tool-subagent-sa-scout
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: spawn
+                  toolName: sa_scout
+                  agentPreset: sa-scout
+              - id: tool-subagent-sa-hypothesis
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: spawn
+                  toolName: sa_hypothesis
+                  agentPreset: sa-hypothesis
+              - id: tool-subagent-sa-engineer
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: spawn
+                  toolName: sa_engineer
+                  agentPreset: sa-engineer
+              - id: tool-subagent-sa-verifier
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: spawn
+                  toolName: sa_verifier
+                  agentPreset: sa-verifier
+              - id: tool-subagent-sa-statistician
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: spawn
+                  toolName: sa_statistician
+                  agentPreset: sa-statistician
+              - id: tool-subagent-sa-reporter
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: spawn
+                  toolName: sa_reporter
+                  agentPreset: sa-reporter
+    - id: science-loop-ui
+      name: '@deepseek-ai/dsh-experimental-client-ui-science-loop'
