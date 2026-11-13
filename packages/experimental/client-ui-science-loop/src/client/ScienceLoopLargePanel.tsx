@@ -5,7 +5,6 @@
  */
 
 import { useState } from 'react'
-import type { SessionTarget } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { STAGES, type LoopRound, type StageId } from '../shared/types.ts'
@@ -14,7 +13,8 @@ import { stageSummary } from './summary.ts'
 
 /** Sidebar-tab actions injected from the plugin's own client services. */
 export interface ScienceLoopLargeInjected {
-  readonly openSession: (target: SessionTarget) => void
+  /** Open one member's child Session of `parentSessionId` in the workspace. */
+  readonly openChild: (parentSessionId: SessionId, childId: string) => void
   /** Open a workspace-relative file for the mounted Session. */
   readonly openFile: (sessionId: SessionId, path: string) => void
 }
@@ -32,7 +32,7 @@ export function ScienceLoopTabTitle({ t }: PropsRuntime<'sidebar.right.pane.tab.
 
 /** Render the selected round as a full vertical loop diagram. */
 export function ScienceLoopLargePanel(props: ScienceLoopLargePanelProps): React.JSX.Element {
-  const { useProjection, sessionId, openSession, openFile, t } = props
+  const { useProjection, sessionId, openChild, openFile, t } = props
   const view = useProjection('scienceAgentLoop')
   const [pickedRoundId, setPickedRoundId] = useState<string | undefined>(undefined)
   const [openStage, setOpenStage] = useState<StageId | null>(null)
@@ -58,9 +58,7 @@ export function ScienceLoopLargePanel(props: ScienceLoopLargePanelProps): React.
     (count, id) => count + round.stages[id].members.filter(member => member.status === 'running').length,
     0,
   )
-  const openSessionFor = (childId: string): void => {
-    openSession({ parentSessionId: sessionId, childSessionId: childId as SessionId, mode: 'one-shot' })
-  }
+  const openSessionFor = (childId: string): void => { openChild(sessionId, childId) }
 
   return (
     <section className="sal-large" data-status={round.status}>

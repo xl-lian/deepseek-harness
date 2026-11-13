@@ -4,6 +4,7 @@
  * verifier results by check outcome, and the round extras attached to each stage.
  */
 
+import { useState } from 'react'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import {
   type LoopCandidate,
@@ -17,6 +18,7 @@ import {
 import { experimentKeyOf, latestAttempts } from '../shared/stage.ts'
 import type { LoopExperiment, LoopExperimentOutcome } from './experiments.ts'
 import type { ScienceLoopKey } from './locales.ts'
+import { MemberChildDetail, type RetainChild } from './MemberChild.tsx'
 
 /** Locale-bound translator for this card's namespace. */
 export type LoopTranslate = TranslateNS<'scienceLoop'>
@@ -109,7 +111,7 @@ function isTerminal(round: LoopRound): boolean {
  * With `experiment`, the Verifier lists each check by result and Decide states
  * what happened to this experiment's runs.
  */
-export function StageDetails({ stage, round, openFile, openSessionFor, t, summaryLines, experiment }: {
+export function StageDetails({ stage, round, openFile, openSessionFor, t, summaryLines, experiment, retainChild }: {
   readonly stage: LoopStage
   readonly round: LoopRound
   readonly openFile: OpenFile
@@ -117,6 +119,8 @@ export function StageDetails({ stage, round, openFile, openSessionFor, t, summar
   readonly t: LoopTranslate
   readonly summaryLines?: readonly string[]
   readonly experiment?: LoopExperiment | undefined
+  /** Lets member rows expand their child Session in place. */
+  readonly retainChild?: RetainChild | undefined
 }): React.JSX.Element {
   const extras = extrasAvailable(stage.id, round)
   const ownRunIds = experiment?.hypothesisId === undefined ? undefined : experiment.runIds
@@ -134,7 +138,7 @@ export function StageDetails({ stage, round, openFile, openSessionFor, t, summar
           <ul className="sal-members">
             {stage.members.map(member => (
               <li key={member.id} className="sal-member" data-status={member.status}>
-                <MemberRow member={member} openFile={openFile} openSessionFor={openSessionFor} t={t} />
+                <MemberRow member={member} openFile={openFile} openSessionFor={openSessionFor} t={t} retainChild={retainChild} />
               </li>
             ))}
           </ul>
@@ -177,37 +181,59 @@ function memberMetricsLine(member: LoopMember): string | undefined {
 }
 
 /** One member row with its plan, metrics, checks, actions, and raw output. */
-export function MemberRow({ member, openFile, openSessionFor, t }: {
+export function MemberRow({ member, openFile, openSessionFor, t, retainChild }: {
   readonly member: LoopMember
   readonly openFile: OpenFile
   readonly openSessionFor: (childId: string) => void
   readonly t: LoopTranslate
+  /** With a child Session on the member, makes the head expand the child's result and steps in place. */
+  readonly retainChild?: RetainChild | undefined
 }): React.JSX.Element {
+  const [expanded, setExpanded] = useState(false)
   const runIds = member.runIds ?? []
   const metrics = memberMetricsLine(member)
   // A sub-second span means the start and end were logged together, not a real duration.
   const elapsed = member.startedAt === undefined ? undefined : (member.endedAt ?? Date.now()) - member.startedAt
+  const childId = retainChild === undefined ? undefined : member.childId
+  const head = (
+    <>
+      <span className="sal-dot" data-status={member.status} aria-hidden="true" />
+      <span className="sal-member-label">{member.label}</span>
+      {member.label.replaceAll('_', '-') === member.role
+        ? null
+        : <span className="sal-member-role">{member.role}</span>}
+      <span className={member.status === 'completed' ? 'sal-sr' : 'sal-member-status'}>
+        {t(`status.${member.status}`)}
+      </span>
+      {member.verdict === undefined
+        ? null
+        : <span className="sal-verdict" data-verdict={member.verdict}>{member.verdict}</span>}
+      {member.repaired === true
+        ? <span className="sal-tag">{t('detail.repaired')}</span>
+        : null}
+      {elapsed === undefined || elapsed < 1000
+        ? null
+        : <span className="sal-member-time">{formatDuration(elapsed)}</span>}
+    </>
+  )
   return (
     <>
-      <div className="sal-member-head">
-        <span className="sal-dot" data-status={member.status} aria-hidden="true" />
-        <span className="sal-member-label">{member.label}</span>
-        {member.label.replaceAll('_', '-') === member.role
-          ? null
-          : <span className="sal-member-role">{member.role}</span>}
-        <span className={member.status === 'completed' ? 'sal-sr' : 'sal-member-status'}>
-          {t(`status.${member.status}`)}
-        </span>
-        {member.verdict === undefined
-          ? null
-          : <span className="sal-verdict" data-verdict={member.verdict}>{member.verdict}</span>}
-        {member.repaired === true
-          ? <span className="sal-tag">{t('detail.repaired')}</span>
-          : null}
-        {elapsed === undefined || elapsed < 1000
-          ? null
-          : <span className="sal-member-time">{formatDuration(elapsed)}</span>}
-      </div>
+      {childId === undefined
+        ? <div className="sal-member-head">{head}</div>
+        : (
+          <button
+            type="button"
+            className="sal-member-head sal-member-toggle"
+            aria-expanded={expanded}
+            onClick={() => { setExpanded(value => !value) }}
+          >
+            <span className="sal-member-chevron" aria-hidden="true" />
+            {head}
+          </button>
+        )}
+      {childId === undefined || retainChild === undefined || !expanded
+        ? null
+        : <MemberChildDetail childId={childId} retainChild={retainChild} t={t} />}
       {member.statusDetail === undefined
         ? null
         : <p className="sal-muted sal-status-detail">{member.statusDetail}</p>}

@@ -4,7 +4,6 @@
  */
 
 import { useState } from 'react'
-import type { SessionTarget } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { STAGE_ROLE, STAGES, type LoopRound, type StageId } from '../shared/types.ts'
@@ -14,7 +13,8 @@ import { stageSummary } from './summary.ts'
 
 /** Navigation actions injected from the plugin's own client services. */
 export interface ScienceLoopInjected {
-  readonly openSession: (target: SessionTarget) => void
+  /** Open one member's child Session of `parentSessionId` in the workspace. */
+  readonly openChild: (parentSessionId: SessionId, childId: string) => void
   /** Open the large right-Sidebar view. */
   readonly openLarge: () => void
 }
@@ -31,7 +31,7 @@ function findRound(rounds: readonly LoopRound[], anchorId: string): LoopRound | 
 
 /** Render one round's loop card with live stage highlighting. */
 export function ScienceLoopPanel(props: ScienceLoopPanelProps): React.JSX.Element | null {
-  const { node, useProjection, openFile, openSession, openLarge, sessionId, t } = props
+  const { node, useProjection, openFile, openChild, openLarge, sessionId, t } = props
   const view = useProjection('scienceAgentLoop')
   const [openStage, setOpenStage] = useState<StageId | null>(null)
   const round = view === undefined ? undefined : findRound(view.rounds, node.data.anchorId)
@@ -43,9 +43,7 @@ export function ScienceLoopPanel(props: ScienceLoopPanelProps): React.JSX.Elemen
     (count, id) => count + round.stages[id].members.filter(member => member.status === 'running').length,
     0,
   )
-  const openSessionFor = (childId: string): void => {
-    openSession({ parentSessionId: sessionId, childSessionId: childId as SessionId, mode: 'one-shot' })
-  }
+  const openSessionFor = (childId: string): void => { openChild(sessionId, childId) }
 
   return (
     <article className="sal-card" data-status={round.status}>

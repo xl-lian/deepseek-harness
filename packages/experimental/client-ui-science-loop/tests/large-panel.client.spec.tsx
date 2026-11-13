@@ -41,7 +41,7 @@ describe('ScienceLoopLargePanel', () => {
     const props = {
       sessionId: 'session-1',
       useProjection: () => ({ v: 1, rounds: [round], activeRoundId: round.id }),
-      openSession: () => {},
+      openChild: () => {},
       openFile: () => {},
       t,
     } as unknown as ScienceLoopLargePanelProps
@@ -58,7 +58,7 @@ describe('ScienceLoopLargePanel', () => {
     const props = {
       sessionId: 'session-1',
       useProjection: () => ({ v: 1, rounds: [], agentPreset: 'standard', scienceSkillLoaded: false }),
-      openSession: () => {},
+      openChild: () => {},
       openFile: () => {},
       t,
     } as unknown as ScienceLoopLargePanelProps

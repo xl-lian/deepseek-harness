@@ -86,7 +86,7 @@ function props(value: LoopRound, ...more: LoopRound[]): ScienceLoopViewProps {
   return {
     sessionId: 'session-1',
     useProjection: () => ({ v: 1, rounds: [value, ...more], activeRoundId: (more[more.length - 1] ?? value).id }),
-    openSession: () => {},
+    openChild: () => {},
     openFile: () => {},
     t,
   } as unknown as ScienceLoopViewProps

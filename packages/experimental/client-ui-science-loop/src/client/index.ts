@@ -5,6 +5,7 @@
  */
 
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { SessionTarget } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
@@ -26,7 +27,7 @@ import { en, NS, zh } from './locales.ts'
 import { ScienceLoopDock, type ScienceLoopDockInjected } from './ScienceLoopDock.tsx'
 import { ScienceLoopLargePanel, ScienceLoopTabTitle, type ScienceLoopLargeInjected } from './ScienceLoopLargePanel.tsx'
 import { ScienceLoopPanel, type ScienceLoopInjected } from './ScienceLoopPanel.tsx'
-import { ScienceLoopView, scienceLoopViewDefinition } from './ScienceLoopView.tsx'
+import { ScienceLoopView, scienceLoopViewDefinition, type ScienceLoopViewInjected } from './ScienceLoopView.tsx'
 import { injectStyles } from './styles.ts'
 import { installKaggleTheme } from './theme.ts'
 
@@ -41,6 +42,13 @@ export const inject = [
   'locale',
   'theme',
 ]
+
+declare module '@deepseek-ai/dsh-api-session-controller/client' {
+  interface SessionReferenceSourceMap {
+    /** A Loop view member row expanded to show its child Session. */
+    scienceLoopMember: unknown
+  }
+}
 
 const IMPLEMENTATION_ID = 'science-agent-loop-ui'
 const TAB_KIND = 'science-loop'
@@ -74,13 +82,19 @@ export function apply(ctx: ClientContext): void {
     priority: -1,
   }, HeroCompetitionMark))
   const t = ctx.locale.bind(NS)
+  // Workflow children may be one-shot or continuable; a wrong mode makes the Host refuse the
+  // child's history, so use the client's known address and let `unknown` skip the mode check.
+  const childAddress = (parentSessionId: SessionId, childId: string): SessionTarget => {
+    const childSessionId = childId as SessionId
+    return ctx.sessions.subagentAddress(childSessionId) ?? { parentSessionId, childSessionId, mode: 'unknown' }
+  }
 
   ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
     name: 'conversation.chat.node',
     key: 'science-loop',
     locale: NS,
     inject: (): ScienceLoopInjected => ({
-      openSession: (target) => { ctx.uiWorkspace.openSession(target) },
+      openChild: (parentSessionId, childId) => { ctx.uiWorkspace.openSession(childAddress(parentSessionId, childId)) },
       openLarge: () => { ctx.sidebarRight.openTab(TAB_KIND) },
     }),
   }, ScienceLoopPanel))
@@ -101,9 +115,13 @@ export function apply(ctx: ClientContext): void {
     order: 20,
     locale: NS,
     label: () => t('view.loop'),
-    inject: (): ScienceLoopLargeInjected => ({
-      openSession: (target) => { ctx.uiWorkspace.openSession(target) },
+    inject: (): ScienceLoopViewInjected => ({
+      openChild: (parentSessionId, childId) => { ctx.uiWorkspace.openSession(childAddress(parentSessionId, childId)) },
       openFile: (sessionId, path) => { ctx.sidebarRight.openResource(fileAddress(sessionId, path)) },
+      retainChild: (parentSessionId, childId, signal) => ctx.sessions.retain(
+        childAddress(parentSessionId, childId),
+        { source: 'scienceLoopMember', signal },
+      ),
     }),
   }, ScienceLoopView))
 
@@ -118,7 +136,7 @@ export function apply(ctx: ClientContext): void {
     key: IMPLEMENTATION_ID,
     locale: NS,
     inject: (): ScienceLoopLargeInjected => ({
-      openSession: (target) => { ctx.uiWorkspace.openSession(target) },
+      openChild: (parentSessionId, childId) => { ctx.uiWorkspace.openSession(childAddress(parentSessionId, childId)) },
       openFile: (sessionId, path) => { ctx.sidebarRight.openResource(fileAddress(sessionId, path)) },
     }),
   }, ScienceLoopLargePanel))

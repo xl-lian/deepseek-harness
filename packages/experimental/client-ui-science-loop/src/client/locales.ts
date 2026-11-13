@@ -35,6 +35,11 @@ export type ScienceLoopKey =
   | 'report.path'
   | 'view.loop'
   | 'view.hint'
+  | 'child.loading'
+  | 'child.empty'
+  | 'child.result'
+  | 'child.finalMessage'
+  | 'child.steps'
   | 'round.experiments'
   | 'ring.label'
   | 'ring.repair'
@@ -155,6 +160,11 @@ export const zh: Record<ScienceLoopKey, string> = {
   'report.path': '报告：{path}',
   'view.loop': '架构',
   'view.hint': '点击环上的节点，查看该阶段在本实验中的具体内容。',
+  'child.loading': '正在读取子代理会话…',
+  'child.empty': '子代理还没有记录任何步骤。',
+  'child.result': '返回结果',
+  'child.finalMessage': '最终回复',
+  'child.steps': '步骤（{count}）',
   'round.experiments': '{count} 个实验',
   'ring.label': '{key} 的实验环',
   'ring.repair': '修复',
@@ -269,6 +279,11 @@ export const en: Record<ScienceLoopKey, string> = {
   'report.path': 'Report: {path}',
   'view.loop': 'Loop',
   'view.hint': 'Click a node on the ring to see what that stage did in this experiment.',
+  'child.loading': 'Loading the agent session…',
+  'child.empty': 'The agent has not recorded any steps yet.',
+  'child.result': 'Result',
+  'child.finalMessage': 'Final message',
+  'child.steps': 'Steps ({count})',
   'round.experiments': '{count} experiments',
   'ring.label': 'Loop of {key}',
   'ring.repair': 'repair',

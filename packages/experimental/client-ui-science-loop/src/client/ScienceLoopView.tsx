@@ -12,6 +12,8 @@ import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots
 import { STAGES, type LoopRound, type StageId } from '../shared/types.ts'
 import { ExperimentRing } from './ExperimentRing.tsx'
 import { roundExperiments, type LoopExperiment } from './experiments.ts'
+import type { SessionReference } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { RetainChild } from './MemberChild.tsx'
 import type { ScienceLoopLargeInjected } from './ScienceLoopLargePanel.tsx'
 import { ScienceLoopEmpty, StageDetails, formatDuration, statusLabel, type LoopTranslate } from './parts.tsx'
 import { currentStage, stageSummary } from './summary.ts'
@@ -29,11 +31,17 @@ export const scienceLoopViewDefinition: ConversationViewDefinition<ConversationV
   }),
 }
 
+/** Loop-view actions injected from the plugin's own client services. */
+export interface ScienceLoopViewInjected extends ScienceLoopLargeInjected {
+  /** Retain one member's child Session of `parentSessionId` until `signal` aborts; the caller releases the reference. */
+  readonly retainChild: (parentSessionId: SessionId, childId: string, signal: AbortSignal) => SessionReference
+}
+
 /** Composed props of the Loop view tab. */
 export type ScienceLoopViewProps =
   & PropsRuntime<'conversation.view'>
   & PropsLocale<'scienceLoop'>
-  & ScienceLoopLargeInjected
+  & ScienceLoopViewInjected
 
 function roundLabel(round: LoopRound, index: number): string {
   return round.roundId ?? `R${index + 1}`
@@ -47,7 +55,7 @@ function defaultStage(experiment: LoopExperiment): StageId | null {
 
 /** Render every round as stacked experiment rings. */
 export function ScienceLoopView(props: ScienceLoopViewProps): React.JSX.Element {
-  const { useProjection, sessionId, openSession, openFile, t } = props
+  const { useProjection, sessionId, openChild, openFile, t } = props
   const view = useProjection('scienceAgentLoop')
   const sections = useRef(new Map<string, HTMLElement>())
   const scrolled = useRef(false)
@@ -74,10 +82,9 @@ export function ScienceLoopView(props: ScienceLoopViewProps): React.JSX.Element 
   }
 
   const now = Date.now()
-  const openSessionFor = (childId: string): void => {
-    openSession({ parentSessionId: sessionId, childSessionId: childId as SessionId, mode: 'one-shot' })
-  }
+  const openSessionFor = (childId: string): void => { openChild(sessionId, childId) }
   const openSessionFile = (path: string): void => { openFile(sessionId, path) }
+  const retainChild: RetainChild = (childId, signal) => props.retainChild(sessionId, childId, signal)
 
   return (
     <section className="sal-view">
@@ -142,6 +149,7 @@ export function ScienceLoopView(props: ScienceLoopViewProps): React.JSX.Element 
                 hasNextRound={index < rounds.length - 1}
                 openFile={openSessionFile}
                 openSessionFor={openSessionFor}
+                retainChild={retainChild}
                 t={t}
               />
             ))}
@@ -152,13 +160,14 @@ export function ScienceLoopView(props: ScienceLoopViewProps): React.JSX.Element 
   )
 }
 
-function ExperimentBlock({ experiment, centerLabel, sharedRound, hasNextRound, openFile, openSessionFor, t }: {
+function ExperimentBlock({ experiment, centerLabel, sharedRound, hasNextRound, openFile, openSessionFor, retainChild, t }: {
   readonly experiment: LoopExperiment
   readonly centerLabel: string
   readonly sharedRound: boolean
   readonly hasNextRound: boolean
   readonly openFile: (path: string) => void
   readonly openSessionFor: (childId: string) => void
+  readonly retainChild: RetainChild
   readonly t: LoopTranslate
 }): React.JSX.Element {
   // undefined follows the live default; null means the user closed the detail.
@@ -203,6 +212,7 @@ function ExperimentBlock({ experiment, centerLabel, sharedRound, hasNextRound, o
                   t={t}
                   summaryLines={stageSummary(experiment.round, stage.id, t)}
                   experiment={experiment}
+                  retainChild={retainChild}
                 />
               </>
             )}

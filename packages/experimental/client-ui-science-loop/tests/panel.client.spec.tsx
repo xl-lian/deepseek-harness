@@ -61,7 +61,7 @@ function makeProps(anchorId: string): ScienceLoopPanelProps {
     sessionId: 'session-1',
     useProjection: () => ({ v: 1, rounds: [round] }),
     openFile: () => {},
-    openSession: () => {},
+    openChild: () => {},
     openLarge: () => {},
     t,
   } as unknown as ScienceLoopPanelProps

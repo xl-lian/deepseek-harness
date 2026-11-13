@@ -197,6 +197,24 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:214748
 @keyframes sal-ring-flow{to{stroke-dashoffset:-12}}
 @media (prefers-reduced-motion:reduce){.sal-ring-arc[data-flow="flowing"] .sal-ring-line,.sal-ring-node[data-status="running"]{animation:none}}
 @container (max-width:860px){.sal-exp-body{grid-template-columns:minmax(0,1fr)}.sal-ring{max-width:480px;justify-self:center}.sal-exp-detail{contain:none;max-height:none}}
+.sal-member-toggle{width:100%;box-sizing:border-box;margin:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;font-size:12px;text-align:left;cursor:pointer}
+.sal-member-toggle:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary,#8fc7a4);outline-offset:3px;border-radius:4px}
+.sal-member-chevron{flex:none;width:6px;height:6px;margin-right:2px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);opacity:.55;transition:transform .15s ease}
+.sal-member-toggle[aria-expanded="true"] .sal-member-chevron{transform:rotate(45deg)}
+.sal-child{display:flex;flex-direction:column;gap:8px;margin:4px 0 2px;padding:8px 10px;border-left:2px solid var(--dsw-alias-border-l4,#404040);background:var(--dsw-alias-bg-layer-2,#202020);border-radius:0 6px 6px 0}
+.sal-child-empty{margin:4px 0 0;font-size:12px}
+.sal-child pre{margin:2px 0 0;max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-word;font-size:11px;line-height:1.45}
+.sal-child-result[data-kind="message"] pre{font-family:inherit;font-size:12px}
+.sal-child-steps ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.sal-child-steps summary{display:flex;align-items:baseline;gap:6px;min-width:0;cursor:pointer;font-size:12px;list-style:none}
+.sal-child-steps summary::-webkit-details-marker{display:none}
+.sal-child-steps code{flex:none;font-size:11px}
+.sal-child-args{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;opacity:.6}
+.sal-child-mark{flex:none;width:12px;text-align:center}
+.sal-child-steps li[data-status="ok"] .sal-child-mark{color:var(--dsw-alias-state-success-primary,#8fc7a4)}
+.sal-child-steps li[data-status="error"] .sal-child-mark{color:var(--dsw-alias-state-error-primary,#ef5350)}
+.sal-child-steps li[data-status="running"] .sal-child-mark{color:var(--dsw-alias-state-business-primary,#8fc7a4)}
+.sal-child-steps details > pre,.sal-child-steps details > p{margin:2px 0 6px 18px}
 .sal-large{display:flex;flex-direction:column;gap:12px;width:100%;min-width:0;box-sizing:border-box;padding:12px}
 .sal-large-header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .sal-large-empty{font-size:12px;opacity:.65;padding:16px}
@@ -210,7 +228,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:214748
 .sal-large-stage[data-status="running"] > .sal-stage-button{border-color:var(--dsw-alias-state-business-primary,#8fc7a4);background:var(--dsw-alias-interactive-bg-hover,#1f1f1f)}
 @media (max-width:640px){.sal-stages{flex-direction:column;align-items:stretch;gap:4px}.sal-connector{width:1px;height:8px;margin-left:12px}.sal-stage{flex:0 0 auto;flex-direction:column;align-items:stretch}}
 @media (prefers-reduced-motion:reduce){.sal-dot[data-status="running"]{animation:none}}
-@media (hover:hover){.sal-stage-button:hover{background:var(--dsw-alias-interactive-bg-hover,#1f1f1f)}.sal-member-actions button:hover{background:var(--dsw-alias-interactive-bg-hover,#1f1f1f)}.sal-expand:hover{background:var(--dsw-alias-interactive-bg-hover,#1f1f1f)}.sal-dock:hover{background:var(--dsw-alias-interactive-bg-hover,#1f1f1f)}.sal-ring-node:hover{background:var(--dsw-alias-interactive-bg-hover,#1f1f1f)}.sal-file:hover{background:var(--dsw-alias-interactive-bg-hover,#1f1f1f)}}
+@media (hover:hover){.sal-stage-button:hover{background:var(--dsw-alias-interactive-bg-hover,#1f1f1f)}.sal-member-actions button:hover{background:var(--dsw-alias-interactive-bg-hover,#1f1f1f)}.sal-member-toggle:hover .sal-member-label{text-decoration:underline;text-underline-offset:2px}.sal-expand:hover{background:var(--dsw-alias-interactive-bg-hover,#1f1f1f)}.sal-dock:hover{background:var(--dsw-alias-interactive-bg-hover,#1f1f1f)}.sal-ring-node:hover{background:var(--dsw-alias-interactive-bg-hover,#1f1f1f)}.sal-file:hover{background:var(--dsw-alias-interactive-bg-hover,#1f1f1f)}}
 `
 
 let mounted: HTMLStyleElement | undefined

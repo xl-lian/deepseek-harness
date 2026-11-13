@@ -48,7 +48,7 @@ function props(): ScienceLoopViewProps {
   return {
     sessionId: 'session-1',
     useProjection: () => ({ v: 1, rounds: [round], activeRoundId: round.id }),
-    openSession: () => {},
+    openChild: () => {},
     openFile: () => {},
     t,
   } as unknown as ScienceLoopViewProps
@@ -78,7 +78,7 @@ describe('ScienceLoopView', () => {
     const emptyProps = {
       sessionId: 'session-1',
       useProjection: () => ({ v: 1, rounds: [], agentPreset: 'standard', scienceSkillLoaded: false }),
-      openSession: () => {},
+      openChild: () => {},
       openFile: () => {},
       t,
     } as unknown as ScienceLoopViewProps
@@ -91,7 +91,7 @@ describe('ScienceLoopView', () => {
     const emptyProps = {
       sessionId: 'session-1',
       useProjection: () => ({ v: 1, rounds: [], agentPreset: 'science', scienceSkillLoaded: true }),
-      openSession: () => {},
+      openChild: () => {},
       openFile: () => {},
       t,
     } as unknown as ScienceLoopViewProps
