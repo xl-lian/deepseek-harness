@@ -35,7 +35,26 @@ export type ScienceLoopKey =
   | 'report.path'
   | 'view.loop'
   | 'view.hint'
-  | 'flow.repair'
+  | 'round.experiments'
+  | 'ring.label'
+  | 'ring.repair'
+  | 'ring.shared'
+  | 'ring.checks'
+  | 'verifier.attempts'
+  | 'verifier.failed'
+  | 'verifier.warned'
+  | 'verifier.passed'
+  | 'verifier.skipped'
+  | 'verifier.noChecks'
+  | 'verifier.blockingTag'
+  | 'outcome.chosen'
+  | 'outcome.eliminated'
+  | 'outcome.candidate'
+  | 'outcome.none'
+  | 'outcome.chosen.short'
+  | 'outcome.eliminated.short'
+  | 'outcome.candidate.short'
+  | 'outcome.rank.short'
   | 'empty'
   | 'empty.notScience.title'
   | 'empty.notScience.body'
@@ -135,8 +154,27 @@ export const zh: Record<ScienceLoopKey, string> = {
   'decision.chosen': '选定 run {run}',
   'report.path': '报告：{path}',
   'view.loop': '架构',
-  'view.hint': '点击任一阶段查看运行它的子代理、输入输出与验证结果。',
-  'flow.repair': '可修复失败：验证 → 实验 回环',
+  'view.hint': '点击环上的节点，查看该阶段在本实验中的具体内容。',
+  'round.experiments': '{count} 个实验',
+  'ring.label': '{key} 的实验环',
+  'ring.repair': '修复',
+  'ring.shared': '本轮所有实验共用此阶段',
+  'ring.checks': '{fail} 失败 · {warn} 警告 · {pass} 通过',
+  'verifier.attempts': '验证尝试',
+  'verifier.failed': '未通过（{count}）',
+  'verifier.warned': '警告（{count}）',
+  'verifier.passed': '通过（{count}）',
+  'verifier.skipped': '跳过（{count}）',
+  'verifier.noChecks': '验证器没有报告逐项检查。',
+  'verifier.blockingTag': '阻塞',
+  'outcome.chosen': '本实验的 run {run} 被选为本轮结果。',
+  'outcome.eliminated': 'run {run} 被淘汰：{reason}',
+  'outcome.candidate': 'run {run} 为候选第 {rank} 名 · 均值 {mean} ± {sd}',
+  'outcome.none': '本实验没有 run 进入决策。',
+  'outcome.chosen.short': '选定',
+  'outcome.eliminated.short': '淘汰',
+  'outcome.candidate.short': '候选',
+  'outcome.rank.short': '第 {rank} 名',
   'empty': '等待本轮开始',
   'empty.notScience.title': '当前不是 Science Agent 会话',
   'empty.notScience.body': '当前使用 {preset}。请新建会话并选择 Science Agent 后再运行实验',
@@ -230,8 +268,27 @@ export const en: Record<ScienceLoopKey, string> = {
   'decision.chosen': 'Chosen run {run}',
   'report.path': 'Report: {path}',
   'view.loop': 'Loop',
-  'view.hint': 'Click a stage to inspect the agents that ran it, its inputs/outputs, and its verdict.',
-  'flow.repair': 'Repairable failure: Verifier → Engineer loop',
+  'view.hint': 'Click a node on the ring to see what that stage did in this experiment.',
+  'round.experiments': '{count} experiments',
+  'ring.label': 'Loop of {key}',
+  'ring.repair': 'repair',
+  'ring.shared': 'Shared by every experiment in this round',
+  'ring.checks': '{fail} failed · {warn} warned · {pass} passed',
+  'verifier.attempts': 'Verification attempts',
+  'verifier.failed': 'Failed ({count})',
+  'verifier.warned': 'Warned ({count})',
+  'verifier.passed': 'Passed ({count})',
+  'verifier.skipped': 'Skipped ({count})',
+  'verifier.noChecks': 'The verifier reported no individual checks.',
+  'verifier.blockingTag': 'blocking',
+  'outcome.chosen': 'Run {run} from this experiment was chosen for the round.',
+  'outcome.eliminated': 'Run {run} was eliminated: {reason}',
+  'outcome.candidate': 'Run {run} is candidate #{rank} · mean {mean} ± {sd}',
+  'outcome.none': 'No run from this experiment reached the decision.',
+  'outcome.chosen.short': 'Chosen',
+  'outcome.eliminated.short': 'Eliminated',
+  'outcome.candidate.short': 'Candidate',
+  'outcome.rank.short': 'Rank {rank}',
   'empty': 'Waiting for the round to start',
   'empty.notScience.title': 'This session is not Science Agent',
   'empty.notScience.body': 'This session uses {preset}. Start a new chat with Science Agent before running experiments.',

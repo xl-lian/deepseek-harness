@@ -32,6 +32,7 @@ import {
   type LoopVerifiedRun,
   type StageId,
 } from '../shared/types.ts'
+import { deriveStage, isSettled } from '../shared/stage.ts'
 
 const MAX_OUTPUT_CHARS = 4096
 const MAX_SUMMARY_CHARS = 512
@@ -387,67 +388,6 @@ function addMember(round: LoopRound, stageId: StageId, member: LoopMember): Loop
     startedAt: round.startedAt ?? member.startedAt,
     status: round.status === 'pending' ? 'running' : round.status,
   })
-}
-
-function groupKey(stageId: StageId, member: LoopMember): string {
-  if (stageId === 'engineer' || stageId === 'verifier') {
-    const match = /^(?:engineer|repair|confirm|verify-confirm|verify|reverify)-(.+)$/.exec(member.label)
-    if (match?.[1] !== undefined) return match[1]
-  }
-  return member.id
-}
-
-function isSettled(status: LoopStatus): boolean {
-  return status === 'completed' || status === 'failed' || status === 'cancelled' || status === 'interrupted' || status === 'blocked'
-}
-
-function latestAttempts(stage: LoopStage): LoopMember[] {
-  const latest = new Map<string, LoopMember>()
-  for (const member of stage.members) {
-    const key = groupKey(stage.id, member)
-    const previous = latest.get(key)
-    if (previous === undefined || (member.startedAt ?? 0) >= (previous.startedAt ?? 0)) latest.set(key, member)
-  }
-  return [...latest.values()]
-}
-
-function deriveStage(stage: LoopStage): LoopStage {
-  if (stage.members.length === 0) {
-    if (stage.explicit !== undefined) {
-      return { ...stage, status: stage.explicit.status }
-    }
-    return stage.status === 'pending' ? stage : { ...stage, status: 'pending' }
-  }
-  const attempts = latestAttempts(stage)
-  let status: LoopStatus
-  if (attempts.some(member => member.status === 'running')) status = 'running'
-  else if (attempts.some(member => member.status === 'failed' || member.status === 'blocked')) status = 'failed'
-  else if (attempts.some(member => member.status === 'cancelled')) status = 'cancelled'
-  else if (attempts.some(member => member.status === 'interrupted')) status = 'interrupted'
-  else if (attempts.every(member => member.status === 'completed')) status = 'completed'
-  else status = 'running'
-
-  const starts = stage.members.map(member => member.startedAt).filter((value): value is number => value !== undefined)
-  const ends = stage.members.map(member => member.endedAt).filter((value): value is number => value !== undefined)
-  const settled = attempts.every(member => isSettled(member.status))
-  const verdict = stageVerdict(stage)
-  return {
-    ...stage,
-    status,
-    startedAt: starts.length === 0 ? stage.startedAt : Math.min(...starts),
-    endedAt: settled && ends.length === stage.members.length ? Math.max(...ends) : undefined,
-    ...(verdict === undefined ? {} : { verdict }),
-  }
-}
-
-function stageVerdict(stage: LoopStage): LoopVerdict | undefined {
-  const verdicts = latestAttempts(stage)
-    .map(member => member.verdict)
-    .filter((value): value is LoopVerdict => value !== undefined)
-  if (verdicts.includes('fail')) return 'fail'
-  if (verdicts.includes('warn')) return 'warn'
-  if (verdicts.length > 0) return 'pass'
-  return undefined
 }
 
 function deriveRoundStatus(round: LoopRound): LoopStatus {

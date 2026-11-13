@@ -3,6 +3,7 @@
  * short lines shown on each stage card.
  */
 
+import { latestAttempts } from '../shared/stage.ts'
 import { STAGES, type LoopStage, type LoopRound, type StageId } from '../shared/types.ts'
 import type { LoopTranslate } from './parts.tsx'
 
@@ -34,17 +35,6 @@ export function currentStage(round: LoopRound): StageId | undefined {
     return stage.members.length > 0 || stage.status !== 'pending'
   })
   return active.length === 0 ? undefined : pickNewest(round, active)
-}
-
-function latestAttempts(stage: LoopStage): LoopRound['stages'][StageId]['members'] {
-  const latest = new Map<string, (typeof stage.members)[number]>()
-  for (const member of stage.members) {
-    const match = /^(?:engineer|repair|verify|reverify)-(.+)$/.exec(member.label)
-    const key = match?.[1] ?? member.id
-    const previous = latest.get(key)
-    if (previous === undefined || (member.startedAt ?? 0) >= (previous.startedAt ?? 0)) latest.set(key, member)
-  }
-  return [...latest.values()]
 }
 
 function formatMetrics(metrics: Readonly<Record<string, number>>): string {

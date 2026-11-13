@@ -55,20 +55,23 @@ function props(): ScienceLoopViewProps {
 }
 
 describe('ScienceLoopView', () => {
-  it('renders the architecture flow with agents, statuses and the repair loop', () => {
+  it('renders the experiment as a ring of seven stages with the repair chord', () => {
     const html = renderToStaticMarkup(<ScienceLoopView {...props()} />)
     expect(html).toContain('Science loop')
     expect(html).toContain('rd-arch')
+    expect(html).toContain('Loop of h-abc')
+    expect(html.match(/class="sal-ring-node"/g)).toHaveLength(7)
     for (const label of ['Scout', 'Hypotheses', 'Engineer', 'Verifier', 'Statistician', 'Decide', 'Report']) {
-      expect(html).toContain(label)
+      expect(html).toContain(`>${label}<`)
     }
-    expect(html).toContain('sa-scout')
-    expect(html).toContain('engineer-h-abc')
-    expect(html).toContain('verify-h-abc')
-    expect(html).toContain('repair-h-abc')
-    expect(html).toContain('Repairable failure')
+    expect(html).toContain('class="sal-ring-repair"')
+    expect(html).toContain('>repair<')
     expect(html).toContain('data-flow="flowing"')
     expect(html).toContain('data-status="running"')
+    // The running Verifier is selected and lists the hypothesis's attempts.
+    expect(html).toContain('Verifier · h-abc')
+    expect(html).toContain('verify-h-abc')
+    expect(html).toContain('repair-h-abc')
   })
 
   it('shows the empty state without rounds', () => {

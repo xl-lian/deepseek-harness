@@ -1,16 +1,19 @@
 /**
- * Full-width Loop view tab: the seven-stage science-agent architecture as a
- * left-to-right flow with its agents/subagents, live status, and a repair
- * back-edge. Content comes from the host `scienceAgentLoop` projection.
+ * Full-width Loop view tab: every round of the Session, oldest first, and in
+ * each round one ring per experiment (hypothesis) showing the seven-stage
+ * loop. Clicking a ring node shows that stage's content for the experiment
+ * beside the ring. Content comes from the host `scienceAgentLoop` projection.
  */
 
-import { Fragment, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ConversationViewDefinition, ConversationViewNode } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { STAGES, STAGE_ROLE, type LoopMember, type LoopRound, type LoopStage, type StageId } from '../shared/types.ts'
+import { STAGES, type LoopRound, type StageId } from '../shared/types.ts'
+import { ExperimentRing } from './ExperimentRing.tsx'
+import { roundExperiments, type LoopExperiment } from './experiments.ts'
 import type { ScienceLoopLargeInjected } from './ScienceLoopLargePanel.tsx'
-import { ScienceLoopEmpty, StageDetails, StageSummaryLines, formatDuration, statusLabel } from './parts.tsx'
+import { ScienceLoopEmpty, StageDetails, formatDuration, statusLabel, type LoopTranslate } from './parts.tsx'
 import { currentStage, stageSummary } from './summary.ts'
 
 /** Empty snapshot for the target; the View reads the projection directly. */
@@ -32,35 +35,34 @@ export type ScienceLoopViewProps =
   & PropsLocale<'scienceLoop'>
   & ScienceLoopLargeInjected
 
-function latestRound(rounds: readonly LoopRound[], activeRoundId: string | undefined): LoopRound | undefined {
-  return rounds.find(round => round.id === activeRoundId) ?? rounds[rounds.length - 1]
+function roundLabel(round: LoopRound, index: number): string {
+  return round.roundId ?? `R${index + 1}`
 }
 
-function uniqueness(members: readonly LoopMember[]): string {
-  const roles = [...new Set(members.map(member => member.role))]
-  if (roles.length === 0) return ''
-  if (roles.length === 1) return members.length > 1 ? `${roles[0]} ×${members.length}` : (roles[0] ?? '')
-  return roles.join(' · ')
+/** Stage shown before the user picks one: the live stage, else the verdict, else the latest activity. */
+function defaultStage(experiment: LoopExperiment): StageId | null {
+  if (experiment.status !== 'running' && experiment.round.stages.verifier.members.length > 0) return 'verifier'
+  return currentStage(experiment.round) ?? null
 }
 
-function hasRepair(round: LoopRound): boolean {
-  return round.stages.verifier.members.some(member => member.label.startsWith('repair-'))
-    || round.stages.engineer.members.some(member => member.label.startsWith('repair-'))
-}
-
-function edgeState(source: LoopStage, target: LoopStage): 'idle' | 'done' | 'flowing' {
-  if (source.status === 'completed' && target.status !== 'pending') return 'done'
-  if (source.status === 'running' || (source.status === 'completed' && target.status === 'running')) return 'flowing'
-  return 'idle'
-}
-
-/** Render the live architecture flow. */
+/** Render every round as stacked experiment rings. */
 export function ScienceLoopView(props: ScienceLoopViewProps): React.JSX.Element {
   const { useProjection, sessionId, openSession, openFile, t } = props
   const view = useProjection('scienceAgentLoop')
-  const [pickedRoundId, setPickedRoundId] = useState<string | undefined>(undefined)
-  const [override, setOverride] = useState<{ readonly roundId: string; readonly stage: StageId | null } | undefined>(undefined)
+  const sections = useRef(new Map<string, HTMLElement>())
+  const scrolled = useRef(false)
   const rounds = view?.rounds ?? []
+  const activeRoundId = view?.activeRoundId ?? rounds[rounds.length - 1]?.id
+
+  // Bring the active round into view once, when its section first mounts.
+  useEffect(() => {
+    if (scrolled.current || activeRoundId === undefined) return
+    const element = sections.current.get(activeRoundId)
+    if (element === undefined) return
+    scrolled.current = true
+    if (rounds.length > 1) element.scrollIntoView({ block: 'start' })
+  })
+
   if (rounds.length === 0) {
     return (
       <ScienceLoopEmpty
@@ -71,148 +73,141 @@ export function ScienceLoopView(props: ScienceLoopViewProps): React.JSX.Element 
     )
   }
 
-  const round = rounds.find(candidate => candidate.id === pickedRoundId)
-    ?? latestRound(rounds, view?.activeRoundId)
-  if (round === undefined) return <div className="sal-view-empty">{t('empty')}</div>
-
-  const autoStage = currentStage(round)
-  const selectedStage = override !== undefined && override.roundId === round.id ? override.stage : autoStage
-  const selected = selectedStage === null || selectedStage === undefined ? undefined : round.stages[selectedStage]
   const now = Date.now()
-  const activeMembers = STAGES.reduce(
-    (count, id) => count + round.stages[id].members.filter(member => member.status === 'running').length,
-    0,
-  )
   const openSessionFor = (childId: string): void => {
     openSession({ parentSessionId: sessionId, childSessionId: childId as SessionId, mode: 'one-shot' })
   }
-  const error = round.workflow?.error
+  const openSessionFile = (path: string): void => { openFile(sessionId, path) }
 
   return (
     <section className="sal-view">
       <header className="sal-view-header">
-        <span className="sal-dot" data-status={round.status} aria-hidden="true" />
         <span className="sal-view-title">{t('title')}</span>
-        {round.roundId === undefined ? null : <code className="sal-round-id">{round.roundId}</code>}
-        {round.mode === undefined ? null : <span className="sal-mode">{round.mode}</span>}
-        <span className="sal-status">{statusLabel(t, round.status)}</span>
-        {activeMembers === 0 ? null : <span className="sal-running">{t('header.running', { count: String(activeMembers) })}</span>}
-        <span className="sal-elapsed">
-          {t('header.elapsed', { time: formatDuration((round.endedAt ?? now) - (round.startedAt ?? now)) })}
-        </span>
         <nav className="sal-rounds" aria-label={t('rounds.label')}>
           {rounds.map((candidate, index) => (
             <button
               key={candidate.id}
               type="button"
               className="sal-round-chip"
-              aria-pressed={candidate.id === round.id}
+              aria-current={candidate.id === activeRoundId ? 'true' : undefined}
               data-status={candidate.status}
-              onClick={() => { setPickedRoundId(candidate.id); setOverride(undefined) }}
+              onClick={() => { sections.current.get(candidate.id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }}
             >
               <span className="sal-dot" data-status={candidate.status} aria-hidden="true" />
-              {candidate.roundId ?? `R${index + 1}`}
+              {roundLabel(candidate, index)}
             </button>
           ))}
         </nav>
       </header>
 
-      {error === undefined ? null : <p className="sal-error">{error}</p>}
-
-      <div className="sal-flow" data-status={round.status}>
-        {STAGES.map((id, index) => {
-          const stage = round.stages[id]
-          const previous = index === 0 ? undefined : round.stages[STAGES[index - 1] as StageId]
-          return (
-            <Fragment key={id}>
-              {previous === undefined ? null : (
-                <span
-                  className="sal-flow-edge"
-                  data-flow={edgeState(previous, stage)}
-                  aria-hidden="true"
-                />
-              )}
-              <StageNode
-                stage={stage}
-                round={round}
-                selected={selectedStage === id}
-                onSelect={() => { setOverride({ roundId: round.id, stage: selectedStage === id ? null : id }) }}
+      {rounds.map((round, index) => {
+        const experiments = roundExperiments(round)
+        const label = roundLabel(round, index)
+        const activeMembers = STAGES.reduce(
+          (count, id) => count + round.stages[id].members.filter(member => member.status === 'running').length,
+          0,
+        )
+        const error = round.workflow?.error
+        return (
+          <section
+            key={round.id}
+            className="sal-round"
+            data-status={round.status}
+            aria-label={label}
+            ref={(element) => {
+              if (element === null) sections.current.delete(round.id)
+              else sections.current.set(round.id, element)
+            }}
+          >
+            <header className="sal-round-header">
+              <span className="sal-dot" data-status={round.status} aria-hidden="true" />
+              <h2 className="sal-round-title">{label}</h2>
+              {round.mode === undefined ? null : <span className="sal-mode">{round.mode}</span>}
+              <span className="sal-status">{statusLabel(t, round.status)}</span>
+              {experiments.length > 1 || experiments[0]?.hypothesisId !== undefined
+                ? <span className="sal-status">{t('round.experiments', { count: String(experiments.length) })}</span>
+                : null}
+              {activeMembers === 0 ? null : <span className="sal-running">{t('header.running', { count: String(activeMembers) })}</span>}
+              <span className="sal-elapsed">
+                {t('header.elapsed', { time: formatDuration((round.endedAt ?? now) - (round.startedAt ?? now)) })}
+              </span>
+            </header>
+            {error === undefined ? null : <p className="sal-error">{error}</p>}
+            {experiments.map(experiment => (
+              <ExperimentBlock
+                key={experiment.key}
+                experiment={experiment}
+                centerLabel={experiment.hypothesisId ?? label}
+                sharedRound={experiments.length > 1}
+                hasNextRound={index < rounds.length - 1}
+                openFile={openSessionFile}
+                openSessionFor={openSessionFor}
                 t={t}
               />
-            </Fragment>
-          )
-        })}
-      </div>
-      {hasRepair(round) ? (
-        <div className="sal-repair-row">
-          <span className="sal-repair-line" aria-hidden="true" />
-          <span>{t('flow.repair')}</span>
-        </div>
-      ) : null}
-
-      {selected === undefined
-        ? <p className="sal-view-hint">{t('view.hint')}</p>
-        : (
-          <div className="sal-view-details">
-            <h3 className="sal-view-details-title">{t(`stage.${selected.id}`)}</h3>
-            <StageDetails
-              stage={selected}
-              round={round}
-              openFile={(path) => { openFile(sessionId, path) }}
-              openSessionFor={openSessionFor}
-              t={t}
-              summaryLines={stageSummary(round, selected.id, t)}
-            />
-          </div>
-        )}
+            ))}
+          </section>
+        )
+      })}
     </section>
   )
 }
 
-function StageNode({ stage, round, selected, onSelect, t }: {
-  readonly stage: LoopStage
-  readonly round: LoopRound
-  readonly selected: boolean
-  readonly onSelect: () => void
-  readonly t: ScienceLoopViewProps['t']
+function ExperimentBlock({ experiment, centerLabel, sharedRound, hasNextRound, openFile, openSessionFor, t }: {
+  readonly experiment: LoopExperiment
+  readonly centerLabel: string
+  readonly sharedRound: boolean
+  readonly hasNextRound: boolean
+  readonly openFile: (path: string) => void
+  readonly openSessionFor: (childId: string) => void
+  readonly t: LoopTranslate
 }): React.JSX.Element {
-  const members = stage.members.slice(-4)
-  const summary = stageSummary(round, stage.id, t).slice(0, 2)
-  const role = uniqueness(stage.members) || STAGE_ROLE[stage.id]
+  // undefined follows the live default; null means the user closed the detail.
+  const [picked, setPicked] = useState<StageId | null | undefined>(undefined)
+  const selected = picked === undefined ? defaultStage(experiment) : picked
+  const stage = selected === null ? undefined : experiment.round.stages[selected]
+  const shared = sharedRound && (selected === 'scout' || selected === 'statistician' || selected === 'report')
   return (
-    <button
-      type="button"
-      className="sal-node"
-      data-status={stage.status}
-      aria-current={stage.status === 'running' ? 'step' : undefined}
-      aria-pressed={selected}
-      onClick={onSelect}
-    >
-      <span className="sal-node-head">
-        <span className="sal-dot" data-status={stage.status} aria-hidden="true" />
-        <span className="sal-node-name">{t(`stage.${stage.id}`)}</span>
-        {stage.verdict === undefined
-          ? null
-          : <span className="sal-verdict" data-verdict={stage.verdict}>{stage.verdict}</span>}
-      </span>
-      <span className="sal-node-role" title={role}>{role}</span>
-      <span className={stage.status === 'completed' ? 'sal-sr' : 'sal-node-status'}>
-        {t(`status.${stage.status}`)}
-      </span>
-      <StageSummaryLines lines={summary} className="sal-node-summary" />
-      {members.length === 0 ? null : (
-        <span className="sal-node-members">
-          {members.map(member => (
-            <span key={member.id} className="sal-node-member" data-status={member.status}>
-              <span className="sal-dot" data-status={member.status} aria-hidden="true" />
-              {member.label}
-            </span>
-          ))}
-          {stage.members.length > members.length
-            ? <span className="sal-node-more">{`+${stage.members.length - members.length}`}</span>
-            : null}
-        </span>
+    <article className="sal-exp" data-status={experiment.status}>
+      {experiment.hypothesisId === undefined ? null : (
+        <h3 className="sal-exp-title">
+          <code>{experiment.hypothesisId}</code>
+          {experiment.hypothesis === undefined ? null : <span className="sal-exp-statement">{experiment.hypothesis.statement}</span>}
+        </h3>
       )}
-    </button>
+      <div className="sal-exp-body">
+        <ExperimentRing
+          experiment={experiment}
+          centerLabel={centerLabel}
+          sharedRound={sharedRound}
+          hasNextRound={hasNextRound}
+          selected={selected}
+          onSelect={(id) => { setPicked(selected === id ? null : id) }}
+          t={t}
+        />
+        <div className="sal-exp-detail">
+          {stage === undefined
+            ? <p className="sal-view-hint">{t('view.hint')}</p>
+            : (
+              <>
+                <h4 className="sal-view-details-title">
+                  {experiment.hypothesisId === undefined
+                    ? t(`stage.${stage.id}`)
+                    : `${t(`stage.${stage.id}`)} · ${experiment.hypothesisId}`}
+                </h4>
+                {shared ? <p className="sal-muted sal-shared-note">{t('ring.shared')}</p> : null}
+                <StageDetails
+                  stage={stage}
+                  round={experiment.round}
+                  openFile={openFile}
+                  openSessionFor={openSessionFor}
+                  t={t}
+                  summaryLines={stageSummary(experiment.round, stage.id, t)}
+                  experiment={experiment}
+                />
+              </>
+            )}
+        </div>
+      </div>
+    </article>
   )
 }

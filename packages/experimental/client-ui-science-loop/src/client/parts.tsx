@@ -1,7 +1,7 @@
 /**
  * Shared rendering parts for the inline loop card, the large right-Sidebar
- * view, and the Loop architecture tab: stage summaries, stage detail sections,
- * member rows, and the round extras attached to each stage.
+ * view, and the Loop tab: stage summaries, stage detail sections, member rows,
+ * verifier results by check outcome, and the round extras attached to each stage.
  */
 
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
@@ -14,6 +14,8 @@ import {
   type LoopStage,
   type StageId,
 } from '../shared/types.ts'
+import { experimentKeyOf, latestAttempts } from '../shared/stage.ts'
+import type { LoopExperiment, LoopExperimentOutcome } from './experiments.ts'
 import type { ScienceLoopKey } from './locales.ts'
 
 /** Locale-bound translator for this card's namespace. */
@@ -102,20 +104,30 @@ function isTerminal(round: LoopRound): boolean {
     || round.status === 'interrupted' || round.status === 'blocked'
 }
 
-/** Stage details shared by the card and the large views. */
-export function StageDetails({ stage, round, openFile, openSessionFor, t, summaryLines }: {
+/**
+ * Stage details shared by the card and the large views.
+ * With `experiment`, the Verifier lists each check by result and Decide states
+ * what happened to this experiment's runs.
+ */
+export function StageDetails({ stage, round, openFile, openSessionFor, t, summaryLines, experiment }: {
   readonly stage: LoopStage
   readonly round: LoopRound
   readonly openFile: OpenFile
   readonly openSessionFor: (childId: string) => void
   readonly t: LoopTranslate
   readonly summaryLines?: readonly string[]
+  readonly experiment?: LoopExperiment | undefined
 }): React.JSX.Element {
   const extras = extrasAvailable(stage.id, round)
+  const ownRunIds = experiment?.hypothesisId === undefined ? undefined : experiment.runIds
   return (
     <div className="sal-details">
       {summaryLines === undefined ? null : <StageSummaryLines lines={summaryLines} className="sal-details-summary" />}
-      <RoundExtras stageId={stage.id} round={round} openFile={openFile} t={t} />
+      {experiment !== undefined && stage.id === 'verifier' ? <VerifierResults stage={stage} t={t} /> : null}
+      {experiment?.hypothesisId !== undefined && stage.id === 'decide' && round.decision !== undefined
+        ? <OutcomeLine outcome={experiment.outcome} t={t} />
+        : null}
+      <RoundExtras stageId={stage.id} round={round} openFile={openFile} t={t} ownRunIds={ownRunIds} />
       {stage.members.length === 0
         ? (extras ? null : <p className="sal-empty">{isTerminal(round) ? t('stage.emptyIdle') : t('stage.emptyPending')}</p>)
         : (
@@ -334,6 +346,146 @@ function ChecksList({ checks, t }: {
   )
 }
 
+const RESULT_ORDER = ['fail', 'warn', 'pass', 'skip'] as const satisfies readonly LoopCheck['status'][]
+const RESULT_KEY = {
+  fail: 'verifier.failed',
+  warn: 'verifier.warned',
+  pass: 'verifier.passed',
+  skip: 'verifier.skipped',
+} as const satisfies Record<LoopCheck['status'], ScienceLoopKey>
+const RESULT_MARK: Readonly<Record<LoopCheck['status'], string>> = { fail: '✗', warn: '!', pass: '✓', skip: '–' }
+
+function ResultGroup({ result, count, t, children }: {
+  readonly result: LoopCheck['status']
+  readonly count: number
+  readonly t: LoopTranslate
+  readonly children: React.ReactNode
+}): React.JSX.Element {
+  return (
+    <div className="sal-vr-group" data-result={result}>
+      <span className="sal-label">{t(RESULT_KEY[result], { count: String(count) })}</span>
+      <ul className="sal-vr-checks">{children}</ul>
+    </div>
+  )
+}
+
+/** Checks of one verification grouped by result, failures first and blocking failures at their top. */
+function CheckGroups({ member, t }: {
+  readonly member: LoopMember
+  readonly t: LoopTranslate
+}): React.JSX.Element | null {
+  const checks = member.checks ?? []
+  if (checks.length === 0) {
+    const flags = [
+      ['fail', member.blockingFailures ?? []],
+      ['warn', member.warnings ?? []],
+    ] as const
+    if (flags.every(([, list]) => list.length === 0)) {
+      return member.verdict === undefined ? null : <p className="sal-muted sal-vr-none">{t('verifier.noChecks')}</p>
+    }
+    return (
+      <>
+        {flags.map(([result, list]) => list.length === 0 ? null : (
+          <ResultGroup key={result} result={result} count={list.length} t={t}>
+            {list.map(text => (
+              <li key={text} className="sal-vr-check" data-status={result}>
+                <span className="sal-vr-mark" aria-hidden="true">{RESULT_MARK[result]}</span>
+                <span>{text}</span>
+              </li>
+            ))}
+          </ResultGroup>
+        ))}
+      </>
+    )
+  }
+  return (
+    <>
+      {RESULT_ORDER.map((result) => {
+        const list = checks
+          .filter(check => check.status === result)
+          .sort((left, right) => Number(right.severity === 'blocking') - Number(left.severity === 'blocking'))
+        if (list.length === 0) return null
+        return (
+          <ResultGroup key={result} result={result} count={list.length} t={t}>
+            {list.map(check => (
+              <li key={`${check.layer}:${check.checkId}`} className="sal-vr-check" data-status={check.status}>
+                <span className="sal-vr-mark" aria-hidden="true">{RESULT_MARK[result]}</span>
+                {check.layer === '' ? null : <span className="sal-vr-layer">{check.layer}</span>}
+                <code>{check.checkId}</code>
+                {check.severity === 'blocking' ? <span className="sal-tag" data-kind="blocking">{t('verifier.blockingTag')}</span> : null}
+                {check.summary === undefined ? null : <span className="sal-vr-summary">{check.summary}</span>}
+              </li>
+            ))}
+          </ResultGroup>
+        )
+      })}
+    </>
+  )
+}
+
+/** Each hypothesis's verification attempts in start order, then the latest attempt's checks by result. */
+function VerifierResults({ stage, t }: {
+  readonly stage: LoopStage
+  readonly t: LoopTranslate
+}): React.JSX.Element | null {
+  const latest = latestAttempts(stage)
+  if (latest.length === 0) return null
+  return (
+    <div className="sal-vr">
+      {latest.map((member) => {
+        const key = experimentKeyOf(member.label)
+        const chain = key === undefined
+          ? [member]
+          : stage.members
+            .filter(candidate => experimentKeyOf(candidate.label) === key)
+            .sort((left, right) => (left.startedAt ?? 0) - (right.startedAt ?? 0))
+        return (
+          <section key={member.id} className="sal-vr-attempt">
+            <ol className="sal-vr-chain" aria-label={t('verifier.attempts')}>
+              {chain.map(attempt => (
+                <li key={attempt.id} data-status={attempt.status}>
+                  <code>{attempt.label}</code>
+                  {attempt.verdict === undefined
+                    ? <span className="sal-muted">{t(`status.${attempt.status}`)}</span>
+                    : <span className="sal-verdict" data-verdict={attempt.verdict}>{attempt.verdict}</span>}
+                </li>
+              ))}
+            </ol>
+            {member.trust === undefined ? null : <p className="sal-muted sal-vr-trust">{`${t('detail.trust')} ${member.trust}`}</p>}
+            <CheckGroups member={member} t={t} />
+          </section>
+        )
+      })}
+    </div>
+  )
+}
+
+function OutcomeLine({ outcome, t }: {
+  readonly outcome: LoopExperimentOutcome | undefined
+  readonly t: LoopTranslate
+}): React.JSX.Element {
+  if (outcome === undefined) return <p className="sal-outcome" data-outcome="none">{t('outcome.none')}</p>
+  switch (outcome.kind) {
+    case 'chosen':
+      return <p className="sal-outcome" data-outcome="chosen">{t('outcome.chosen', { run: outcome.runId })}</p>
+    case 'eliminated':
+      return <p className="sal-outcome" data-outcome="eliminated">{t('outcome.eliminated', { run: outcome.runId, reason: outcome.reason })}</p>
+    case 'candidate': {
+      const candidate = outcome.candidate
+      return (
+        <p className="sal-outcome" data-outcome="candidate">
+          {t('outcome.candidate', {
+            run: candidate.runId,
+            rank: candidate.rank === undefined ? '—' : String(candidate.rank),
+            mean: candidate.verifiedMean === undefined ? '—' : String(candidate.verifiedMean),
+            sd: candidate.verifiedSd === undefined ? '—' : String(candidate.verifiedSd),
+          })}
+        </p>
+      )
+    }
+  }
+}
+
 function issueLine(issue: LoopReportIssue): string {
   const location = issue.line === undefined ? '' : `L${issue.line} `
   const token = issue.token ?? ''
@@ -341,11 +493,13 @@ function issueLine(issue: LoopReportIssue): string {
   return `${location}${token}${token !== '' && text !== '' ? ' — ' : ''}${text}`.trim()
 }
 
-function CandidatesTable({ candidates, t }: {
+function CandidatesTable({ candidates, ownRunIds, t }: {
   readonly candidates: readonly LoopCandidate[]
+  readonly ownRunIds?: readonly string[] | undefined
   readonly t: LoopTranslate
 }): React.JSX.Element | null {
   if (candidates.length === 0) return null
+  const own = new Set(ownRunIds ?? [])
   return (
     <div className="sal-candidates">
       <span className="sal-label">{t('detail.candidates')}</span>
@@ -361,7 +515,7 @@ function CandidatesTable({ candidates, t }: {
         </thead>
         <tbody>
           {candidates.map(candidate => (
-            <tr key={candidate.runId}>
+            <tr key={candidate.runId} data-own={own.has(candidate.runId) ? 'true' : undefined}>
               <td>{candidate.rank ?? ''}</td>
               <td><code>{candidate.runId}</code></td>
               <td>{candidate.verifiedMean ?? ''}</td>
@@ -375,12 +529,13 @@ function CandidatesTable({ candidates, t }: {
   )
 }
 
-/** Round-level facts attached to the stage that produced them. */
-export function RoundExtras({ stageId, round, openFile, t }: {
+/** Round-level facts attached to the stage that produced them; `ownRunIds` marks one experiment's decision candidates. */
+export function RoundExtras({ stageId, round, openFile, t, ownRunIds }: {
   readonly stageId: StageId
   readonly round: LoopRound
   readonly openFile: OpenFile
   readonly t: LoopTranslate
+  readonly ownRunIds?: readonly string[] | undefined
 }): React.JSX.Element | null {
   if (stageId === 'scout' && round.scout !== undefined) {
     const scout = round.scout
@@ -488,7 +643,7 @@ export function RoundExtras({ stageId, round, openFile, t }: {
           ? null
           : <p>{t('decision.chosen', { run: decision.chosenRunId })}</p>}
         {decision.rationaleCode === undefined ? null : <p className="sal-muted">{decision.rationaleCode}</p>}
-        <CandidatesTable candidates={decision.candidates} t={t} />
+        <CandidatesTable candidates={decision.candidates} ownRunIds={ownRunIds} t={t} />
         {decision.eliminated.length === 0 ? null : (
           <div>
             <span className="sal-label">{t('detail.eliminated')}</span>

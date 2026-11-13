@@ -82,10 +82,10 @@ const round: LoopRound = {
   report: { path: 'reports/r.md', ok: true, strict: true, issues: [] },
 }
 
-function props(value: LoopRound): ScienceLoopViewProps {
+function props(value: LoopRound, ...more: LoopRound[]): ScienceLoopViewProps {
   return {
     sessionId: 'session-1',
-    useProjection: () => ({ v: 1, rounds: [value], activeRoundId: value.id }),
+    useProjection: () => ({ v: 1, rounds: [value, ...more], activeRoundId: (more[more.length - 1] ?? value).id }),
     openSession: () => {},
     openFile: () => {},
     t,
@@ -97,8 +97,8 @@ describe('ScienceLoopView enrichment', () => {
     const html = renderToStaticMarkup(<ScienceLoopView {...props(round)} />)
     expect(html).toContain('tabular · roc_auc · 1000×42')
     expect(html).toContain('Plan: Added a log transform and kept features/CV fixed.')
-    expect(html).toContain('1 pass · 0 warn · 0 fail')
-    expect(html).toContain('h-1: log-transform the target')
+    expect(html).toContain('0 failed · 0 warned · 1 passed')
+    expect(html).toContain('log-transform the target')
   })
 
   it('auto-selects the running stage and shows its full detail', () => {
@@ -119,11 +119,53 @@ describe('ScienceLoopView enrichment', () => {
         engineer: stage('engineer', 'completed', round.stages.engineer.members.map(member => ({
           ...member, status: 'completed', endedAt: 10,
         }))),
+        verifier: stage('verifier', 'pending'),
         decide: { ...stage('decide', 'completed'), startedAt: 15, endedAt: 16 },
       },
       decision: undefined,
     }
     const html = renderToStaticMarkup(<ScienceLoopView {...props(settled)} />)
     expect(html).toContain('This stage did not run in this round.')
+  })
+
+  it('stacks one ring per experiment, round by round, oldest first', () => {
+    const experimentStages = (prefix: string): Record<StageId, LoopStage> => ({
+      ...stages,
+      engineer: stage('engineer', 'completed', ['h-1', 'h-2'].map((key, index) => ({
+        id: `${prefix}:e${index}`, label: `engineer-${key}`, role: 'sa-engineer', agent: 'sa-engineer', kind: 'workflow' as const, status: 'completed' as const, startedAt: index, runIds: [`${prefix}-${key}`],
+      }))),
+      verifier: stage('verifier', 'completed', ['h-1', 'h-2'].map((key, index) => ({
+        id: `${prefix}:v${index}`,
+        label: `verify-${key}`,
+        role: 'sa-verifier',
+        agent: 'sa-verifier',
+        kind: 'workflow' as const,
+        status: 'completed' as const,
+        startedAt: 10 + index,
+        verdict: key === 'h-1' ? 'fail' as const : 'pass' as const,
+        checks: [
+          { layer: 'L2', checkId: 'metric.recompute', status: key === 'h-1' ? 'fail' as const : 'pass' as const, severity: 'blocking', summary: 'reported 0.83, recomputed 0.71' },
+          { layer: 'L0', checkId: 'files.present', status: 'pass' as const, summary: 'all outputs present' },
+        ],
+      }))),
+    })
+    const first: LoopRound = { ...round, id: 'round-1', roundId: 'rd-first', status: 'completed', stages: experimentStages('a'), hypotheses: undefined, decision: undefined }
+    const second: LoopRound = { ...round, id: 'round-2', roundId: 'rd-second', status: 'completed', stages: experimentStages('b'), hypotheses: undefined, decision: undefined }
+    const html = renderToStaticMarkup(<ScienceLoopView {...props(first, second)} />)
+
+    const rings = [...html.matchAll(/aria-label="Loop of (h-\d)"/g)].map(match => match[1])
+    expect(rings).toEqual(['h-1', 'h-2', 'h-1', 'h-2'])
+    expect(html.indexOf('rd-first')).toBeLessThan(html.indexOf('rd-second'))
+    expect(html.match(/class="sal-ring-node"/g)).toHaveLength(28)
+    expect(html).toContain('2 experiments')
+
+    // A settled experiment opens on its Verifier, grouping checks by result.
+    const failed = html.indexOf('Failed (1)')
+    const passed = html.indexOf('Passed (1)', failed)
+    expect(failed).toBeGreaterThan(-1)
+    expect(html.slice(failed, passed)).toContain('metric.recompute')
+    expect(html.slice(failed, passed)).toContain('blocking')
+    expect(html.slice(passed, html.indexOf('</div>', passed))).toContain('files.present')
+    expect(html).toContain('Passed (2)')
   })
 })
