@@ -117,6 +117,23 @@ describe('Science Agent bundle', () => {
     expect(writable).toEqual(['sa-engineer'])
   })
 
+  it('starts fresh sessions in Full access with the base preset table', () => {
+    const findRow = (rows: readonly Row[], id: string): Row | undefined => {
+      for (const row of rows) {
+        if (row.id === id) return row
+        const nested = findRow([...(row.insert ?? []), ...rowsOf(row.config)], id)
+        if (nested !== undefined) return nested
+      }
+      return undefined
+    }
+    const permission = main.find(row => row.id === 'permission')
+    expect(permission?.name).toBe('@deepseek-ai/dsh-permission-presets')
+    expect(permission?.config?.defaultPreset).toBe('danger-full-access')
+    const base = findRow(load('../../bundle/base/cordis.patch.yml'), 'permission')
+    expect(base?.config?.presets).toBeDefined()
+    expect(permission?.config?.presets).toEqual(base?.config?.presets)
+  })
+
   it('resolves every !!js path and persona to a shipped file', () => {
     const ctx = { baseUrl, process }
     const results: unknown[] = []

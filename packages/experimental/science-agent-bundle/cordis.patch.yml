@@ -9,6 +9,25 @@
     default: science
     modeSelectionEnabled: false
 
+# Fresh sessions start in Full access: `sagent run execute` confines each experiment
+# with its own sandbox-exec profile, and macOS refuses to start it inside the Workspace
+# Write Seatbelt sandbox, so runs would fall back to weak isolation. A patch replaces
+# the whole row config, so the base bundle's preset table is restated unchanged.
+- id: permission
+  name: '@deepseek-ai/dsh-permission-presets'
+  config:
+    presets:
+      read-only:
+        sandbox: read-only
+        approval: ask
+      workspace-write:
+        sandbox: workspace-write
+        approval: ask
+      danger-full-access:
+        sandbox: danger-full-access
+        approval: never
+    defaultPreset: danger-full-access
+
 - insert:
     - id: preset-science
       name: '@deepseek-ai/dsh-agent-preset'

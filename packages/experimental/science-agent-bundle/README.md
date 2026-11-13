@@ -4,7 +4,7 @@ Profile layer that turns dsh into a science-agent research app: auditable resear
 
 ## Use this package
 
-The layer makes the `science` Agent preset the profile default and the only selectable preset, and mounts:
+The layer makes the `science` Agent preset the profile default and the only selectable preset, starts fresh sessions in the Full access permission preset (`danger-full-access`), and mounts:
 
 - the `science-agent` and `science-agent-kaggle` skills plus eight user-invocable `/sa-*` command skills (`/sa-campaign`, `/sa-round`, `/sa-kaggle`, `/sa-status`, `/sa-verify`, `/sa-report`, `/sa-submit`, `/sa-doctor`);
 - six role tools (`sa_scout`, `sa_hypothesis`, `sa_engineer`, `sa_verifier`, `sa_statistician`, `sa_reporter`), each spawning its own Agent preset from `presets/roles.patch.yml`; only `sa-engineer` can write or edit files;
@@ -30,6 +30,10 @@ cd /path/to/workspace && pnpm --dir /path/to/deepseek-harness dsh --profile scie
 ```
 
 The profile links this package; its dependency closure supplies the loop view and the hooks bridge. The MCP server and hooks use the launch directory as the default workspace.
+
+### Permissions
+
+`sagent run execute` confines each experiment with its own `sandbox-exec` profile. macOS refuses to start that sandbox inside the Workspace Write Seatbelt sandbox, so a run there falls back to portable mode, the verifier reports an L0 `sandbox.isolation` warning, and trust is capped at medium. Fresh sessions therefore start in Full access: the agent's own shell commands run without the dsh sandbox and without approval prompts, while experiment code still runs under the `sagent` sandbox. A saved `permission.defaultPreset` user setting overrides this default, existing sessions keep their mode, and `/permission workspace-write` switches a session back.
 
 ## Content layout
 
