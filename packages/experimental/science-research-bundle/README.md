@@ -2,6 +2,57 @@
 
 The research science loop for dsh: give the Research Agent a question in any field (machine learning, data science, physics, chemistry, biology) and it answers it through recorded rounds of reading, pre-registered experiments, independent validation, and a decision about what to do next, then writes a report whose every number and citation traces back to the record.
 
+## Architecture
+
+```mermaid
+flowchart TB
+  user(["You: a research question"])
+  agent["<b>Research Agent</b> · dsh research profile<br/>persona · science-research skill · /sa-research<br/>hooks guard .sa/ and runs/"]
+
+  subgraph loop["research-loop workflow · every step is its own agent"]
+    direction LR
+    retrieve["<b>Retrieve</b><br/>search → read → refine"]
+    plan["<b>Plan</b><br/>pre-register experiments<br/>and their analysis"]
+    experiment["<b>Experiment</b><br/>build → run → debug"]
+    validate["<b>Validate</b><br/>check → challenge<br/>→ recheck"]
+    next["<b>Next step</b><br/>continue or stop"]
+    writeup["<b>Write-up</b><br/>report from the record"]
+    retrieve --> plan --> experiment --> validate --> next
+    next -. "continue: next round" .-> retrieve
+    next -- "stop" --> writeup
+  end
+
+  subgraph toolkit["sagent toolkit · CLI and MCP"]
+    direction LR
+    record["ledger records<br/>round open/close<br/>hard limits"]
+    lit["literature search<br/>quote-checked citations"]
+    sandbox["sandboxed runs<br/>offline, no secrets"]
+  end
+
+  subgraph ws["Research workspace"]
+    direction LR
+    ledger[(".sa/<br/>append-only ledger")]
+    notebook["research/<br/>question · state · plan<br/>report · rounds/NN/"]
+    runs["runs/&lt;id&gt;/<br/>code · outputs · logs"]
+  end
+
+  subgraph ui["dsh web app · research loop view"]
+    direction LR
+    projection["scienceResearchLoop<br/>projection over the Session log"]
+    views["Notebook tab · dock · Chat card<br/>lab-notebook skin"]
+    projection --> views
+  end
+
+  user --> agent
+  agent -- "workflow tool" --> loop
+  loop -- "step agents call" --> toolkit
+  toolkit -- "writes" --> ws
+  loop -- "Session events: steps, narration, result" --> ui
+  ui -. "opens files" .-> ws
+```
+
+The Research Agent starts the saved `research-loop` workflow. Each step runs as its own agent and calls the `sagent` toolkit, which writes the ledger, the notebook files, and the sandboxed runs into the research workspace. The web app folds the workflow's Session events into the research loop view, which opens the workspace's files.
+
 ## The loop
 
 ```text
