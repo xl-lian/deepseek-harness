@@ -224,6 +224,8 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   // The science-agent layer ships its command skills, hook config, and the
   // content synced from a science-agent checkout.
   '@deepseek-ai/dsh-experimental-science-agent-bundle': ['hooks/hooks.json', 'skills', 'synced'],
+  // The science-research layer ships the same kinds of content for the research loop.
+  '@deepseek-ai/dsh-experimental-science-research-bundle': ['hooks/hooks.json', 'skills', 'synced'],
   // The Web Host mounts the default-off settings owner independently of the
   // delegation-tool instances.
   '@deepseek-ai/dsh-tool-subagent': ['lib/model-selection-settings.js'],

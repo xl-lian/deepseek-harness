@@ -1,0 +1,31 @@
+# Open research: a question instead of a metric. The `research:` block selects the research pack,
+# whose loop (retrieve, plan, experiment, validate, next step) is run by node agents from their prompts.
+# Everything below is read by those prompts as plain text; nothing here is a scoring rule.
+objective_id: obj-research
+title: Does a learning-rate warmup make small-batch training more robust to the base learning rate?
+research:
+  # The one thing a human must write.
+  question: >-
+    Does linear learning-rate warmup widen the range of base learning rates at which a
+    small MLP trains stably with small batches, and if so, why?
+  # Optional: split the question.
+  questions:
+    - {id: q1, text: "Does warmup widen the stable learning-rate range, and by how much?"}
+    - {id: q2, text: "Is the effect explained by early-training loss curvature?"}
+  # general | ml | data_science | physics | chemistry | biology, or any field name: the prompts adapt.
+  field: ml
+  scope: Small fully connected networks on synthetic or tiny public datasets; CPU only.
+  success: An effect size with an interval for q1 and a tested mechanism (supported or refuted) for q2.
+  # The evidence you will accept, in your own words. Every validate node reads this.
+  standards: >-
+    At least 5 seeds per condition, a tuned baseline at equal compute, and a replication
+    under new seeds before anything is called established.
+  resources:
+    network: false        # experiments run offline unless this is true
+    env: []               # names of environment variables passed into runs (API keys)
+    compute: local CPU, a few minutes per run
+# Hard limits enforced by code, whatever the prompts decide.
+budget:
+  max_rounds: 4
+  max_wall_clock_min_per_run: 10
+  max_usd: 20.0

@@ -220,7 +220,8 @@
     "gen-provider-data": "tsx packages/llm/llm-pi-ai/scripts/gen-provider-data.ts",
     "verify-provider-data": "tsx packages/llm/llm-pi-ai/scripts/gen-provider-data.ts --check",
     "verify-product-use": "tsx scripts/verify-product-use.ts",
-    "sync-science-agent-bundle": "tsx packages/experimental/science-agent-bundle/scripts/sync.ts"
+    "sync-science-agent-bundle": "tsx packages/experimental/science-agent-bundle/scripts/sync.ts",
+    "sync-science-research-bundle": "tsx packages/experimental/science-research-bundle/scripts/sync.ts"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-hooks-claude-code": "workspace:*",

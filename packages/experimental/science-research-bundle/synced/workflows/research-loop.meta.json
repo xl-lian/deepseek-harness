@@ -1,0 +1,35 @@
+{
+  "name": "research-loop",
+  "description": "Prompt-driven research loop for any field: rounds of retrieve, plan, experiment, validate, and next step, each node an agent following its own prompt, until the next-step node decides to stop or a hard limit is reached; then a write-up",
+  "whenToUse": "Call when the user asks to research, investigate, or continue researching a question in a science-agent workspace whose objective has a `research:` block. The script only sequences nodes; every judgment (what to read, what to test, how to analyze, whether a result holds, what to do next, when to stop) is made by the node agents from their prompts in plugin/agents/research-*.md.",
+  "phases": [
+    {
+      "title": "Open",
+      "detail": "open or resume a round; hard limits only"
+    },
+    {
+      "title": "Retrieve",
+      "detail": "retrieve-search, then retrieve-read per focus and retrieve-refine, repeated until enough"
+    },
+    {
+      "title": "Plan",
+      "detail": "plan: experiments and their analysis, recorded before anything runs"
+    },
+    {
+      "title": "Experiment",
+      "detail": "per experiment: build, then run and debug until it runs"
+    },
+    {
+      "title": "Validate",
+      "detail": "per experiment: check, then challenge and recheck until no blocking objection"
+    },
+    {
+      "title": "Next step",
+      "detail": "next-step: state of knowledge, next-step plan, continue or stop"
+    },
+    {
+      "title": "Write-up",
+      "detail": "write-up: the final report"
+    }
+  ]
+}

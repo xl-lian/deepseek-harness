@@ -21,6 +21,7 @@
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./presets/roles.patch.yml": "./presets/roles.patch.yml",
     "./src/*": "./src/*",
+    "./scripts/*": "./scripts/*",
     "./package.json": "./package.json"
   },
   "files": [

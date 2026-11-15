@@ -16,3 +16,4 @@ docs/persistence-changes/historical-formats/*.schema.json linguist-generated=tru
 # Content refreshed from a science-agent checkout by the bundle's sync tool.
 packages/experimental/science-agent-bundle/synced/** linguist-generated=true
 packages/experimental/science-agent-bundle/tests/fixtures/science-agent/** linguist-generated=true
+packages/experimental/science-research-bundle/synced/** linguist-generated=true

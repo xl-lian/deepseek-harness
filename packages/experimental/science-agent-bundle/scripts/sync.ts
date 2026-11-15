@@ -88,14 +88,30 @@ export function readTemplates(root: string = PACKAGE_ROOT): SyncTemplates {
   }
 }
 
-function replaceOnce(text: string, anchor: string, replacement: string, file: string): string {
+/**
+ * Replace the single occurrence of `anchor`.
+ * @param text - source text.
+ * @param anchor - exact text that must occur exactly once.
+ * @param replacement - text that takes its place.
+ * @param file - source-relative path for diagnostics.
+ * @returns the edited text.
+ */
+export function replaceOnce(text: string, anchor: string, replacement: string, file: string): string {
   const first = text.indexOf(anchor)
   if (first === -1) throw new SyncAnchorError(file, `missing ${JSON.stringify(anchor)}`)
   if (text.indexOf(anchor, first + 1) !== -1) throw new SyncAnchorError(file, `ambiguous ${JSON.stringify(anchor)}`)
   return text.slice(0, first) + replacement + text.slice(first + anchor.length)
 }
 
-function replaceAllRequired(text: string, anchor: string, replacement: string, file: string): string {
+/**
+ * Replace every occurrence of `anchor`, which must occur at least once.
+ * @param text - source text.
+ * @param anchor - exact text that must occur.
+ * @param replacement - text that takes each occurrence's place.
+ * @param file - source-relative path for diagnostics.
+ * @returns the edited text.
+ */
+export function replaceAllRequired(text: string, anchor: string, replacement: string, file: string): string {
   if (!text.includes(anchor)) throw new SyncAnchorError(file, `missing ${JSON.stringify(anchor)}`)
   return text.split(anchor).join(replacement)
 }
@@ -104,9 +120,14 @@ function replaceAllRequired(text: string, anchor: string, replacement: string, f
  * Build each role persona: the dsh runtime note followed by the agent body without front matter.
  * @param agents - agent file name (`sa-scout.md`) → file text.
  * @param runtimeNote - the runtime note template.
+ * @param required - persona names that must be present.
  * @returns persona name → persona text, sorted by name.
  */
-export function buildPersonas(agents: ReadonlyMap<string, string>, runtimeNote: string): Map<string, string> {
+export function buildPersonas(
+  agents: ReadonlyMap<string, string>,
+  runtimeNote: string,
+  required: readonly string[] = ROLE_NAMES,
+): Map<string, string> {
   const personas = new Map<string, string>()
   for (const [fileName, text] of [...agents].sort(([a], [b]) => a.localeCompare(b))) {
     const match = /^---\n([\s\S]*?)\n---\n/.exec(text)
@@ -121,7 +142,7 @@ export function buildPersonas(agents: ReadonlyMap<string, string>, runtimeNote: 
     }
     personas.set(name, `${runtimeNote}\n\n${body.trim()}`)
   }
-  const missing = ROLE_NAMES.filter(role => !personas.has(role))
+  const missing = required.filter(role => !personas.has(role))
   if (missing.length > 0) throw new SyncAnchorError('plugin/agents', `missing agent definitions ${missing.join(', ')}`)
   return new Map([...personas].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
 }
@@ -423,15 +444,26 @@ export function buildSynced(source: string, templates: SyncTemplates = readTempl
   put(`${SYNCED_DIR}/scripts/mcp-server.sh`, text(read('plugin/scripts/mcp-server.sh'), 0o755))
   put(FIXTURE_PATH, text(read('src/science_agent/domains/predictive.json')))
 
-  const version = /^version\s*=\s*"([^"]+)"/m.exec(read('pyproject.toml'))?.[1]
+  put(`${SYNCED_DIR}/MANIFEST.json`, manifestFile(read('pyproject.toml'), sources, files))
+  return { files, sources }
+}
+
+/**
+ * Build `synced/MANIFEST.json`: the science-agent version and the sha256 of every source read and file written.
+ * @param pyproject - science-agent `pyproject.toml` text.
+ * @param sources - source-relative path → sha256 of each file read.
+ * @param files - every derived file except the manifest.
+ * @returns the manifest file.
+ */
+export function manifestFile(pyproject: string, sources: ReadonlyMap<string, string>, files: SyncedFiles): SyncedFile {
+  const version = /^version\s*=\s*"([^"]+)"/m.exec(pyproject)?.[1]
   if (version === undefined) throw new SyncAnchorError('pyproject.toml', 'version missing')
   const manifest = {
     sourceVersion: version,
     sources: Object.fromEntries([...sources].sort(([a], [b]) => (a < b ? -1 : 1))),
     files: Object.fromEntries([...files].sort(([a], [b]) => (a < b ? -1 : 1)).map(([path, file]) => [path, sha256(file.data)])),
   }
-  put(`${SYNCED_DIR}/MANIFEST.json`, text(`${JSON.stringify(manifest, undefined, 2)}\n`))
-  return { files, sources }
+  return text(`${JSON.stringify(manifest, undefined, 2)}\n`)
 }
 
 /**
