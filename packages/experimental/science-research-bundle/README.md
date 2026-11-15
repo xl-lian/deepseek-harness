@@ -1,84 +1,84 @@
 # @deepseek-ai/dsh-experimental-science-research-bundle
 
-Profile layer that turns dsh into a research app for open questions in any field: science-agent's research loop (retrieve, plan, experiment, validate, next step, then a write-up) run by the external `sagent` toolkit, with guard hooks and a lab-notebook loop view.
+The research science loop for dsh: give the Research Agent a question in any field (machine learning, data science, physics, chemistry, biology) and it answers it through recorded rounds of reading, pre-registered experiments, independent validation, and a decision about what to do next, then writes a report whose every number and citation traces back to the record.
 
-## Use this package
+## The loop
 
-The layer makes the `research` Agent preset the profile default and the only selectable preset, starts fresh sessions in the Full access permission preset (`danger-full-access`), and mounts:
+```text
+round:  Retrieve    retrieve-search → [retrieve-read per focus → retrieve-refine]*     until reading is enough
+        Plan        plan: experiments and the analysis that will judge each, registered before anything runs
+        Experiment  per experiment: experiment-build → [experiment-run → experiment-debug]*
+        Validate    per experiment: validate-check → [validate-challenge → validate-recheck]*
+        Next step   next-step: state of knowledge, next-step plan, continue or stop
+end:    Write-up    the report, from the record only
+```
 
-- the `science-research` skill and three user-invocable command skills (`/sa-research`, `/sa-research-status`, `/sa-doctor`);
-- the saved `research-loop` workflow (launched by name through `tool-workflow` `workflowDirs`), which embeds all twelve node prompts and the clerk prompt, so no node depends on registered agent types;
-- `dsh-hooks-claude-code` with a guard that blocks direct edits to `.sa/`, `runs/`, and the installed toolkit, and a trigger that turns a continue-research request into a `research-loop` call;
-- a stdio MCP client for the `sagent mcp serve` server (`mcp__science-agent__sa_*`, including `sa_research`);
-- the [research loop view and lab-notebook skin](../client-ui-research-loop/README.md).
+Each step is a separate agent following its own prompt, so the research method is text: what to read, what to test and how to analyze it, whether a result holds, what to do next, and when to stop are all judged by the step prompts. The `research-loop` workflow only sequences the steps and enforces the loop caps. The `sagent` toolkit decides nothing scientific; it runs experiments in a sandbox, records when each step's output was written, checks that cited quotes exist in their stored sources, and enforces the hard limits on rounds, deadline, and spend.
 
-The layer carries no metric campaigns; Kaggle, scored-artifact, and equation work stays in the [science-agent bundle](../science-agent-bundle/README.md).
+| Step | Decides |
+|---|---|
+| retrieve-search | what this round must find out; search focuses with counter-queries |
+| retrieve-read | which sources to rely on; cited findings, methods, disagreements, gaps |
+| retrieve-refine | whether reading is enough to plan; which citations over-reach |
+| plan | hypotheses, designs, controls, units of replication, and the exact analysis and criterion for each |
+| experiment-build | how to implement the plan faithfully, or that it cannot be |
+| experiment-run | nothing: it executes, checks provenance, and classifies failures |
+| experiment-debug | the root cause and a fix that keeps the experiment's meaning, or that it needs a new design |
+| validate-check | fidelity to the registered plan, and a verdict from its own reanalysis run |
+| validate-challenge | objections, which are blocking, and the check that settles each |
+| validate-recheck | the checks' results and the revised verdict |
+| next-step | the state of knowledge, answers, the next-step plan, continue or stop |
+| write-up | the final report |
 
-### Install
+## What makes a result trustworthy
 
-The layer needs `sagent` 0.3.0 or later on `PATH` (or in `~/.local/bin`) and `python3` for the hooks. Install the toolkit from a science-agent checkout:
+- **Pre-registration.** A round's plan, including how each result will be analyzed, is registered before its first run; `sagent` refuses runs under unregistered experiment ids, and the registration freezes once a run exists.
+- **Independent judgment.** A result is judged by a validator that did not build it and challenged by a skeptic before it enters the state of knowledge.
+- **Evidence class.** Each experiment starts confirmatory or exploratory as planned and can only be demoted, with the reasons listed: a run before registration, code or inputs changed after a run finished, or a run no step reported. Only confirmatory results may be called established.
+- **Traceable claims.** Every number names its run, and every literature fact names a citation whose quote is present in a stored source snapshot.
+- **Kept negatives.** Failed runs, refuted hypotheses, and null results stay in the record and the report.
+- **Contained experiments.** Experiments run only through `sagent run execute` in their own sandbox, offline and without secrets unless the locked objective grants network access or named keys; the agent asks before granting either.
+
+## The research notebook
+
+A study lives in one workspace:
+
+```text
+objective.yaml       the question, field, scope, success criterion, evidence standards, budget (locked)
+research/
+  question.md        written from the locked objective
+  guidance.md        optional: your standing instructions to every step
+  state.md           the state of knowledge, ending with the round log
+  plan.md            the next-step plan the next round starts from
+  report.md          the final report
+  rounds/NN/         retrieval notes, the registered plan, experiment code, validation notes
+runs/<run_id>/       every sandboxed run: code snapshot, outputs, logs, verdict
+.sa/                 the append-only ledger and object store (never edited by hand)
+```
+
+In the app, the **Notebook** tab beside Chat shows the study as it runs: links to these files, then each round's stage rail, reading focuses with source and citation counts, whether the plan was registered before any run, an experiments table with verdict, confidence, evidence class and the reasons for any demotion, objections, and run links, and the next-step decision. A strip above the composer follows the live round, and each run gets a card in Chat. These surfaces come from the [research loop view](../client-ui-research-loop/README.md).
+
+## Run it
+
+The profile needs the `sagent` toolkit 0.3.0 or later and `python3`:
 
 ```sh
 uv tool install --python 3.13 --force "science-agent-toolkit[ml,mcp] @ file:///path/to/science-agent"
-```
-
-Create a `research` profile from the Web profile (this replaces an existing `research` profile), then add this package and launch from the research workspace:
-
-```sh
 pnpm dsh --profile research --from-default-profile web --dump-config >/dev/null
 pnpm dsh plugin --profile research add "$PWD/packages/experimental/science-research-bundle"
 cd /path/to/workspace && pnpm --dir /path/to/deepseek-harness dsh --profile research
 ```
 
-The profile links this package; its dependency closure supplies the loop view and the hooks bridge. The MCP server and hooks use the launch directory as the default workspace.
+Open the `?token=` URL the launcher prints, start a session (Research Agent is the only preset), and type `/sa-research <your question>`. The agent drafts and locks the objective, initializes the experiment environment, and runs the loop; `/sa-research <rounds>` or "continue researching" runs more rounds, `/sa-research-status` reports what is established, and `/sa-doctor` checks the toolkit. Sessions start in Full access because `sagent` confines each experiment with its own `sandbox-exec` profile, which macOS refuses to nest inside the Workspace Write sandbox.
 
-### Start and use
-
-Launch from source in the folder that should be the default research workspace:
-
-```sh
-cd /path/to/workspace && pnpm --dir /path/to/deepseek-harness dsh --profile research
-```
-
-The log prints `dsh web: http://127.0.0.1:<port>/?token=…`; open that URL the first time. The port defaults to 3080, which another Web profile may already hold; pass `--port <port>` after the profile to choose another.
-
-In a new session, choose the workspace; Research Agent is the only preset. Then:
-
-- `/sa-research <question>` starts a study: the agent runs intake from the `science-research` skill (`sagent init --type research`, an `objective.yaml` drafted from the example objective, `objective lock`, `env init --profile research`) and then calls the `research-loop` workflow. It asks before granting experiments network access or an API key.
-- `/sa-research <rounds>` or a request such as "continue researching" runs more rounds on a workspace whose research objective is locked; the objective's `budget.max_rounds` stays the hard cap.
-- `/sa-research-status` reports what is established: per-round decisions, verdicts, evidence class, open objections, and literature counts. `/sa-doctor` checks the toolkit, sandbox, and ledger.
-
-While a loop runs, the Notebook tab beside Chat, the dock above the composer, and the run's Chat card show each round's stages; the notebook also links the workspace's `research/` files. When the loop returns, the agent saves the write-up to `research/report.md` and records it in the ledger.
-
-### Permissions
-
-`sagent run execute` confines each experiment with its own `sandbox-exec` profile, which macOS refuses to start inside the Workspace Write Seatbelt sandbox. Fresh sessions therefore start in Full access: the agent's own shell commands run without the dsh sandbox and without approval prompts, while experiment code still runs under the `sagent` sandbox. A saved `permission.defaultPreset` user setting overrides this default, existing sessions keep their mode, and `/permission workspace-write` switches a session back.
-
-## Content layout
-
-| Path | Owner |
-|---|---|
-| `cordis.patch.yml`, `hooks/hooks.json`, `skills/sa-*` | this package |
-| `templates/` | dsh-only text the sync inserts into science-agent sources |
-| `synced/` | generated by `scripts/sync.ts` from a science-agent checkout; never edit by hand |
-
-Refresh or verify the synced content after a science-agent change:
-
-```sh
-pnpm run sync-science-research-bundle --source /path/to/science-agent
-pnpm run sync-science-research-bundle --source /path/to/science-agent --check
-```
-
-The sync adapts the node prompts (`plugin/agents/research-*.md`, `sa-clerk.md`), the `science-research` skill, the example research objective, the guard and round-trigger hooks, the MCP launcher, and the `research-loop` workflow. The workflow loses `agentType`, `effort`, and the `pattern` schema keyword (outside dsh's enforced schema subset; the script already slugs experiment ids), embeds each persona, and narrates each round through `log()`, `artifact()`, and `metric()` from `templates/loop-record-outputs.js`. Each step anchors on exact source text and fails with the file and anchor when science-agent changed it; the sync also fails when a member label or result field the loop view reads disappears. `synced/MANIFEST.json` records the science-agent version and the sha256 of every source read and file written. The shared anchor helpers come from the science-agent bundle's sync module.
+The loop content is synced from a science-agent checkout; refresh it after science-agent changes with `pnpm run sync-science-research-bundle --source /path/to/science-agent` (add `--check` to verify).
 
 ## Model Experience
 
-The `research` preset carries a fixed persona and the tool catalog listed above; the `science-research` skill loads on demand, and the round trigger adds one sentence to a turn whose prompt asks to continue research in a workspace with `.sa/`. Node prompts are embedded once in the saved workflow script, which never enters the orchestrator's context; each node child receives its prompt, the dsh runtime note, and the loop's per-node context message. The preset text is stable across turns, so it stays in the KV-cache prefix.
+The `research` preset carries a fixed persona that is stable across turns and stays in the KV-cache prefix; the `science-research` skill loads on demand, and a continue-research request in a workspace with `.sa/` adds one trigger sentence to that turn. Step prompts are embedded in the saved workflow script, which never enters the orchestrator's context.
 
 ## Known Limitations and Deferred Work
 
-- The profile must link this package: the patch resolves its own root through `createRequire(baseUrl)` from the profile directory, and `pnpm dsh` installations do not list it.
-- Workflow node children receive the profile's research persona before their node prompt; the persona tells them to follow the node prompt and never start a workflow, but the two texts share one context.
-- `sagent`, `python3`, and the research pack live outside dsh; the CI tests run the synced workflow against stubbed nodes and the hooks only when `python3` exists.
-- CI cannot reach science-agent, so `--check` runs only locally.
-- The content synced from science-agent is Apache-2.0 upstream; licensing, locale metadata, icon and DETAIL page, coverage, and the README translation pair are not yet in place.
+- The profile must link this package, and `sagent`, `python3`, and the research pack live outside dsh.
+- Workflow step agents receive the Research Agent persona before their step prompt.
+- The content synced from science-agent is Apache-2.0 upstream; licensing, the README translation pair, locale metadata, icon, and coverage are not yet in place.
