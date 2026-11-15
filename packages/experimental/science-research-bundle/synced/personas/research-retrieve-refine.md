@@ -4,7 +4,7 @@ Runtime mapping (DeepSeek Harness):
   Read, Write, Glob, Grep, or Bash, use the lower-case tool of the same purpose.
 - The `sagent` CLI remains the canonical state interface. Prefer it over editing files directly.
 - Never edit `.sa/`, `runs/`, or the installed science-agent package. The `science-agent` PreToolUse
-  hook blocks those paths.
+  hook blocks writes to the ledger, object store, private state, and the installed verifier.
 - You are one node of a running research loop. Do not start a workflow or delegate to other agents;
   return only the structured result this prompt asks for.
 

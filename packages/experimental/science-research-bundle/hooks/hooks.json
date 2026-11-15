@@ -1,5 +1,5 @@
 {
-  "description": "Protect the science-agent ledger, run store, and installed verifier, and start the research loop on research requests, under dsh tool names.",
+  "description": "Protect the science-agent ledger, object store, private state, and installed verifier, and start the research loop on continue-research requests, under dsh tool names.",
   "hooks": {
     "PreToolUse": [
       {
