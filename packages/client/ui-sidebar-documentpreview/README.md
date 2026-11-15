@@ -18,6 +18,7 @@ Preview files in the right Sidebar and choose among registered renderers. Markdo
 - [How it reads](#how-it-reads)
 - [Excel preview](#excel-preview)
 - [Office preview](#office-preview)
+- [TeX preview](#tex-preview)
 - [Navigation](#navigation)
 - [Model Experience](#model-experience)
 - [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
@@ -122,6 +123,11 @@ The page refresh shortcut reuses the selected preview’s reload operation, incl
 
 </details>
 
+<a id="tex-preview"></a>
+## TeX preview
+
+A `.tex` or `.ltx` file opens as the PDF compiled from it; **Code** and plain text remain in the viewer menu. The renderer registers at the `extension` band with `loading: 'renderer'`, never compiles, and looks for the PDF in order: `<name>.pdf` beside the source, `build/<name>.pdf`, `out/<name>.pdf`, then the parent directory's `build/main.pdf` and `main.pdf`, which covers a section file under a paper's `sections/` directory. The first candidate that exists is read whole, shown through the shared PDF body with the path above it, and added to the tab's dependencies, so rebuilding the PDF reloads the preview when automatic refresh is on. Absent or non-regular candidates are skipped; any other read failure stops the search and shows its message. With no PDF, the body lists every path searched and offers Retry. The reported version is the PDF's, so editing the source alone also reloads the preview.
+
 <a id="navigation"></a>
 ## Navigation
 
@@ -141,6 +147,7 @@ No direct effect; what the user reads here never enters a model request.
 <a id="known-limitations-and-deferred-work"></a>
 - **Preview, not editing.** The viewers provide no file editing or shared search interface; a directory address fails with `not-regular-file`. Unknown extensions use the plain-text reader and remain subject to its UTF-8/NUL checks.
 - **Office conversion limits.** The preview does not launch native Office editors or download an engine. Binary `.doc` and `.ppt` files return no missing-font diagnostics. Conversion fidelity and resource limits belong to the [LibreOffice provider](../../document/office-to-pdf/README.md).
+- **TeX previews show a PDF built elsewhere.** The preview does not compile LaTeX or check that the PDF is newer than the source; a stale PDF stays on screen until it is rebuilt.
 - **Sequential text and bounded complete files.** Deep source lines require the preceding pages; PDF, HTML, and images require a complete result within the Host's `maxFileBytes` cap.
 - **PDF raster allocation is bounded.** Each page bitmap is capped at 16,777,216 pixels; very large pages or high zoom on high-density displays can still render below device resolution.
 - **Byte-view scroll state is not restored.** PDF, HTML, and images can return to the top when their renderer remounts or reloads; fixed PDF and image zoom can overflow horizontally, and HTML iframe scrolling belongs to its opaque browsing context.

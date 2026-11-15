@@ -18,6 +18,7 @@ kind: "package-reference"
 - [怎么读](#how-it-reads)
 - [Excel 预览](#excel-preview)
 - [Office 预览](#office-preview)
+- [TeX 预览](#tex-preview)
 - [导航](#navigation)
 - [模型体验](#model-experience)
 - [已知限制与延期工作](#known-limitations-and-deferred-work)
@@ -122,6 +123,11 @@ Office Remote 通过 Connection 的 multipart 二进制传输返回原生 `Uint8
 
 </details>
 
+<a id="tex-preview"></a>
+## TeX 预览
+
+`.tex` 或 `.ltx` 文件以其编译出的 PDF 打开；查看器菜单仍提供**代码**和纯文本。该渲染器以 `extension` 级别、`loading: 'renderer'` 注册，从不编译，按顺序查找 PDF：源文件旁的 `<name>.pdf`、`build/<name>.pdf`、`out/<name>.pdf`，然后是上级目录的 `build/main.pdf` 和 `main.pdf`，后者覆盖论文 `sections/` 目录下的章节文件。读取第一个存在的候选文件的完整内容，通过共享 PDF 正文显示并在上方标明路径，同时加入 tab 依赖，因此开启自动刷新时重新生成 PDF 会刷新预览。不存在或非普通文件的候选会被跳过；其他读取失败会停止查找并显示其消息。找不到 PDF 时，正文列出所有已查找的路径并提供重试。上报的版本是 PDF 的版本，因此仅编辑源文件也会刷新预览。
+
 <a id="navigation"></a>
 ## 导航
 
@@ -141,6 +147,7 @@ Office Remote 通过 Connection 的 multipart 二进制传输返回原生 `Uint8
 <a id="known-limitations-and-deferred-work"></a>
 - **预览而非编辑。** 查看器不提供文件编辑或共享搜索接口；目录地址以 `not-regular-file` 失败。未知扩展名使用纯文本读取，仍受其 UTF-8/NUL 检查限制。
 - **Office 转换限制。** 预览不启动原生 Office 编辑器，也不下载引擎。二进制 `.doc` 和 `.ppt` 文件不返回缺失字体诊断。转换保真度与资源限制由 [LibreOffice 提供方](../../document/office-to-pdf/README.zh.md)负责。
+- **TeX 预览显示外部生成的 PDF。** 预览不编译 LaTeX，也不检查 PDF 是否比源文件新；过期的 PDF 会一直显示，直到重新生成。
 - **文本顺序分页，完整文件受限。** 定位到较深处的源码行需要先加载此前各页；PDF、HTML 和图片必须取得 Host `maxFileBytes` 上限内的完整结果。
 - **PDF 栅格分配有上限。** 每页位图最多为 16,777,216 像素；超大页面或高像素密度屏幕上的高比例缩放仍可能低于设备分辨率。
 - **字节视图不恢复滚动位置。** PDF、HTML 与图片的渲染器重新挂载或重新载入时可能回到顶部；固定 PDF 与图片缩放可产生横向滚动，HTML iframe 的滚动属于其不透明浏览上下文。

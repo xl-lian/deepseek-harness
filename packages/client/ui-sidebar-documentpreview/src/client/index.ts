@@ -25,7 +25,7 @@ import type { TextPreviewInjected } from './TextPreview.tsx'
 import { TextTitle } from './TextTitle.tsx'
 import { TEXTPREVIEW_ID, textDefinition } from './definition.ts'
 import { textFace } from './face.ts'
-import { createReadPage } from './rpc.ts'
+import { createReadPage, type ReadDocumentBytes } from './rpc.ts'
 import { createTextStore } from './store.ts'
 import { en, ja, es, fr, de, ru, pt, zh } from './locales.ts'
 import { DocumentPreviewRegistry } from './document/registry.ts'
@@ -37,6 +37,7 @@ import { apply as registerImage } from './image/index.ts'
 import { apply as registerPdf } from './pdf/index.ts'
 import { apply as registerCode } from './code/index.ts'
 import { apply as registerOffice } from './office/index.ts'
+import { apply as registerTex } from './tex/index.ts'
 import { apply as registerExcel } from './excel/index.ts'
 import { Config } from '../config.ts'
 
@@ -94,11 +95,8 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'ui-sidebar-documentpreview: dictionaries')
 
   const store = createTextStore()
-  const face = textFace(
-    createReadPage(ctx.remote),
-    (file, signal) => ctx.remote.workspaceFiles.readBytes(file.sessionId, file.path, {}, signal),
-    ctx.resources,
-  )
+  const readBytes: ReadDocumentBytes = (file, signal) => ctx.remote.workspaceFiles.readBytes(file.sessionId, file.path, {}, signal)
+  const face = textFace(createReadPage(ctx.remote), readBytes, ctx.resources)
   const source = { getSnapshot: previews.getSnapshot, subscribe: previews.subscribe }
   ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register(
     {
@@ -125,6 +123,7 @@ export function apply(ctx: ClientContext): void {
   registerImage(ctx)
   registerPdf(ctx)
   registerOffice(ctx, config.office)
+  registerTex(ctx, readBytes)
   registerExcel(ctx, config.excel)
   registerCode(ctx)
 }

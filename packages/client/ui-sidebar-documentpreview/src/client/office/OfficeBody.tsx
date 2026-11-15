@@ -1,11 +1,12 @@
 /** Office presents retained conversion results and font notices around the shared PDF view. */
-import { useEffect, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import type { PropsLocale, PropsRenderSlots, PropsStore, SlotHookFactory } from '@deepseek-ai/dsh-client-ui-slots'
 import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
 import { Button, FileTypeIcon, classifyFileType } from '@deepseek-ai/dsh-client-ui-primitives'
 import { pathPartsOf } from '@deepseek-ai/dsh-util-workspace-path'
 import type { UseSidebarRightTabInfo } from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type { DocumentBodyOwner, DocumentPreviewProps } from '../document/contract.ts'
+import { useRendererRequest } from '../document/renderer-request.ts'
 import { hostFileOf } from '../rpc.ts'
 import { LoadingIndicator } from '../LoadingIndicator.tsx'
 import type { OfficeLoadInjected } from './face.ts'
@@ -44,20 +45,13 @@ export type OfficeBodyProps = DocumentPreviewProps & PropsStore<OfficeStore> & O
 export function OfficeBody(props: OfficeBodyProps): ReactNode {
   const { tab } = props.useTabInfo()
   const { load, retainTab, resourceAddress, t } = props
-  const request = props.content.kind === 'renderer' ? props.content : undefined
-  const revision = request?.revision
+  const revision = props.content.kind === 'renderer' ? props.content.revision : undefined
   const held = props.useStore(state => state.byTab[tab.id])
   const view = held?.revision === revision ? held : undefined
   const settled = view?.file !== undefined || view?.failure !== undefined
-  useEffect(() => { retainTab(tab.id, tab.signal) }, [retainTab, tab.id, tab.signal])
-  // Metadata may replace callbacks without advancing the content revision.
-  useEffect(() => {
-    if (request === undefined || settled || tab.signal.aborted) return
-    const controller = new AbortController()
-    const signal = AbortSignal.any([controller.signal, tab.signal])
-    load(tab.id, request.revision, hostFileOf(resourceAddress), signal, request.loaded, request.failed)
-    return () => { controller.abort() }
-  }, [revision, resourceAddress, tab.id, tab.signal, load, settled])
+  const request = useRendererRequest(props.content, tab, settled, retainTab, (next, signal) => {
+    load(tab.id, next.revision, hostFileOf(resourceAddress), signal, next.loaded, next.failed)
+  }, [resourceAddress, load])
   const file = view?.file
   if (request === undefined) return null
   if (view?.failure !== undefined) {
