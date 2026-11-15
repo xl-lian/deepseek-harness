@@ -10,7 +10,7 @@ import { notebookPaths } from '../shared/labels.ts'
 import { RESEARCH_PRESET, RESEARCH_STAGES } from '../shared/constants.ts'
 import type { LedgerRound, ResearchLedger, ResearchMember, ResearchRound, ResearchStatus, ResearchVerdict } from '../shared/schema.ts'
 import type {} from './locales.ts'
-import { experimentRows, focusRows, stageStatus, type ExperimentRow } from './model.ts'
+import { experimentRows, focusRows, formatTimestamp, stageStatus, type ExperimentRow } from './model.ts'
 
 /** Bound translator of the research loop namespace. */
 export type ResearchTranslate = TranslateNS<'researchLoop'>
@@ -184,7 +184,7 @@ function PlanSection({ round, ledger, openPath, t }: {
       <p className="rl-ok">
         <span className="rl-seal" aria-hidden="true">✓</span>
         {t('plan.registered')}
-        {registered?.registeredAt === undefined ? null : <span className="rl-muted"> · {t('plan.registeredAt', { time: registered.registeredAt })}</span>}
+        {registered?.registeredAt === undefined ? null : <span className="rl-muted"> · {t('plan.registeredAt', { time: formatTimestamp(registered.registeredAt) })}</span>}
       </p>
     )
   } else line = <p className="rl-muted">{t('plan.pending')}</p>

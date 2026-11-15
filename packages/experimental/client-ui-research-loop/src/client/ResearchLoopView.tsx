@@ -11,7 +11,7 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { notebookPaths } from '../shared/labels.ts'
 import type { ResearchRun, ResearchView } from '../shared/schema.ts'
 import { resolveWorkspacePath } from '@deepseek-ai/dsh-util-workspace-path'
-import { elapsed, formatDuration, ledgerRound } from './model.ts'
+import { elapsed, formatDuration, ledgerRound, stopText } from './model.ts'
 import { FileLink, NotebookBar, ResearchEmpty, RoundBody, StageRail, StatusMark, type ResearchTranslate } from './parts.tsx'
 
 /** Empty snapshot for the target; the view reads the projection directly. */
@@ -48,6 +48,7 @@ export function RunSection({ run, index, view, sessionId, openChild, openFile, t
   const openPath = (path: string): void => { openFile(sessionId, resolveWorkspacePath(run.workspace, path)) }
   const openRunChild = (childId: string): void => { openChild(sessionId, childId) }
   const time = elapsed(run.startedAt, run.endedAt, Date.now())
+  const stopped = stopText(run)
   return (
     <section className="rl-run" data-status={run.status}>
       <header className="rl-run-head">
@@ -68,7 +69,7 @@ export function RunSection({ run, index, view, sessionId, openChild, openFile, t
           <RoundBody round={round} ledger={ledgerRound(view, round)} openPath={openPath} openChild={openRunChild} t={t} />
         </article>
       ))}
-      {run.stop === undefined ? null : <p className="rl-muted">{t('run.stopped', { reason: run.stop.detail === undefined ? run.stop.reason : `${run.stop.reason} — ${run.stop.detail}` })}</p>}
+      {stopped === undefined ? null : <p className="rl-muted">{t('run.stopped', { reason: stopped })}</p>}
       {run.answer === undefined && run.writeUp === undefined
         ? null
         : (

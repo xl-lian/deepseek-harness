@@ -35,7 +35,10 @@ function replies(register: boolean): Readonly<Record<string, Value>> {
     'r1-retrieve-search': { focuses: [{ id: 'f1', question: 'what is known', why: 'scope' }], reason: 'one gap' },
     'r1-read-f1': { focus_id: 'f1', summary: 'read', sources: 2, citations: 1 },
     'r1-retrieve-refine-1': { enough: true, focuses: [], summary: 'enough' },
-    'r1-plan': { experiments: [{ id: 'e1', title: 'Warmup "range"', role: 'confirmatory' }], summary: 'one test' },
+    'r1-plan': {
+      experiments: [{ id: 'e1', title: 'Warmup "range"', role: 'confirmatory' }, { id: 'e2', title: 'Curvature', role: 'exploratory' }],
+      summary: 'two tests',
+    },
     'r1-save-plan': register
       ? { ok: true, data: { plan: { cas_path: '.sa/objects/p', sha256: 'abcdef0123456789', experiments: ['e1'] } } }
       : { ok: false, error: { code: 'STATE', message: 'plan file missing' } },
@@ -62,7 +65,7 @@ async function runLoop(register: boolean): Promise<{ result: Value; trace: Trace
   const trace: Trace = { logs: [], artifacts: [], metrics: [], labels: [] }
   const table = replies(register)
   const hooks: Record<string, unknown> = {
-    args: { workspace: '/ws', maxRounds: 2 },
+    args: { workspace: '/ws', maxRounds: 2, maxExperiments: 1 },
     phase: () => undefined,
     log: (line: string) => { trace.logs.push(line) },
     artifact: (path: string, description: string) => { trace.artifacts.push(`${path} | ${description}`) },
@@ -109,7 +112,7 @@ describe('synced research loop workflow', () => {
     expect(trace.logs).toEqual(expect.arrayContaining([
       'Round 1 (rd-1).',
       'Round 1 reading: 1 focus note(s), 1 pass(es), enough',
-      'Round 1 plan: registered · e1 "Warmup \\"range\\"" [confirmatory]',
+      'Round 1 plan: registered · e1 "Warmup \\"range\\"" [confirmatory] · e2 "Curvature" [exploratory]',
       'Round 1 e1: supported (high) · runs run-a, run-b',
       'Round 1 next step: stop — question answered',
       'Round 1 needs a human: approve network',
@@ -125,6 +128,8 @@ describe('synced research loop workflow', () => {
     ])
     expect(trace.metrics).toEqual(['experiments_validated=1@1', 'supported=1@1'])
     expect(trace.labels.at(-1)).toBe('write-up')
+    expect(round?.not_run_by_cap).toEqual(['e2'])
+    expect(trace.labels.some(label => label.startsWith('r1-build-e2'))).toBe(false)
   })
 
   it('runs no experiment when the plan cannot be registered', async () => {

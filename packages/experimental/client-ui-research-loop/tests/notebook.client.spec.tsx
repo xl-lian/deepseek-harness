@@ -9,7 +9,7 @@ import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { installDocumentBrand } from '../src/client/brand.tsx'
 import { en, zh } from '../src/client/locales.ts'
-import { activeStage, experimentRows, formatDuration, stageStatus } from '../src/client/model.ts'
+import { activeStage, experimentRows, formatDuration, stageStatus, stopText } from '../src/client/model.ts'
 import { CardBody } from '../src/client/ResearchLoopCard.tsx'
 import { DockStrip } from '../src/client/ResearchLoopDock.tsx'
 import { NotebookContent } from '../src/client/ResearchLoopView.tsx'
@@ -92,6 +92,8 @@ describe('research notebook', () => {
     expect(row?.attempts).toEqual([['build', 1], ['run', 1], ['check', 1]])
     expect(row?.ledger?.evidenceClass).toBe('exploratory')
     expect(formatDuration(3_725_000)).toBe('1:02:05')
+    expect(stopText(settledRun)).toBe('decided')
+    expect(stopText({ ...settledRun, stop: { reason: 'hard-limit', detail: 'max_rounds' } })).toBe('hard-limit — max_rounds')
   })
 
   it('renders notebook links, reading, plan, experiments with evidence class, and the write-up', () => {

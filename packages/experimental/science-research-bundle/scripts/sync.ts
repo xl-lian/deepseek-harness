@@ -124,7 +124,8 @@ const PERSONA_WRAPPERS: readonly (readonly [string, string])[] = [
 /** Narration call sites; the helpers come from `templates/loop-record-outputs.js`. */
 const RECORD_CALLS: readonly (readonly [string, string])[] = [
   ['    const retrieval = await retrieve(R)\n', '    const retrieval = await retrieve(R)\n    recordRetrieval(R, retrieval)\n'],
-  ["\n    phase('Experiment')\n", "\n    recordPlan(R, plan, experiments)\n    phase('Experiment')\n"],
+  // Before the per-invocation cap, so experiments it drops keep their titles and roles.
+  ['    if (experiments.length > MAX_EXPERIMENTS) {\n', '    recordPlan(R, plan, experiments)\n    if (experiments.length > MAX_EXPERIMENTS) {\n'],
   [
     "      async (result, e) => { await save(R, e.id, 'Validate'); return result },",
     "      async (result, e) => { await save(R, e.id, 'Validate'); recordExperiment(R, e, result); return result },",

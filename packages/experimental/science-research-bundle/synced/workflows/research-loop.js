@@ -317,13 +317,13 @@ try {
       log(`Round ${R.number}: the plan could not be registered (${R.registrationError}), so no experiment runs this round.`)
       experiments = []
     }
+    recordPlan(R, plan, experiments)
     if (experiments.length > MAX_EXPERIMENTS) {
       R.capped = experiments.slice(MAX_EXPERIMENTS).map((e) => e.id)
       log(`Round ${R.number}: ${R.capped.length} planned experiment(s) beyond maxExperiments not run: ${R.capped.join(', ')}.`)
       experiments = experiments.slice(0, MAX_EXPERIMENTS)
     }
 
-    recordPlan(R, plan, experiments)
     phase('Experiment')
     const results = (await pipeline(experiments,
       (e) => experimentLoop(R, e),

@@ -137,6 +137,29 @@ export function elapsed(startedAt: number | undefined, endedAt: number | undefin
 }
 
 /**
+ * Local date and time for an ISO timestamp from `sagent`.
+ * @param iso - ISO 8601 text.
+ * @returns the viewer's locale date-time, or `iso` when it does not parse.
+ */
+export function formatTimestamp(iso: string): string {
+  const time = Date.parse(iso)
+  return Number.isNaN(time) ? iso : new Date(time).toLocaleString()
+}
+
+/**
+ * Stop text for a run, without repeating the last round's next-step reason.
+ * @param run - the run.
+ * @returns `reason — detail`, or the reason alone when the detail restates the last round's reason.
+ */
+export function stopText(run: ResearchRun): string | undefined {
+  if (run.stop === undefined) return undefined
+  const { reason, detail } = run.stop
+  const lastReason = run.rounds[run.rounds.length - 1]?.reason
+  const repeats = detail !== undefined && lastReason !== undefined && (detail.startsWith(lastReason.replace(/…$/u, '')) || lastReason.startsWith(detail.replace(/…$/u, '')))
+  return detail === undefined || repeats ? reason : `${reason} — ${detail}`
+}
+
+/**
  * `m:ss` or `h:mm:ss` duration text.
  * @param milliseconds - duration.
  * @returns the formatted duration.
