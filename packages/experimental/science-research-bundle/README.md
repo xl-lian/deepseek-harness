@@ -32,6 +32,24 @@ cd /path/to/workspace && pnpm --dir /path/to/deepseek-harness dsh --profile rese
 
 The profile links this package; its dependency closure supplies the loop view and the hooks bridge. The MCP server and hooks use the launch directory as the default workspace.
 
+### Start and use
+
+Launch from source in the folder that should be the default research workspace:
+
+```sh
+cd /path/to/workspace && pnpm --dir /path/to/deepseek-harness dsh --profile research
+```
+
+The log prints `dsh web: http://127.0.0.1:<port>/?token=…`; open that URL the first time. The port defaults to 3080, which another Web profile may already hold; pass `--port <port>` after the profile to choose another.
+
+In a new session, choose the workspace; Research Agent is the only preset. Then:
+
+- `/sa-research <question>` starts a study: the agent runs intake from the `science-research` skill (`sagent init --type research`, an `objective.yaml` drafted from the example objective, `objective lock`, `env init --profile research`) and then calls the `research-loop` workflow. It asks before granting experiments network access or an API key.
+- `/sa-research <rounds>` or a request such as "continue researching" runs more rounds on a workspace whose research objective is locked; the objective's `budget.max_rounds` stays the hard cap.
+- `/sa-research-status` reports what is established: per-round decisions, verdicts, evidence class, open objections, and literature counts. `/sa-doctor` checks the toolkit, sandbox, and ledger.
+
+While a loop runs, the Notebook tab beside Chat, the dock above the composer, and the run's Chat card show each round's stages; the notebook also links the workspace's `research/` files. When the loop returns, the agent saves the write-up to `research/report.md` and records it in the ledger.
+
 ### Permissions
 
 `sagent run execute` confines each experiment with its own `sandbox-exec` profile, which macOS refuses to start inside the Workspace Write Seatbelt sandbox. Fresh sessions therefore start in Full access: the agent's own shell commands run without the dsh sandbox and without approval prompts, while experiment code still runs under the `sagent` sandbox. A saved `permission.defaultPreset` user setting overrides this default, existing sessions keep their mode, and `/permission workspace-write` switches a session back.
