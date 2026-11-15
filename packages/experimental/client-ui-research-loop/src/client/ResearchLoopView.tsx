@@ -31,11 +31,20 @@ export interface ResearchNavigation {
   readonly openFile: (sessionId: SessionId, path: string) => void
 }
 
+/** Injected props of the notebook view tab: navigation plus opening the right-Sidebar notebook tab. */
+export type ResearchLoopViewInjected = ResearchNavigation & {
+  /** Open the notebook tab in the right Sidebar. */
+  readonly openNotebook: () => void
+}
+
 /** Composed props of the notebook view tab. */
 export type ResearchLoopViewProps =
   & PropsRuntime<'conversation.view'>
   & PropsLocale<'researchLoop'>
-  & ResearchNavigation
+  & ResearchLoopViewInjected
+
+/** The Chat view's id, selected when the notebook moves beside it. */
+const CHAT_VIEW = 'chat'
 
 /** One loop run: header, rounds, write-up. */
 export function RunSection({ run, index, view, sessionId, openChild, openFile, t }: ResearchNavigation & {
@@ -100,10 +109,12 @@ export type NotebookContentProps = ResearchNavigation & {
   readonly view: ResearchView | undefined
   readonly sessionId: SessionId
   readonly t: ResearchTranslate
+  /** Move the notebook beside Chat; omitted where it already sits beside Chat. */
+  readonly openBeside?: (() => void) | undefined
 }
 
 /** The notebook body shared by the view tab and the right-Sidebar tab. */
-export function NotebookContent({ view, sessionId, openChild, openFile, t }: NotebookContentProps): React.JSX.Element {
+export function NotebookContent({ view, sessionId, openChild, openFile, openBeside, t }: NotebookContentProps): React.JSX.Element {
   const runs = view?.runs ?? []
   const workspace = runs[runs.length - 1]?.workspace ?? view?.ledger?.workspace
   return (
@@ -112,6 +123,7 @@ export function NotebookContent({ view, sessionId, openChild, openFile, t }: Not
         workspace={workspace}
         ledger={view?.ledger}
         openPath={(path) => { openFile(sessionId, resolveWorkspacePath(workspace, path)) }}
+        openBeside={openBeside}
         t={t}
       />
       {view === undefined || runs.length === 0
@@ -132,9 +144,26 @@ export function NotebookContent({ view, sessionId, openChild, openFile, t }: Not
   )
 }
 
-/** Render the notebook view tab. */
-export function ResearchLoopView({ useProjection, ...rest }: ResearchLoopViewProps): React.JSX.Element {
-  return <NotebookContent view={useProjection('scienceResearchLoop')} {...rest} />
+/** Render the notebook view tab; its "Open beside chat" button opens the right-Sidebar notebook and selects Chat. */
+export function ResearchLoopView({
+  useProjection, sessionId, openChild, openFile, openNotebook, openView, completeViewRequest, t,
+}: ResearchLoopViewProps): React.JSX.Element {
+  const openBeside = (): void => {
+    openNotebook()
+    // `openView` is the only selection action a View receives; Chat takes no focus request, so clear it at once.
+    openView(CHAT_VIEW, CHAT_VIEW)
+    completeViewRequest()
+  }
+  return (
+    <NotebookContent
+      view={useProjection('scienceResearchLoop')}
+      sessionId={sessionId}
+      openChild={openChild}
+      openFile={openFile}
+      openBeside={openBeside}
+      t={t}
+    />
+  )
 }
 
 /** Composed props of the right-Sidebar notebook tab. */
@@ -143,7 +172,7 @@ export type ResearchLoopPaneProps =
   & PropsLocale<'researchLoop'>
   & ResearchNavigation
 
-/** Render the notebook in the right Sidebar, opened from the dock and the Chat card. */
+/** Render the notebook in the right Sidebar, opened from its guide card, the view tab, the dock, and the Chat card. */
 export function ResearchLoopPane({ useProjection, ...rest }: ResearchLoopPaneProps): React.JSX.Element {
   return <NotebookContent view={useProjection('scienceResearchLoop')} {...rest} />
 }

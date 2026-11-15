@@ -9,10 +9,18 @@ import type { HeroBrandMarkOwnerProps } from '@deepseek-ai/dsh-client-ui-convers
 
 const BEADS: readonly (readonly [number, number])[] = [[32, 15], [48.2, 26.7], [42, 45.8], [22, 45.8], [15.8, 26.7]]
 
-/** The loop mark; colors follow the active theme's ink and accent tokens. */
-export function LoopMark({ size, label }: { readonly size: number; readonly label: string }): React.JSX.Element {
+/**
+ * The loop mark; colors follow the active theme's ink and accent tokens.
+ * Without `label` the mark is decorative and hidden from assistive technology.
+ */
+export function LoopMark({ size, label, className }: {
+  readonly size: number
+  readonly label?: string | undefined
+  readonly className?: string | undefined
+}): React.JSX.Element {
+  const a11y = label === undefined ? { 'aria-hidden': true } : { role: 'img', 'aria-label': label }
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={label} className="rl-mark">
+    <svg width={size} height={size} viewBox="0 0 64 64" {...a11y} className={className === undefined ? 'rl-mark' : `rl-mark ${className}`}>
       <rect x="3" y="3" width="58" height="58" rx="14" className="rl-mark-page" />
       <path d="M12 52h40M12 44h6M46 44h6" className="rl-mark-rule" />
       <circle cx="32" cy="32" r="17" className="rl-mark-ring" />
@@ -20,6 +28,18 @@ export function LoopMark({ size, label }: { readonly size: number; readonly labe
       {BEADS.map(([x, y], index) => <circle key={index} cx={x} cy={y} r={index === 0 ? 4 : 3.2} className={index === 0 ? 'rl-mark-bead rl-mark-bead-lead' : 'rl-mark-bead'} />)}
     </svg>
   )
+}
+
+/**
+ * Decorative loop mark for the right Sidebar's guide card; the card's title names it.
+ * @param props - icon size (default 20) and placement class.
+ * @returns the mark.
+ */
+export function NotebookGuideIcon({ size = 20, className }: {
+  readonly size?: number | undefined
+  readonly className?: string | undefined
+}): React.JSX.Element {
+  return <LoopMark size={size} className={className} />
 }
 
 /** Localized brand words. */

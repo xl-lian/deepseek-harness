@@ -209,7 +209,7 @@ The [research loop view](../client-ui-research-loop/README.md) shows the study i
 | Next step | continue or stop with the reason, and any request for a human | narration |
 | Write-up | the stop reason, the answer, and a link to the report | narration and the workflow result |
 
-A strip above the composer follows the live round, and each run gets a card in Chat; both open the Notebook in the right sidebar. Evidence classes and objection states appear once the Research Agent runs `sagent research status`, which it does after every loop. The profile also applies a lab-notebook skin in light and dark mode: paper surfaces, an indigo accent, serif headings, and a graph-paper Notebook ground.
+A strip above the composer follows the live round, and each run gets a card in Chat; both open the Notebook in the right sidebar. To read the Notebook while you chat, pick **Notebook** on the right sidebar's Start page, or press **Open beside chat** in the Notebook view tab: Chat stays on the left and the Notebook on the right. Evidence classes and objection states appear once the Research Agent runs `sagent research status`, which it does after every loop. The profile also applies a lab-notebook skin in light and dark mode: paper surfaces, an indigo accent, serif headings, and a graph-paper Notebook ground.
 
 ## Run it
 

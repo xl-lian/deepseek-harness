@@ -7,7 +7,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import { installDocumentBrand } from '../src/client/brand.tsx'
+import { installDocumentBrand, NotebookGuideIcon } from '../src/client/brand.tsx'
 import { en, zh } from '../src/client/locales.ts'
 import { activeStage, experimentRows, formatDuration, stageStatus, stopText } from '../src/client/model.ts'
 import { CardBody } from '../src/client/ResearchLoopCard.tsx'
@@ -108,6 +108,15 @@ describe('research notebook', () => {
     }
     expect(html).toContain('title="runs/run-a/logs/stdout.log"')
     expect(html).toContain('title="research/rounds/01/retrieval/lit.md"')
+  })
+
+  it('offers to open the notebook beside Chat only where a handler is given', () => {
+    const props = { view: view([settledRun]), sessionId: 's-1' as SessionId, openChild: noop, openFile: noop, t }
+    expect(renderToStaticMarkup(<NotebookContent {...props} openBeside={noop} />)).toContain('Open beside chat')
+    expect(renderToStaticMarkup(<NotebookContent {...props} />)).not.toContain('Open beside chat')
+    const icon = renderToStaticMarkup(<NotebookGuideIcon />)
+    expect(icon).toContain('aria-hidden="true"')
+    expect(icon).toContain('width="20"')
   })
 
   it('states why the notebook is empty', () => {

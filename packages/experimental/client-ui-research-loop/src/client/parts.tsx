@@ -76,10 +76,11 @@ export function StageRail({ round, t, compact = false }: {
 }
 
 /** Study-level notebook shortcuts. */
-export function NotebookBar({ workspace, ledger, openPath, t }: {
+export function NotebookBar({ workspace, ledger, openPath, openBeside, t }: {
   readonly workspace: string | undefined
   readonly ledger: ResearchLedger | undefined
   readonly openPath: OpenPath
+  readonly openBeside?: (() => void) | undefined
   readonly t: ResearchTranslate
 }): React.JSX.Element {
   const paths = notebookPaths()
@@ -95,6 +96,9 @@ export function NotebookBar({ workspace, ledger, openPath, t }: {
       <div className="rl-notebook-head">
         <h2 className="rl-notebook-title">{t('notebook.title')}</h2>
         {workspace === undefined ? null : <code className="rl-path" title={t('notebook.workspace')}>{workspace}</code>}
+        {openBeside === undefined
+          ? null
+          : <button type="button" className="rl-link rl-beside" onClick={openBeside}>{t('notebook.openBeside')}</button>}
       </div>
       {ledger?.question === undefined ? null : <p className="rl-question">{ledger.question}</p>}
       <nav className="rl-notebook-links">

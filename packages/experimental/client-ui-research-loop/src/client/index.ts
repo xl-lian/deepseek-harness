@@ -15,12 +15,19 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
-import { brandOccupants, installDocumentBrand } from './brand.tsx'
+import { brandOccupants, installDocumentBrand, NotebookGuideIcon } from './brand.tsx'
 import { researchLoopDefinition } from './definition.ts'
 import { en, NS, zh } from './locales.ts'
 import { ResearchLoopCard, type ResearchLoopCardInjected } from './ResearchLoopCard.tsx'
 import { ResearchLoopDock, type ResearchLoopDockInjected } from './ResearchLoopDock.tsx'
-import { ResearchLoopPane, ResearchLoopPaneTitle, ResearchLoopView, researchLoopViewDefinition, type ResearchNavigation } from './ResearchLoopView.tsx'
+import {
+  ResearchLoopPane,
+  ResearchLoopPaneTitle,
+  ResearchLoopView,
+  researchLoopViewDefinition,
+  type ResearchLoopViewInjected,
+  type ResearchNavigation,
+} from './ResearchLoopView.tsx'
 import { injectStyles } from './styles.ts'
 import { installNotebookTheme } from './theme.ts'
 
@@ -74,7 +81,7 @@ export function apply(ctx: ClientContext): void {
     order: 20,
     locale: NS,
     label: () => t('view.loop'),
-    inject: navigation,
+    inject: (): ResearchLoopViewInjected => ({ ...navigation(), openNotebook }),
   }, ResearchLoopView))
 
   ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
@@ -96,6 +103,7 @@ export function apply(ctx: ClientContext): void {
     id: IMPLEMENTATION_ID,
     kind: TAB_KIND,
     title: () => t('notebook.title'),
+    guide: [{ id: 'open', order: 15, title: () => t('notebook.title'), description: () => t('notebook.guide'), icon: NotebookGuideIcon }],
   }), 'science-research: notebook sidebar tab')
 
   ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({

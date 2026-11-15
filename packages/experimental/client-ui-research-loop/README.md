@@ -7,7 +7,7 @@ Research loop view and lab-notebook skin for Sessions that run the [science-rese
 The [science-research bundle](../science-research-bundle/README.md) mounts this plugin as the `research-loop-ui` row; it is not mounted on its own.
 
 - **Host half** (`src/index.ts`): registers the `scienceResearchLoop` session projection, a pure fold over the durable Session log. It follows each `research-loop` workflow run through its member labels (`r<N>-read-<focus>`, `r<N>-build-<id>`, `r<N>-check-<id>`, …), the fixed-grammar narration lines the bundle's workflow writes with `log()`, and the workflow's return value, and it keeps the latest `sagent research status` result (bash or `mcp__science-agent__sa_research`) as a ledger.
-- **Client half** (`src/client/index.ts`): renders the projection in four places: a Notebook view tab beside Chat, a dock above the composer while a loop runs, a keyed Chat card at each run start, and a right-sidebar Notebook tab that the dock and card open.
+- **Client half** (`src/client/index.ts`): renders the projection in four places: a Notebook view tab beside Chat, a dock above the composer while a loop runs, a keyed Chat card at each run start, and a right-sidebar Notebook tab that sits beside Chat. The right sidebar's Start page lists it as a Notebook card; the view tab's **Open beside chat** button, the dock, and the card open it too.
 
 The Notebook lists study-level shortcuts (question, guidance, state of knowledge, next-step plan, report) that open `research/` files in the right sidebar, then every loop run, oldest first. Each round shows:
 
@@ -33,5 +33,5 @@ None. The plugin reads committed Session events and adds no model-visible input,
 
 - Live detail comes from member labels and narration lines, because a workflow member's end event carries only its outcome. A science-agent change to the labels or to the bundle's narration grammar needs a matching change in `src/shared/labels.ts`; the bundle's sync fails when a label or result field the view reads disappears.
 - Evidence classes, objection states, and literature counts appear only after the Session runs `sagent research status`; the fold does not read `.sa/` itself.
-- The dock and Chat card open the right-sidebar Notebook; the conversation shell does not let them select the Notebook view tab.
+- The dock and Chat card open the right-sidebar Notebook; the conversation shell does not let them select the Notebook view tab. **Open beside chat** selects Chat through the View's `openView` and clears the focus request at once, because Chat consumes none.
 - UI copy has English and Chinese dictionaries only; locale metadata, icon, DETAIL page, coverage, export JSDoc, and client i18n gates are not yet met, and the brand mark has no designer review.

@@ -40,6 +40,7 @@ const STYLES = `
 .rl-notebook-head,.rl-run-head,.rl-round-head,.rl-card-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
 .rl-notebook-title,.rl-run-title,.rl-round-title{margin:0;font-family:${SERIF};font-weight:600;color:${INK}}
 .rl-notebook-title{font-size:17px}
+.rl-beside{margin-left:auto}
 .rl-run-title{font-size:16px}
 .rl-round-title{font-size:15px}
 .rl-question{margin:0;font-family:${SERIF};font-size:15px;font-style:italic;color:${INK2};line-height:1.5}
