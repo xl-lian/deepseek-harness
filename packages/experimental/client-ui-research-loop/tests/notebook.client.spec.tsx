@@ -9,13 +9,14 @@ import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { installDocumentBrand, NotebookGuideIcon } from '../src/client/brand.tsx'
 import { en, zh } from '../src/client/locales.ts'
-import { activeStage, experimentRows, formatDuration, stageStatus, stopText } from '../src/client/model.ts'
+import { activeStage, experimentRows, formatDuration, paperStageStatus, stageStatus, stopText } from '../src/client/model.ts'
 import { CardBody } from '../src/client/ResearchLoopCard.tsx'
 import { DockStrip } from '../src/client/ResearchLoopDock.tsx'
 import { NotebookContent } from '../src/client/ResearchLoopView.tsx'
+import { PaperCardBody, PaperDockStrip, PaperRunSection } from '../src/client/PaperSection.tsx'
 import { injectStyles } from '../src/client/styles.ts'
 import { NOTEBOOK_THEME_TOKENS } from '../src/client/theme.ts'
-import type { ResearchRound, ResearchRun, ResearchView } from '../src/shared/schema.ts'
+import type { PaperRun, ResearchRound, ResearchRun, ResearchView } from '../src/shared/schema.ts'
 
 const t = ((key: keyof typeof en, params?: Record<string, string | number>) =>
   Object.entries(params ?? {}).reduce((text, [name, value]) => text.replace(`{${name}}`, String(value)), en[key])) as TranslateNS<'researchLoop'>
@@ -54,8 +55,9 @@ const runningRound: ResearchRound = {
 
 function view(runs: ResearchRun[]): ResearchView {
   return {
-    v: 1,
+    v: 2,
     runs,
+    papers: [],
     agentPreset: 'research',
     skillLoaded: true,
     ledger: {
@@ -81,6 +83,25 @@ const settledRun: ResearchRun = {
 }
 
 const noop = (): void => undefined
+
+const paperRun: PaperRun = {
+  runId: 'wf-p', workspace: '/ws/study', status: 'completed', startedAt: 1_000, endedAt: 9_000,
+  title: 'False-positive rate at n = 5',
+  sections: [{ id: 'results', status: 'written', words: 380 }],
+  items: [
+    { id: 'rates-table', kind: 'table', status: 'ready', reason: 'rates with intervals' },
+    { id: 'curve', kind: 'figure', status: 'blocked', reason: 'no run recorded other sizes' },
+  ],
+  references: { entries: 2, missing: ['e-00aa11'] },
+  audits: [{ pass: 1, blocking: 2, minor: 1, numbers: 14, citations: 9 }, { pass: 2, blocking: 1, minor: 0, numbers: 14, citations: 8 }],
+  review: { recommendation: 'minor-revision', summary: 'clear but overclaims once' },
+  revisions: 1,
+  compile: { status: 'ok', pages: 6, pdf: 'paper/build/main.pdf' },
+  open: [{ id: 'a7', section: 'results', blocking: true, summary: 'still overclaims' }],
+  members: [{ seq: 1, label: 'paper-outline', kind: 'outline', status: 'completed', childId: 'c-1' }],
+  stop: { reason: 'finished' },
+  notes: [],
+}
 
 describe('research notebook', () => {
   it('derives stage status, experiment rows, and durations', () => {
@@ -120,7 +141,7 @@ describe('research notebook', () => {
   })
 
   it('states why the notebook is empty', () => {
-    const empty = { v: 1 as const, runs: [], agentPreset: 'science', skillLoaded: false }
+    const empty = { v: 2 as const, runs: [], papers: [], agentPreset: 'science', skillLoaded: false }
     expect(renderToStaticMarkup(<NotebookContent view={empty} sessionId={'s-1' as SessionId} openChild={noop} openFile={noop} t={t} />))
       .toContain('does not run the Research Agent preset')
   })
@@ -135,6 +156,40 @@ describe('research notebook', () => {
     expect(card).toContain('Supported')
     expect(card).toContain('Exploratory evidence')
     expect(renderToStaticMarkup(<CardBody view={view([settledRun])} runId="other" openNotebook={noop} t={t} />)).toBe('')
+  })
+
+  it('renders a paper run with its files, items, audit, open issues, review, and PDF', () => {
+    const opened: string[] = []
+    const html = renderToStaticMarkup(
+      <PaperRunSection run={paperRun} index={0} openPath={(path) => { opened.push(path) }} openChild={noop} t={t} />,
+    )
+    for (const text of ['Paper draft 1', 'False-positive rate at n = 5', 'PDF built, 6 pages', 'results', '380 words',
+      'rates-table', 'Blocked — no run recorded other sizes', '2 bibliography entries from the ledger', 'Not citable: e-00aa11',
+      'Pass 1: 2 blocking, 1 minor', '14 numbers and 8 citations checked', 'Revision passes: 1', 'still overclaims', 'Minor revision']) {
+      expect(html, text).toContain(text)
+    }
+    expect(html).toContain('title="paper/build/main.pdf"')
+    expect(html).toContain('title="paper/sections/results.tex"')
+    expect(html).toContain('title="paper/tables/rates-table.tex"')
+    expect(html).not.toContain('title="paper/figures/curve.tex"')
+    expect(paperStageStatus(paperRun, 'compile')).toBe('completed')
+    expect(paperStageStatus({ ...paperRun, compile: { status: 'failed', detail: 'x' } }, 'compile')).toBe('failed')
+  })
+
+  it('shows the paper dock only while a paper run is live, and a card per paper run', () => {
+    const live: PaperRun = { ...paperRun, runId: 'wf-p2', status: 'running', phase: 'Draft', compile: undefined, members: [
+      { seq: 1, label: 'paper-section-results', kind: 'section', status: 'running', target: 'results' },
+    ] }
+    const withPapers = (papers: PaperRun[]): ResearchView => ({ ...view([]), papers })
+    expect(renderToStaticMarkup(<PaperDockStrip view={withPapers([paperRun, live])} openNotebook={noop} t={t} />)).toContain('Draft')
+    expect(renderToStaticMarkup(<PaperDockStrip view={withPapers([paperRun])} openNotebook={noop} t={t} />)).toBe('')
+    const card = renderToStaticMarkup(<PaperCardBody view={withPapers([paperRun])} runId="wf-p" openNotebook={noop} t={t} />)
+    expect(card).toContain('False-positive rate at n = 5')
+    expect(card).toContain('Pass 2: 1 blocking, 0 minor')
+    expect(renderToStaticMarkup(<PaperCardBody view={withPapers([paperRun])} runId="other" openNotebook={noop} t={t} />)).toBe('')
+    const notebook = renderToStaticMarkup(<NotebookContent view={withPapers([paperRun])} sessionId={'s-1' as SessionId} openChild={noop} openFile={noop} t={t} />)
+    expect(notebook).toContain('Paper draft 1')
+    expect(notebook).not.toContain('does not run the Research Agent preset')
   })
 
   it('keeps both dictionaries complete and both theme modes distinct', () => {

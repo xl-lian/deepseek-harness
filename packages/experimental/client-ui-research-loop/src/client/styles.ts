@@ -33,14 +33,22 @@ const STYLES = `
 .rl-wordmark{display:inline-flex;flex-direction:column;justify-content:center;gap:2px;font-family:${SERIF};line-height:1;white-space:nowrap}
 .rl-wordmark-main{color:${INK};font-size:15px;font-weight:600}
 .rl-wordmark-accent{color:${ACCENT};font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase}
-.rl-view{display:flex;flex-direction:column;gap:18px;padding:16px;min-height:100%;box-sizing:border-box;color:${INK};font-variant-numeric:tabular-nums;
+.rl-view{display:flex;flex-direction:column;gap:18px;padding:16px;flex:1 1 auto;height:100%;min-height:0;overflow:auto;box-sizing:border-box;color:${INK};font-variant-numeric:tabular-nums;
   background-image:linear-gradient(${RULE_FAINT} 1px,transparent 1px),linear-gradient(90deg,${RULE_FAINT} 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+.rl-view>*{flex-shrink:0}
 .rl-notebook,.rl-run,.rl-card{background:${SURFACE};border:1px solid ${RULE};border-radius:10px}
 .rl-notebook{padding:14px 16px;display:flex;flex-direction:column;gap:8px;border-left:3px solid ${ACCENT}}
 .rl-notebook-head,.rl-run-head,.rl-round-head,.rl-card-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
 .rl-notebook-title,.rl-run-title,.rl-round-title{margin:0;font-family:${SERIF};font-weight:600;color:${INK}}
 .rl-notebook-title{font-size:17px}
 .rl-beside{margin-left:auto}
+.rl-paper-title{margin:0;font-family:${SERIF};font-size:17px;line-height:1.35;color:${INK}}
+.rl-paper-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.rl-paper-grid section,.rl-paper>section{display:flex;flex-direction:column;gap:6px}
+.rl-paper-row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.rl-paper-review{margin:0;font-size:13px;line-height:1.5}
+.rl-paper-steps{margin-top:6px}
+.rl-paper li[data-blocking="true"]{color:${BAD}}
 .rl-run-title{font-size:16px}
 .rl-round-title{font-size:15px}
 .rl-question{margin:0;font-family:${SERIF};font-size:15px;font-style:italic;color:${INK2};line-height:1.5}

@@ -1,6 +1,6 @@
 /** The research loop fold turns a `research-loop` run and a research status result into rounds, experiments, and a ledger. */
 
-import type { SessionEvent, SessionEventMap } from '@deepseek-ai/dsh-session/types'
+import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
 import type {} from '@deepseek-ai/dsh-tool-workflow/types'
 import type {} from '@deepseek-ai/dsh-agent-preset-registry'
 import { describe, expect, it } from 'vitest'
@@ -8,35 +8,9 @@ import { researchLoopProjection, toResearchView } from '../src/projection/defini
 import { initResearchState, reduceResearchEvent } from '../src/projection/reduce.ts'
 import { memberStage, parseLabel, parseLogLine } from '../src/shared/labels.ts'
 import type { ResearchState } from '../src/shared/schema.ts'
+import { call, event, result, undefinedPaths, workflowEvents } from './session-events.ts'
 
-let seq = 0
-
-function event(type: keyof SessionEventMap, data: object): SessionEvent {
-  seq += 1
-  return { type, seq, time: 1_000 + seq, data } as SessionEvent
-}
-
-const call = (callId: string, name: string, args: object): SessionEvent =>
-  event('tool/call', { turn: 1, step: 1, callId, name, arguments: JSON.stringify(args) })
-
-const result = (callId: string, text: string): SessionEvent => event('tool/result', {
-  turn: 1,
-  step: 1,
-  message: { role: 'tool', source: { kind: 'tool', callId }, toolCallId: callId, content: [{ type: 'text', text }], isError: false },
-})
-
-const start = (memberSeq: number, label: string): SessionEvent =>
-  event('tool-workflow/agent-start', { runId: 'wf-1', seq: memberSeq, label, childId: `child-${memberSeq}` })
-const end = (memberSeq: number): SessionEvent => event('tool-workflow/agent-end', { runId: 'wf-1', seq: memberSeq, outcome: 'completed' })
-const log = (message: string): SessionEvent => event('tool-workflow/log', { runId: 'wf-1', message })
-
-/** JSON paths whose value is `undefined`; the wire and the persisted cache accept only lossless JSON. */
-function undefinedPaths(value: unknown, path = '$'): string[] {
-  if (value === undefined) return [path]
-  if (Array.isArray(value)) return value.flatMap((item, index) => undefinedPaths(item, `${path}[${index}]`))
-  if (typeof value === 'object' && value !== null) return Object.entries(value).flatMap(([key, item]) => undefinedPaths(item, `${path}.${key}`))
-  return []
-}
+const { start, end, log } = workflowEvents('wf-1')
 
 function fold(events: readonly SessionEvent[], from: ResearchState = initResearchState('research')): ResearchState {
   return events.reduce(reduceResearchEvent, from)

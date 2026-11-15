@@ -6,7 +6,7 @@ import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { SyncAnchorError } from '@deepseek-ai/dsh-experimental-science-agent-bundle/scripts/sync.ts'
-import { NODE_NAMES, adaptResearchLoop, adaptResearchSkill, readTemplates } from '../scripts/sync.ts'
+import { NODE_NAMES, adaptPaperSkill, adaptPaperWorkflow, adaptResearchLoop, adaptResearchSkill, readTemplates } from '../scripts/sync.ts'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const templates = readTemplates(root)
@@ -31,6 +31,11 @@ describe('science-agent research sync', () => {
     const skill = failure(() => adaptResearchSkill('# Skill\n## Non-negotiables\n', templates))
     expect(skill.file).toBe('plugin/skills/science-research/SKILL.md')
     expect(skill.anchor).toContain('launch fallback')
+    const paper = failure(() => adaptPaperWorkflow(`${meta.replace('research-loop', 'paper-writing')}const x = 1\n`, personas))
+    expect(paper.file).toBe('plugin/workflows/paper-writing.js')
+    expect(paper.anchor).toContain('loop view field')
+    const paperSkill = failure(() => adaptPaperSkill('# Skill\n## Non-negotiables\n', templates))
+    expect(paperSkill.file).toBe('plugin/skills/science-paper/SKILL.md')
   })
 
   it('keeps committed synced files equal to MANIFEST.json', () => {

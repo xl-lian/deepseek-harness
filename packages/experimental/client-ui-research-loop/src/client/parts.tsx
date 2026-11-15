@@ -53,25 +53,50 @@ export function FileLink({ path, label, openPath }: {
   )
 }
 
+/** One step of a stage rail. */
+export interface RailStep {
+  readonly key: string
+  readonly label: string
+  readonly status: ResearchStatus
+}
+
+/** A numbered stage rail with live status per step. */
+export function Rail({ steps, t, compact = false }: {
+  readonly steps: readonly RailStep[]
+  readonly t: ResearchTranslate
+  readonly compact?: boolean
+}): React.JSX.Element {
+  return (
+    <ol className="rl-rail" data-compact={compact}>
+      {steps.map((step, index) => (
+        <li key={step.key} className="rl-rail-step" data-status={step.status}>
+          <span className="rl-rail-index" aria-hidden="true">{index + 1}</span>
+          <span className="rl-rail-label">{step.label}</span>
+          <span className="rl-sr">{t(`status.${step.status}`)}</span>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
 /** The five round stages with live status. */
 export function StageRail({ round, t, compact = false }: {
   readonly round: ResearchRound
   readonly t: ResearchTranslate
   readonly compact?: boolean
 }): React.JSX.Element {
+  const steps = RESEARCH_STAGES.map(stage => ({ key: stage, label: t(`stage.${stage}`), status: stageStatus(round, stage) }))
+  return <Rail steps={steps} t={t} compact={compact} />
+}
+
+/** A collapsed list of a run's free-form workflow notes; nothing when there are none. */
+export function RunNotes({ notes, title }: { readonly notes: readonly string[]; readonly title: string }): React.JSX.Element | null {
+  if (notes.length === 0) return null
   return (
-    <ol className="rl-rail" data-compact={compact}>
-      {RESEARCH_STAGES.map((stage, index) => {
-        const status = stageStatus(round, stage)
-        return (
-          <li key={stage} className="rl-rail-step" data-status={status}>
-            <span className="rl-rail-index" aria-hidden="true">{index + 1}</span>
-            <span className="rl-rail-label">{t(`stage.${stage}`)}</span>
-            <span className="rl-sr">{t(`status.${status}`)}</span>
-          </li>
-        )
-      })}
-    </ol>
+    <details className="rl-run-notes">
+      <summary>{title}</summary>
+      <ul className="rl-notes">{notes.map((note, at) => <li key={at}>{note}</li>)}</ul>
+    </details>
   )
 }
 
@@ -111,21 +136,31 @@ export function NotebookBar({ workspace, ledger, openPath, openBeside, t }: {
   )
 }
 
+/** A status chip for one workflow member; it opens the member's child Session when it has one. */
+export function StepChip({ status, label, childId, t, openChild }: {
+  readonly status: ResearchStatus
+  readonly label: string
+  readonly childId?: string | undefined
+  readonly t: ResearchTranslate
+  readonly openChild: OpenChild
+}): React.JSX.Element {
+  if (childId === undefined) {
+    return <span className="rl-chip" data-status={status}><StatusMark status={status} t={t} />{label}</span>
+  }
+  return (
+    <button type="button" className="rl-chip" data-status={status} title={t('member.open')} onClick={() => { openChild(childId) }}>
+      <StatusMark status={status} t={t} />{label}
+    </button>
+  )
+}
+
 function MemberChip({ member, t, openChild }: {
   readonly member: ResearchMember
   readonly t: ResearchTranslate
   readonly openChild: OpenChild
 }): React.JSX.Element {
   const label = `${t(`kind.${member.kind}`)}${member.pass === undefined ? '' : ` ${member.pass}`}`
-  if (member.childId === undefined) {
-    return <span className="rl-chip" data-status={member.status}><StatusMark status={member.status} t={t} />{label}</span>
-  }
-  const childId = member.childId
-  return (
-    <button type="button" className="rl-chip" data-status={member.status} title={t('member.open')} onClick={() => { openChild(childId) }}>
-      <StatusMark status={member.status} t={t} />{label}
-    </button>
-  )
+  return <StepChip status={member.status} label={label} childId={member.childId} t={t} openChild={openChild} />
 }
 
 function ReadingSection({ round, openPath, openChild, t }: {

@@ -75,8 +75,17 @@
                 then run `sagent -w <workspace> research status --json` and report from the recorded state. If the
                 workflow tool refuses, report its error verbatim instead of hand-running the nodes.
 
-                When a message opens with a research-loop node prompt ("You are the **plan** node", "You are sa-clerk"),
-                you are that node inside a running loop: follow that prompt only and never start a workflow.
+                **A paper request starts the paper workflow.** When the user asks to write, draft, or revise a paper,
+                manuscript, or article about this research, and the workspace has `research/state.md` or
+                `research/report.md`, load the `science-paper` skill, then call the `workflow` tool with
+                `{name: "paper-writing", args: {workspace, saBin, authors, venue}}`. The paper reports the recorded
+                research: it adds no experiment, number, or source, and you never invent an author. When it returns,
+                read `paper/audit.md` and `paper/review.md` and report the title, the files, every blocking issue still
+                open, and the review's recommendation.
+
+                When a message opens with a workflow node prompt ("You are the **plan** node", "You are the
+                **paper-outline** node", "You are sa-clerk"), you are that node inside a running workflow: follow that
+                prompt only and never start a workflow.
               suffix: !!js "'The science-research bundle root is ' + process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-science-research-bundle/package.json')) + '. Read synced/workflows/, synced/skills/, synced/examples/, skills/, and hooks/ from that root when a skill tells you to.'"
           - id: agent-instructions
             name: '@deepseek-ai/dsh-agent-instructions'

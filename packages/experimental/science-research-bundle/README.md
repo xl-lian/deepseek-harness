@@ -1,8 +1,8 @@
 # @deepseek-ai/dsh-experimental-science-research-bundle
 
-The research science loop for dsh: give the Research Agent a question in any field (machine learning, data science, physics, chemistry, biology) and it answers it through recorded rounds of reading, pre-registered experiments, independent validation, and a decision about what to do next, then writes a report whose every number and citation traces back to the record.
+The research science loop for dsh: give the Research Agent a question in any field (machine learning, data science, physics, chemistry, biology) and it answers it through recorded rounds of reading, pre-registered experiments, independent validation, and a decision about what to do next, then writes a report whose every number and citation traces back to the record. When the study is done, the same record becomes a LaTeX paper and a PDF.
 
-**Contents:** [Architecture](#architecture) · [One round, step by step](#one-round-step-by-step) · [The steps](#the-steps) · [Loop arguments and hard limits](#loop-arguments-and-hard-limits) · [The objective](#the-objective) · [What makes a result trustworthy](#what-makes-a-result-trustworthy) · [The research notebook](#the-research-notebook) · [The Notebook view](#the-notebook-view) · [Run it](#run-it) · [Commands](#commands) · [Permissions and hooks](#permissions-and-hooks) · [How the bundle adapts science-agent](#how-the-bundle-adapts-science-agent) · [Troubleshooting](#troubleshooting)
+**Contents:** [Architecture](#architecture) · [One round, step by step](#one-round-step-by-step) · [The steps](#the-steps) · [Loop arguments and hard limits](#loop-arguments-and-hard-limits) · [The objective](#the-objective) · [What makes a result trustworthy](#what-makes-a-result-trustworthy) · [The research notebook](#the-research-notebook) · [The Notebook view](#the-notebook-view) · [Write a paper](#write-a-paper) · [Run it](#run-it) · [Commands](#commands) · [Permissions and hooks](#permissions-and-hooks) · [How the bundle adapts science-agent](#how-the-bundle-adapts-science-agent) · [Troubleshooting](#troubleshooting)
 
 ## Architecture
 
@@ -211,9 +211,27 @@ The [research loop view](../client-ui-research-loop/README.md) shows the study i
 
 A strip above the composer follows the live round, and each run gets a card in Chat; both open the Notebook in the right sidebar. To read the Notebook while you chat, pick **Notebook** on the right sidebar's Start page, or press **Open beside chat** in the Notebook view tab: Chat stays on the left and the Notebook on the right. Evidence classes and objection states appear once the Research Agent runs `sagent research status`, which it does after every loop. The profile also applies a lab-notebook skin in light and dark mode: paper surfaces, an indigo accent, serif headings, and a graph-paper Notebook ground.
 
+## Write a paper
+
+When a study has a record, `/sa-paper` (or asking to "write a paper") starts the `paper-writing` workflow, which science-agent ships beside the research loop. It writes `paper/` in the workspace and builds `paper/build/main.pdf`:
+
+| Stage | Steps | Writes |
+|---|---|---|
+| Setup | `sagent paper init` | `paper/main.tex` from the template, empty sections; existing files are kept |
+| Outline | `paper-outline` | `paper/outline.md` (thesis, a claim table tying each claim to its runs, section plans, figure list), `paper/meta.tex` |
+| Figures | `paper-references` with one `paper-item` per figure or table, in parallel | `paper/references.bib` from the ledger's quote-verified literature; `paper/figures/` (pgfplots over a CSV of recorded values) and `paper/tables/` (booktabs) |
+| Draft | `paper-section` for introduction, related work, methods, results, and discussion, then abstract and conclusion | `paper/sections/<id>.tex` |
+| Audit | `sagent paper check`, `paper-audit`, and once `paper-review`, in parallel | `paper/audit.md` (every number, citation, and claim against the record), `paper/review.md` (a referee's report) |
+| Revise | `paper-revise` per section with issues, then another audit, up to `maxRevisions` (default 2) | the sections, bibliography, and figures at fault |
+| Compile | `sagent paper compile` (Tectonic), then `paper-fix` on LaTeX errors, up to `maxCompileFixes` (default 3) | `paper/build/main.pdf` |
+
+The paper reports the record and nothing else: every number carries `\runid{<run ids>}` (printed as small gray tags in the draft; `\showrunidsfalse` hides them), every bibliography entry names its ledger evidence ids, exploratory results are marked `\expl`, and no step invents an author. Pass the authors and the venue or emphasis in the command (`/sa-paper A. Researcher; 8 pages for a statistics journal`). Install Tectonic (`brew install tectonic`) to build the PDF; the first build downloads its LaTeX packages. Without it the LaTeX sources are still written and the agent gives the compile command.
+
+The Notebook shows each paper run below the loop runs: a stage rail (Outline, Figures and tables, Draft, Audit, Revise, Compile), links to the PDF, the LaTeX source, the outline, the bibliography, the audit report, and the review, each section with its word count, each figure or table (blocked ones with the reason), every audit pass, the issues still open, and the review's recommendation. A strip above the composer follows a live paper run, and each run gets a card in Chat.
+
 ## Run it
 
-The profile needs the `sagent` toolkit 0.3.0 or later on `PATH` (or in `~/.local/bin`) and `python3` for the hooks. Install the toolkit from a science-agent checkout and create the profile once:
+The profile needs the `sagent` toolkit 0.4.0 or later (0.3.0 has no `paper` commands) on `PATH` (or in `~/.local/bin`) and `python3` for the hooks. Install the toolkit from a science-agent checkout and create the profile once:
 
 ```sh
 uv tool install --python 3.13 --force "science-agent-toolkit[ml,mcp] @ file:///path/to/science-agent"
@@ -244,9 +262,10 @@ To continue a study, ask to "continue researching" or run `/sa-research <rounds>
 | `/sa-research <question>` | intake for a new study, then the loop |
 | `/sa-research <rounds>` | more rounds on a locked study |
 | `/sa-research-status` | what is established: decisions, verdicts, evidence class, open objections, literature, next-step plan |
+| `/sa-paper [authors; venue]` | the paper-writing workflow over the study's record |
 | `/sa-doctor` | checks the toolkit, sandbox, disk, ledger, and the research workspace, with fixes |
 
-The step agents use the `sagent` CLI (`research open-round`, `record`, `results`, `close-round`, `status`, `prompt`; `lit search`; `source add` and `show`; `evidence cite`; `run execute`; `verify run`; `run logs`) or the same operations through the `mcp__science-agent__sa_research`, `sa_run`, and `sa_verify` MCP tools.
+The step agents use the `sagent` CLI (`research open-round`, `record`, `results`, `close-round`, `status`, `prompt`; `paper init`, `check`, `compile`, `prompt`; `lit search`; `source add` and `show`; `evidence cite`; `run execute`; `verify run`; `run logs`) or the same operations through the `mcp__science-agent__sa_research`, `sa_run`, and `sa_verify` MCP tools.
 
 ## Permissions and hooks
 
@@ -259,12 +278,13 @@ Two hooks run through the Claude Code hook bridge:
 
 ## How the bundle adapts science-agent
 
-science-agent owns the step prompts, the skill, the hooks, the MCP launcher, the example objective, and the `research-loop` workflow. `scripts/sync.ts` copies them into `synced/` and adapts them to dsh:
+science-agent owns the research and paper step prompts, the `science-research` and `science-paper` skills, the hooks, the MCP launcher, the example objective, the LaTeX template and `sagent paper` commands, and the `research-loop` and `paper-writing` workflows. `scripts/sync.ts` copies the prompts, workflows, skills, hooks, and example into `synced/` and adapts them to dsh:
 
-- every step prompt gains a runtime note (dsh tool names, never start a workflow) and is embedded in the workflow script, which then needs no registered agent types;
-- the workflow loses Claude Code-only `agentType` and `effort` options and the `pattern` schema keyword, which dsh's structured-output schema subset rejects (the script already normalizes experiment ids);
+- every step prompt gains a runtime note (dsh tool names, never start a workflow; `templates/runtime-note.md` or `templates/paper-runtime-note.md`) and is embedded in its workflow script, which then needs no registered agent types;
+- both workflows lose Claude Code-only `agentType` and `effort` options; the research loop also loses the `pattern` schema keyword, which dsh's structured-output schema subset rejects (the script already normalizes experiment ids);
 - the workflow narrates each round through `log()`, `artifact()`, and `metric()` lines that the Notebook view reads (`templates/loop-record-outputs.js`), recording the experiments_validated and supported counts per round;
-- the skill gains the dsh runtime section; the guard matches dsh's lower-case tool names; the trigger names the dsh `workflow` tool.
+- the paper workflow writes its own fixed-grammar narration upstream, so the sync only checks that the lines the view reads are still there;
+- each skill gains its dsh runtime section; the guard matches dsh's lower-case tool names; the trigger names the dsh `workflow` tool.
 
 Every edit anchors on exact source text and fails with the file and anchor when science-agent changed it; the sync also fails when a step label or result field the view reads disappears. Refresh or verify after a science-agent change:
 
@@ -279,7 +299,9 @@ pnpm run sync-science-research-bundle --source /path/to/science-agent --check
 
 | Symptom | Cause and fix |
 |---|---|
-| `No such command 'research'` | the installed toolkit predates 0.3.0; reinstall it from the checkout with `uv tool install --force` |
+| `No such command 'research'` or `'paper'` | the installed toolkit predates 0.3.0 or 0.4.0; reinstall it from the checkout with `uv tool install --force` |
+| The paper has LaTeX sources but no PDF | Tectonic is not installed; `brew install tectonic`, then `sagent -w <workspace> paper compile --json` |
+| The first PDF build takes minutes | Tectonic downloads the LaTeX packages it needs once; later builds use its cache |
 | `Address already in use` at launch | another Web profile holds the port; add `--port <port>` after `--profile research` |
 | The page asks for a token | open the exact `?token=` URL from the launcher log |
 | The page goes blank with asset 404s | the client was rebuilt while the server ran; restart the server (this stops a running loop) |
@@ -291,7 +313,7 @@ pnpm run sync-science-research-bundle --source /path/to/science-agent --check
 
 ## Model Experience
 
-The `research` preset carries a fixed persona that is stable across turns and stays in the KV-cache prefix; the `science-research` skill loads on demand, and a continue-research request in a workspace with `.sa/` adds one trigger sentence to that turn. Step prompts are embedded in the saved workflow script, which never enters the orchestrator's context; each step agent receives its prompt, the runtime note, and the loop's per-step context message.
+The `research` preset carries a fixed persona that is stable across turns and stays in the KV-cache prefix; the `science-research` and `science-paper` skills load on demand, and a continue-research request in a workspace with `.sa/` adds one trigger sentence to that turn. Step prompts are embedded in the saved workflow script, which never enters the orchestrator's context; each step agent receives its prompt, the runtime note, and the workflow's per-step context message. The paper workflow's steps read the research record and the paper files from disk; the orchestrator sees only the workflow's result.
 
 ## Known Limitations and Deferred Work
 

@@ -1,11 +1,12 @@
 /**
- * Dock above the composer while a research loop runs: the current round, its
- * stage rail, and the elapsed time. Clicking it opens the notebook view.
+ * Dock above the composer while a research loop or a paper-writing run is
+ * live: the current round or paper stage rail and the elapsed time. Clicking it opens the notebook view.
  */
 
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { activeStage, currentRun, elapsed, formatDuration } from './model.ts'
 import type { ResearchView } from '../shared/schema.ts'
+import { PaperDockStrip } from './PaperSection.tsx'
 import { StageRail, StatusMark, type ResearchTranslate } from './parts.tsx'
 
 /** Actions injected for the dock. */
@@ -43,7 +44,13 @@ export function DockStrip({ view, openNotebook, t }: ResearchLoopDockInjected & 
   )
 }
 
-/** Dock slot occupant: reads the projection and renders {@link DockStrip}. */
+/** Dock slot occupant: reads the projection and renders the loop strip and the paper strip. */
 export function ResearchLoopDock({ useProjection, openNotebook, t }: ResearchLoopDockProps): React.JSX.Element | null {
-  return <DockStrip view={useProjection('scienceResearchLoop')} openNotebook={openNotebook} t={t} />
+  const view = useProjection('scienceResearchLoop')
+  return (
+    <>
+      <DockStrip view={view} openNotebook={openNotebook} t={t} />
+      <PaperDockStrip view={view} openNotebook={openNotebook} t={t} />
+    </>
+  )
 }

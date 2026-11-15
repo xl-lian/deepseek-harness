@@ -12,7 +12,8 @@ import { notebookPaths } from '../shared/labels.ts'
 import type { ResearchRun, ResearchView } from '../shared/schema.ts'
 import { resolveWorkspacePath } from '@deepseek-ai/dsh-util-workspace-path'
 import { elapsed, formatDuration, ledgerRound, stopText } from './model.ts'
-import { FileLink, NotebookBar, ResearchEmpty, RoundBody, StageRail, StatusMark, type ResearchTranslate } from './parts.tsx'
+import { PaperRunSection } from './PaperSection.tsx'
+import { FileLink, NotebookBar, RunNotes, ResearchEmpty, RoundBody, StageRail, StatusMark, type ResearchTranslate } from './parts.tsx'
 
 /** Empty snapshot for the target; the view reads the projection directly. */
 const EMPTY_SNAPSHOT = { v: 1 } as const
@@ -91,14 +92,7 @@ export function RunSection({ run, index, view, sessionId, openChild, openFile, t
             <FileLink path={notebookPaths().report} label={t('writeUp.open')} openPath={openPath} />
           </section>
         )}
-      {run.notes.length === 0
-        ? null
-        : (
-          <details className="rl-run-notes">
-            <summary>{t('run.notes')}</summary>
-            <ul className="rl-notes">{run.notes.map((note, at) => <li key={at}>{note}</li>)}</ul>
-          </details>
-        )}
+      <RunNotes notes={run.notes} title={t('run.notes')} />
     </section>
   )
 }
@@ -116,7 +110,8 @@ export type NotebookContentProps = ResearchNavigation & {
 /** The notebook body shared by the view tab and the right-Sidebar tab. */
 export function NotebookContent({ view, sessionId, openChild, openFile, openBeside, t }: NotebookContentProps): React.JSX.Element {
   const runs = view?.runs ?? []
-  const workspace = runs[runs.length - 1]?.workspace ?? view?.ledger?.workspace
+  const papers = view?.papers ?? []
+  const workspace = runs[runs.length - 1]?.workspace ?? view?.ledger?.workspace ?? papers[papers.length - 1]?.workspace
   return (
     <div className="rl-view">
       <NotebookBar
@@ -126,7 +121,7 @@ export function NotebookContent({ view, sessionId, openChild, openFile, openBesi
         openBeside={openBeside}
         t={t}
       />
-      {view === undefined || runs.length === 0
+      {view === undefined || (runs.length === 0 && papers.length === 0)
         ? <ResearchEmpty agentPreset={view?.agentPreset} skillLoaded={view?.skillLoaded ?? false} t={t} />
         : runs.map((run, index) => (
           <RunSection
@@ -140,6 +135,16 @@ export function NotebookContent({ view, sessionId, openChild, openFile, openBesi
             t={t}
           />
         ))}
+      {papers.map((paper, index) => (
+        <PaperRunSection
+          key={paper.runId}
+          run={paper}
+          index={index}
+          openPath={(path) => { openFile(sessionId, resolveWorkspacePath(paper.workspace ?? workspace, path)) }}
+          openChild={(childId) => { openChild(sessionId, childId) }}
+          t={t}
+        />
+      ))}
     </div>
   )
 }

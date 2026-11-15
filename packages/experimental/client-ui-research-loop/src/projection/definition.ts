@@ -9,13 +9,15 @@ import { researchStateSchema, researchViewSchema, type ResearchState, type Resea
 import { initResearchState, reduceResearchEvent } from './reduce.ts'
 
 /**
- * Wire view: the state without pending call bindings. Runs and the ledger keep
+ * Wire view: the state without pending call bindings. Runs, papers, and the ledger keep
  * their references, and the fold already bounds them.
  * @param state - fold state.
  * @returns the browser view.
  */
 export function toResearchView(state: ResearchState): ResearchView {
-  const view: ResearchView = { v: 1, runs: state.runs, agentPreset: state.agentPreset, skillLoaded: state.skillLoaded }
+  const view: ResearchView = {
+    v: 2, runs: state.runs, papers: state.papers, agentPreset: state.agentPreset, skillLoaded: state.skillLoaded,
+  }
   // The view crosses the wire as lossless JSON, so an absent ledger is omitted rather than `undefined`.
   return state.ledger === undefined ? view : { ...view, ledger: state.ledger }
 }
@@ -23,7 +25,7 @@ export function toResearchView(state: ResearchState): ResearchView {
 /** The research loop projection unit registered by the host plugin. */
 export const researchLoopProjection = {
   key: 'scienceResearchLoop',
-  stateVersion: 1,
+  stateVersion: 2,
   stateSchema: researchStateSchema,
   init: header => initResearchState(header.agentPreset ?? null),
   apply: reduceResearchEvent,

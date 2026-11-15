@@ -1,15 +1,17 @@
 /**
  * Refresh `synced/` from a science-agent checkout for the research profile.
  *
- * science-agent owns the research-loop node prompts, the `science-research`
- * skill, the guard and round-trigger hooks, the MCP launcher, the example
- * research objective, and the `research-loop` workflow. This tool adapts them
- * to dsh: node personas gain the dsh runtime note; the workflow loses Claude
- * Code-only options and the `pattern` schema keyword, embeds every persona, and
- * narrates rounds for the loop view through `log()`, `artifact()`, and
- * `metric()`; the skill gains the dsh runtime section; the
- * guard matches dsh tool names and the trigger names the dsh `workflow` tool.
- * dsh-only text lives in `templates/`.
+ * science-agent owns the research-loop and paper-writing node prompts, the
+ * `science-research` and `science-paper` skills, the guard and round-trigger
+ * hooks, the MCP launcher, the example research objective, and the
+ * `research-loop` and `paper-writing` workflows. This tool adapts them to dsh:
+ * node personas gain a dsh runtime note; each workflow loses Claude Code-only
+ * options and embeds every persona it calls; the research loop also loses the
+ * `pattern` schema keyword and narrates rounds for the loop view through
+ * `log()`, `artifact()`, and `metric()` (the paper workflow narrates itself);
+ * each skill gains its dsh runtime section; the guard matches dsh tool names
+ * and the trigger names the dsh `workflow` tool. dsh-only text lives in
+ * `templates/`.
  *
  * Every adaptation anchors on exact source text and throws a
  * {@link SyncAnchorError} naming the anchor and file when the source changed.
@@ -62,12 +64,29 @@ export const NODE_NAMES = [
   'sa-clerk',
 ] as const
 
+/** The paper-writing node agents; the clerk is shared with the research loop. */
+export const PAPER_NODE_NAMES = [
+  'paper-audit',
+  'paper-fix',
+  'paper-item',
+  'paper-outline',
+  'paper-references',
+  'paper-review',
+  'paper-revise',
+  'paper-section',
+  'sa-clerk',
+] as const
+
 /** dsh-only text blocks read from `templates/`. */
 export interface ResearchTemplates {
-  /** Prefixed to every node persona. */
+  /** Prefixed to every research-loop node persona. */
   readonly runtimeNote: string
+  /** Prefixed to every paper-writing node persona. */
+  readonly paperRuntimeNote: string
   /** The dsh runtime section inserted into the research skill. */
   readonly skillRuntime: string
+  /** The dsh runtime section inserted into the paper skill. */
+  readonly paperSkillRuntime: string
   /** Replaces the round trigger hook's model context. */
   readonly triggerContext: string
   /** Narration helpers inserted into the workflow ahead of the rounds. */
@@ -83,7 +102,9 @@ export function readTemplates(root: string = PACKAGE_ROOT): ResearchTemplates {
   const read = (name: string): string => readFileSync(join(root, 'templates', name), 'utf8')
   return {
     runtimeNote: read('runtime-note.md'),
+    paperRuntimeNote: read('paper-runtime-note.md'),
     skillRuntime: read('skill-runtime.md'),
+    paperSkillRuntime: read('paper-skill-runtime.md'),
     triggerContext: read('research-trigger-context.txt').trimEnd(),
     recordOutputs: read('loop-record-outputs.js'),
   }
@@ -105,20 +126,30 @@ const LOOP_VIEW_FIELDS = [
   'report: report ? {',
 ] as const
 
-/** Exact source edits: Claude Code-only agent options and schema keywords outside dsh's enforced subset. */
-const OPTION_EDITS: readonly (readonly [string, string])[] = [
-  ['  agentType: typeOf(`research-${name}`),\n', ''],
-  ["  effort: opts.effort || 'high',\n", ''],
-  [", agentType: typeOf('sa-clerk'), schema: SCHEMA.envelope, effort: 'low' })", ', schema: SCHEMA.envelope })'],
-  ["id: { type: 'string', pattern: '^[A-Za-z0-9][A-Za-z0-9_]{0,40}$' }", 'id: STR'],
-]
+type Edits = readonly (readonly [string, string])[]
 
-/** Persona wrappers: each node and clerk prompt is prefixed by its embedded persona. */
-const PERSONA_WRAPPERS: readonly (readonly [string, string])[] = [
-  ['=> agent(`You are the research-${name} node', '=> agent(withPersona(`research-${name}`, `You are the research-${name} node'],
-  ['Return only the structured result.`, {', 'Return only the structured result.`), {'],
-  ['=> agent(`You are sa-clerk.', "=> agent(withPersona('sa-clerk', `You are sa-clerk."],
-  ['Do not edit files. Do not run any other command.`, {', 'Do not edit files. Do not run any other command.`), {'],
+/** Exact source edits that drop Claude Code-only agent options from a workflow whose nodes are `<prefix>-<name>`. */
+function optionEdits(prefix: string): Edits {
+  return [
+    [`  agentType: typeOf(\`${prefix}-\${name}\`),\n`, ''],
+    ["  effort: opts.effort || 'high',\n", ''],
+    [", agentType: typeOf('sa-clerk'), schema: SCHEMA.envelope, effort: 'low' })", ', schema: SCHEMA.envelope })'],
+  ]
+}
+
+/** Persona wrappers: each node and clerk prompt of a `<prefix>-<name>` workflow is prefixed by its embedded persona. */
+function personaWrappers(prefix: string): Edits {
+  return [
+    [`=> agent(\`You are the ${prefix}-\${name} node`, `=> agent(withPersona(\`${prefix}-\${name}\`, \`You are the ${prefix}-\${name} node`],
+    ['Return only the structured result.`, {', 'Return only the structured result.`), {'],
+    ['=> agent(`You are sa-clerk.', "=> agent(withPersona('sa-clerk', `You are sa-clerk."],
+    ['Do not edit files. Do not run any other command.`, {', 'Do not edit files. Do not run any other command.`), {'],
+  ]
+}
+
+/** Research-loop schema keywords outside dsh's enforced subset. */
+const SCHEMA_EDITS: Edits = [
+  ["id: { type: 'string', pattern: '^[A-Za-z0-9][A-Za-z0-9_]{0,40}$' }", 'id: STR'],
 ]
 
 /** Narration call sites; the helpers come from `templates/loop-record-outputs.js`. */
@@ -145,6 +176,56 @@ function personaBlock(personas: ReadonlyMap<string, string>): string {
     + "const withPersona = (name, prompt) => PERSONAS[name] + '\\n\\n---\\n\\n' + prompt\n\n"
 }
 
+/** What one workflow's adaptation needs beyond the shared steps. */
+interface WorkflowAdaptation {
+  /** Source file, relative to the checkout. */
+  readonly file: string
+  /** Saved workflow name, which names the output files. */
+  readonly name: string
+  /** Node agent prefix: `research` or `paper`. */
+  readonly prefix: string
+  /** Source text the Notebook view depends on; a missing one fails the sync. */
+  readonly viewFields: readonly string[]
+  /** Further exact edits applied once each, after the options are dropped. */
+  readonly edits: Edits
+}
+
+/**
+ * Adapt a science-agent workflow to the dsh workflow engine: drop the `meta`
+ * export and the agent-type options, wrap every node and clerk prompt in its
+ * embedded persona, and apply the workflow's own edits.
+ * @param source - the workflow script text.
+ * @param personas - persona name → text for every agent the script calls.
+ * @param spec - the workflow's adaptation.
+ * @returns `<name>.js` and `<name>.meta.json` → text.
+ */
+function adaptWorkflow(source: string, personas: ReadonlyMap<string, string>, spec: WorkflowAdaptation): Map<string, string> {
+  const { file } = spec
+  const meta = workflowMeta(source, file)
+  for (const field of spec.viewFields) {
+    if (!source.includes(field)) throw new SyncAnchorError(file, `loop view field ${JSON.stringify(field)} missing`)
+  }
+  let body = source.replace(/^export const meta = \{[\s\S]*?\n\}\n\n/, '')
+  const typeOf = /^const typeOf = .*\n/m.exec(body)?.[0]
+  if (typeOf === undefined) throw new SyncAnchorError(file, 'const typeOf = … line missing')
+  body = replaceOnce(body, typeOf, '', file)
+  for (const [anchor, replacement] of optionEdits(spec.prefix)) body = replaceOnce(body, anchor, replacement, file)
+  for (const [anchor, replacement] of personaWrappers(spec.prefix)) body = replaceAllRequired(body, anchor, replacement, file)
+  for (const [anchor, replacement] of spec.edits) body = replaceOnce(body, anchor, replacement, file)
+  body = replaceOnce(body, NODES_MARKER, personaBlock(personas) + NODES_MARKER, file)
+  for (const leftover of ['agentType', 'typeOf(', 'pattern:', 'type: [']) {
+    if (body.includes(leftover)) throw new SyncAnchorError(file, `${JSON.stringify(leftover)} remains after adaptation`)
+  }
+  // Node call sites still pass `effort` inside node()'s own options; only a multi-line agent() option is fatal.
+  if (/^\s*effort: /mu.test(body)) {
+    throw new SyncAnchorError(file, 'an agent() effort option remains after adaptation')
+  }
+  return new Map([
+    [`${spec.name}.js`, body],
+    [`${spec.name}.meta.json`, `${JSON.stringify(meta, undefined, 2)}\n`],
+  ])
+}
+
 /**
  * Adapt `plugin/workflows/research-loop.js` to the dsh workflow engine.
  * @param source - the workflow script text.
@@ -157,31 +238,50 @@ export function adaptResearchLoop(
   personas: ReadonlyMap<string, string>,
   recordOutputs: string,
 ): Map<string, string> {
-  const file = 'plugin/workflows/research-loop.js'
-  const meta = workflowMeta(source, file)
-  for (const field of LOOP_VIEW_FIELDS) {
-    if (!source.includes(field)) throw new SyncAnchorError(file, `loop view field ${JSON.stringify(field)} missing`)
-  }
-  let body = source.replace(/^export const meta = \{[\s\S]*?\n\}\n\n/, '')
-  const typeOf = /^const typeOf = .*\n/m.exec(body)?.[0]
-  if (typeOf === undefined) throw new SyncAnchorError(file, 'const typeOf = … line missing')
-  body = replaceOnce(body, typeOf, '', file)
-  for (const [anchor, replacement] of OPTION_EDITS) body = replaceOnce(body, anchor, replacement, file)
-  for (const [anchor, replacement] of PERSONA_WRAPPERS) body = replaceAllRequired(body, anchor, replacement, file)
-  for (const [anchor, replacement] of RECORD_CALLS) body = replaceOnce(body, anchor, replacement, file)
-  body = replaceOnce(body, NODES_MARKER, personaBlock(personas) + NODES_MARKER, file)
-  body = replaceOnce(body, ROUNDS_MARKER, `${recordOutputs}\n${ROUNDS_MARKER}`, file)
-  for (const leftover of ['agentType', 'typeOf(', 'pattern:', 'type: [']) {
-    if (body.includes(leftover)) throw new SyncAnchorError(file, `${JSON.stringify(leftover)} remains after adaptation`)
-  }
-  // Node call sites still pass `effort` inside node()'s own options; only a multi-line agent() option is fatal.
-  if (/^\s*effort: /mu.test(body)) {
-    throw new SyncAnchorError(file, 'an agent() effort option remains after adaptation')
-  }
-  return new Map([
-    ['research-loop.js', body],
-    ['research-loop.meta.json', `${JSON.stringify(meta, undefined, 2)}\n`],
-  ])
+  return adaptWorkflow(source, personas, {
+    file: 'plugin/workflows/research-loop.js',
+    name: 'research-loop',
+    prefix: 'research',
+    viewFields: LOOP_VIEW_FIELDS,
+    edits: [...SCHEMA_EDITS, ...RECORD_CALLS, [ROUNDS_MARKER, `${recordOutputs}\n${ROUNDS_MARKER}`]],
+  })
+}
+
+/** Narration lines and result fields of the paper workflow that the Notebook view reads. */
+const PAPER_VIEW_FIELDS = [
+  "label: 'paper-outline'",
+  'label: `paper-item-${it.id}`',
+  'label: `paper-section-${id}`',
+  'label: `paper-audit-${pass}`',
+  'label: `paper-revise-${part}-${revisions}`',
+  'log(`Paper: ',
+  'log(`Paper references: ',
+  'log(`Paper item ${it.id}: ',
+  'log(`Paper section ${id}: ',
+  'log(`Paper audit pass ${pass}: ',
+  'log(`Paper review: ',
+  'log(`Paper revise pass ${revisions}: ',
+  'log(`Paper compile: ok · ',
+  'log(`Paper compile: skipped — ',
+  'log(`Paper compile: failed — ',
+  'log(`Paper stopped: ',
+  'open: open.slice(0, 20),',
+] as const
+
+/**
+ * Adapt `plugin/workflows/paper-writing.js` to the dsh workflow engine.
+ * @param source - the workflow script text.
+ * @param personas - persona name → text, one per {@link PAPER_NODE_NAMES} entry.
+ * @returns `paper-writing.js` and `paper-writing.meta.json` → text.
+ */
+export function adaptPaperWorkflow(source: string, personas: ReadonlyMap<string, string>): Map<string, string> {
+  return adaptWorkflow(source, personas, {
+    file: 'plugin/workflows/paper-writing.js',
+    name: 'paper-writing',
+    prefix: 'paper',
+    viewFields: PAPER_VIEW_FIELDS,
+    edits: [],
+  })
 }
 
 /**
@@ -197,6 +297,21 @@ export function adaptResearchSkill(text: string, templates: ResearchTemplates): 
   if (!fallback.test(out)) throw new SyncAnchorError(file, 'Claude Code launch fallback paragraph missing')
   out = out.replace(fallback, () => 'The script is saved in the profile and embeds every node prompt, so it needs no agent types or script path. A run that was interrupted resumes: the still-open round is reused.\n')
   out = replaceOnce(out, 'Write `objective.yaml` from `examples/objective.research.yaml`', 'Write `objective.yaml` from the example objective (`synced/examples/objective.research.yaml` under the bundle root)', file)
+  return out.split('Without the Workflow tool').join('Without the `workflow` tool')
+}
+
+/**
+ * Adapt the paper skill: dsh runtime section and the dsh launch fallback.
+ * @param text - `plugin/skills/science-paper/SKILL.md`.
+ * @param templates - the dsh templates.
+ * @returns the adapted text.
+ */
+export function adaptPaperSkill(text: string, templates: ResearchTemplates): string {
+  const file = 'plugin/skills/science-paper/SKILL.md'
+  let out = replaceOnce(text, '## Non-negotiables\n', `${templates.paperSkillRuntime}\n## Non-negotiables\n`, file)
+  const fallback = /If the name is not registered, use `scriptPath:[\s\S]*?rewrites what its nodes are asked to write\.\n/
+  if (!fallback.test(out)) throw new SyncAnchorError(file, 'Claude Code launch fallback paragraph missing')
+  out = out.replace(fallback, () => 'The script is saved in the profile and embeds every node prompt, so it needs no agent types or script path. A rerun keeps every file under `paper/` that exists and rewrites what its nodes are asked to write.\n')
   return out.split('Without the Workflow tool').join('Without the `workflow` tool')
 }
 
@@ -234,15 +349,24 @@ export function buildResearchSynced(source: string, templates: ResearchTemplates
   const files: SyncedFiles = new Map()
 
   const agentFiles = new Set(readdirSync(join(source, 'plugin/agents')))
-  const agents = new Map(NODE_NAMES.filter(name => agentFiles.has(`${name}.md`))
+  const agentsOf = (names: readonly string[]): Map<string, string> => new Map(names.filter(name => agentFiles.has(`${name}.md`))
     .map(name => [`${name}.md`, read(`plugin/agents/${name}.md`)] as const))
-  const personas = buildPersonas(agents, templates.runtimeNote, NODE_NAMES)
+  const personas = buildPersonas(agentsOf(NODE_NAMES), templates.runtimeNote, NODE_NAMES)
   for (const [name, persona] of personas) files.set(`${SYNCED_DIR}/personas/${name}.md`, text(`${persona}\n`))
+  // The paper workflow embeds its own clerk persona, prefixed by the paper runtime note.
+  const paperPersonas = buildPersonas(agentsOf(PAPER_NODE_NAMES), templates.paperRuntimeNote, PAPER_NODE_NAMES)
+  for (const [name, persona] of paperPersonas) {
+    if (name.startsWith('paper-')) files.set(`${SYNCED_DIR}/personas/${name}.md`, text(`${persona}\n`))
+  }
 
   for (const [name, value] of adaptResearchLoop(read('plugin/workflows/research-loop.js'), personas, templates.recordOutputs)) {
     files.set(`${SYNCED_DIR}/workflows/${name}`, text(value))
   }
+  for (const [name, value] of adaptPaperWorkflow(read('plugin/workflows/paper-writing.js'), paperPersonas)) {
+    files.set(`${SYNCED_DIR}/workflows/${name}`, text(value))
+  }
   files.set(`${SYNCED_DIR}/skills/science-research/SKILL.md`, text(adaptResearchSkill(read('plugin/skills/science-research/SKILL.md'), templates)))
+  files.set(`${SYNCED_DIR}/skills/science-paper/SKILL.md`, text(adaptPaperSkill(read('plugin/skills/science-paper/SKILL.md'), templates)))
   files.set(`${SYNCED_DIR}/examples/objective.research.yaml`, text(read('examples/objective.research.yaml')))
   files.set(`${SYNCED_DIR}/hooks/guard.py`, text(adaptGuard(read('plugin/hooks/guard.py'))))
   files.set(`${SYNCED_DIR}/hooks/round_trigger.py`, text(adaptRoundTrigger(read('plugin/hooks/round_trigger.py'), templates.triggerContext)))

@@ -49,3 +49,30 @@ export const RESEARCH_PRESET = 'research'
 
 /** Skill whose load the empty state reports. */
 export const RESEARCH_SKILL = 'science-research'
+
+/** Workflow name of the paper-writing runs the projection follows. */
+export const PAPER_WORKFLOW = 'paper-writing'
+
+/** The paper-writing stages, in workflow order. */
+export const PAPER_STAGES = ['outline', 'figures', 'draft', 'audit', 'revise', 'compile'] as const
+
+/** One paper-writing stage. */
+export type PaperStageId = typeof PAPER_STAGES[number]
+
+/** What one paper-writing member does, read from its label. */
+export const PAPER_MEMBER_KINDS = ['setup', 'outline', 'references', 'item', 'section', 'check', 'audit', 'review', 'revise', 'compile', 'fix'] as const
+
+/** Stage that owns a paper member kind. */
+export const PAPER_STAGE_OF: Readonly<Record<typeof PAPER_MEMBER_KINDS[number], PaperStageId>> = {
+  setup: 'outline',
+  outline: 'outline',
+  references: 'figures',
+  item: 'figures',
+  section: 'draft',
+  check: 'audit',
+  audit: 'audit',
+  review: 'audit',
+  revise: 'revise',
+  compile: 'compile',
+  fix: 'compile',
+}

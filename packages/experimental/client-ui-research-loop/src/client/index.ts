@@ -16,8 +16,9 @@ import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import { brandOccupants, installDocumentBrand, NotebookGuideIcon } from './brand.tsx'
-import { researchLoopDefinition } from './definition.ts'
+import { researchLoopDefinition, researchPaperDefinition } from './definition.ts'
 import { en, NS, zh } from './locales.ts'
+import { PaperCard, type PaperCardInjected } from './PaperSection.tsx'
 import { ResearchLoopCard, type ResearchLoopCardInjected } from './ResearchLoopCard.tsx'
 import { ResearchLoopDock, type ResearchLoopDockInjected } from './ResearchLoopDock.tsx'
 import {
@@ -52,6 +53,7 @@ const TAB_KIND = 'research-notebook'
  */
 export function apply(ctx: ClientContext): void {
   ctx.uiConversation.events.register(researchLoopDefinition)
+  ctx.uiConversation.events.register(researchPaperDefinition)
   ctx.uiConversation.views.register(researchLoopViewDefinition)
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'science-research: dictionaries')
   ctx.effect(() => injectStyles(), 'science-research: styles')
@@ -90,6 +92,13 @@ export function apply(ctx: ClientContext): void {
     locale: NS,
     inject: (): ResearchLoopCardInjected => ({ openNotebook }),
   }, ResearchLoopCard))
+
+  ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
+    name: 'conversation.chat.node',
+    key: 'research-paper',
+    locale: NS,
+    inject: (): PaperCardInjected => ({ openNotebook }),
+  }, PaperCard))
 
   ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
     name: 'conversation.input.dock',

@@ -1,0 +1,35 @@
+{
+  "name": "paper-writing",
+  "description": "Write a LaTeX paper from a finished science-agent research record: outline, bibliography and figures from the ledger and run outputs, one agent per section, an audit of every number and citation against the record, a referee review, revision, and a PDF build",
+  "whenToUse": "Call when the user asks to write, draft, or revise a paper, manuscript, or article about the research in a science-agent workspace that already has research/state.md or research/report.md. The script only sequences nodes; the paper reports the recorded research and adds no experiment, number, or source.",
+  "phases": [
+    {
+      "title": "Setup",
+      "detail": "create paper/ from the template; check for Tectonic"
+    },
+    {
+      "title": "Outline",
+      "detail": "outline: thesis, claim table, section plans, figure and table list"
+    },
+    {
+      "title": "Figures",
+      "detail": "references from ledger evidence; one agent per figure or table from run outputs"
+    },
+    {
+      "title": "Draft",
+      "detail": "one agent per section: body sections, then abstract and conclusion"
+    },
+    {
+      "title": "Audit",
+      "detail": "static check, audit of numbers and citations against the record, referee review"
+    },
+    {
+      "title": "Revise",
+      "detail": "one agent per part with open issues, then another audit"
+    },
+    {
+      "title": "Compile",
+      "detail": "build the PDF with Tectonic; fix LaTeX errors and rebuild"
+    }
+  ]
+}

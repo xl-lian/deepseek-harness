@@ -68,6 +68,7 @@ describe('Science Research bundle', () => {
     expect([...byId.keys()].filter(id => id.startsWith('tool-subagent-sa-'))).toEqual([])
     const persona = byId.get('persona')?.config?.prefix
     expect(persona).toContain('{name: "research-loop"')
+    expect(persona).toContain('{name: "paper-writing"')
     expect(persona).toContain('never start a workflow')
   })
 
@@ -91,7 +92,7 @@ describe('Science Research bundle', () => {
       const relative = /\$\{CLAUDE_PLUGIN_ROOT\}\/([^"]+)/u.exec(command)?.[1] ?? ''
       expect(existsSync(resolve(root, relative)), command).toBe(true)
     }
-    for (const name of ['sa-research', 'sa-research-status', 'sa-doctor']) {
+    for (const name of ['sa-research', 'sa-research-status', 'sa-doctor', 'sa-paper']) {
       const skill = readFileSync(resolve(root, 'skills', name, 'SKILL.md'), 'utf8')
       expect(skill).toContain(`name: ${name}\n`)
       expect(skill).toContain('user-invocable: true\n')
@@ -100,5 +101,8 @@ describe('Science Research bundle', () => {
     expect(research).toContain('## DeepSeek Harness runtime')
     expect(research).toContain('Mapping rule')
     expect(research).not.toContain('CLAUDE_PLUGIN_ROOT')
+    const paper = readFileSync(resolve(root, 'synced/skills/science-paper/SKILL.md'), 'utf8')
+    expect(paper).toContain('## DeepSeek Harness runtime')
+    expect(paper).not.toContain('CLAUDE_PLUGIN_ROOT')
   })
 })

@@ -5,11 +5,12 @@
  */
 
 import { memberStage } from '../shared/labels.ts'
-import { RESEARCH_STAGES, type ResearchStageId } from '../shared/constants.ts'
+import { PAPER_STAGES, PAPER_STAGE_OF, RESEARCH_STAGES, type PaperStageId, type ResearchStageId } from '../shared/constants.ts'
 import type {
   LedgerExperiment,
   LedgerRound,
   MemberKind,
+  PaperRun,
   ResearchExperiment,
   ResearchMember,
   ResearchRound,
@@ -19,7 +20,7 @@ import type {
 } from '../shared/schema.ts'
 
 /** Status of a set of members: running wins, then failure, then completion. */
-function membersStatus(members: readonly ResearchMember[]): ResearchStatus {
+function membersStatus(members: readonly Pick<ResearchMember, 'status'>[]): ResearchStatus {
   if (members.length === 0) return 'pending'
   if (members.some(member => member.status === 'running')) return 'running'
   if (members.some(member => member.status === 'failed')) return 'failed'
@@ -123,6 +124,33 @@ export function ledgerRound(view: ResearchView, round: ResearchRound): LedgerRou
 export function currentRun(view: ResearchView | undefined): ResearchRun | undefined {
   if (view === undefined) return undefined
   return [...view.runs].reverse().find(run => run.status === 'running') ?? view.runs[view.runs.length - 1]
+}
+
+/**
+ * Status of one stage of a paper run.
+ * @param run - the paper run.
+ * @param stage - the stage.
+ * @returns the members' status; a failed PDF build fails the compile stage, and a stage the run has
+ *   moved past without members counts as completed.
+ */
+export function paperStageStatus(run: PaperRun, stage: PaperStageId): ResearchStatus {
+  if (stage === 'compile' && run.compile?.status === 'failed' && run.status !== 'running') return 'failed'
+  const status = membersStatus(run.members.filter(member => PAPER_STAGE_OF[member.kind] === stage))
+  if (status !== 'pending') return status
+  const later = PAPER_STAGES.slice(PAPER_STAGES.indexOf(stage) + 1)
+  const reached = later.some(next => run.members.some(member => PAPER_STAGE_OF[member.kind] === next))
+  if (reached || run.status === 'completed') return 'completed'
+  return run.status === 'running' ? 'pending' : run.status
+}
+
+/**
+ * The paper run the dock follows.
+ * @param view - the projection view.
+ * @returns the running paper run, else the latest.
+ */
+export function currentPaper(view: ResearchView | undefined): PaperRun | undefined {
+  if (view === undefined) return undefined
+  return [...view.papers].reverse().find(run => run.status === 'running') ?? view.papers[view.papers.length - 1]
 }
 
 /**

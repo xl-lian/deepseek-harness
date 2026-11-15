@@ -1,15 +1,20 @@
 /**
  * Pure fold from committed Session events to research loop state. It follows
  * `research-loop` workflow runs (member lifecycle, narration lines, and the
- * final return value) and the latest `sagent research status` result. It
- * performs no I/O and returns the same state reference for unrelated events.
+ * final return value) and the latest `sagent research status` result, then
+ * hands each event to the paper-writing fold. It performs no I/O and returns
+ * the same state reference for unrelated events.
  */
 
 import type {} from '@deepseek-ai/dsh-agent-preset-registry'
-import type { ContentBlock } from '@deepseek-ai/dsh-llm/types'
 import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
 import type {} from '@deepseek-ai/dsh-tool-workflow/types'
 import { parseLabel, parseLogLine, type ParsedLine } from '../shared/labels.ts'
+import {
+  MAX_LIST, SHORT_TEXT, TEXT, clip, compact, isRecord, num, parseObject, payloadsOf,
+  pushBounded, settled, str, strings, textOf, workflowCall,
+} from './fold-util.ts'
+import { initPaperRuns, reducePaperEvent } from './paper.ts'
 import { RESEARCH_SKILL, RESEARCH_WORKFLOW } from '../shared/constants.ts'
 import {
   verdictSchema,
@@ -21,7 +26,6 @@ import {
   type ResearchRound,
   type ResearchRun,
   type ResearchState,
-  type ResearchStatus,
 } from '../shared/schema.ts'
 
 const MAX_RUNS = 20
@@ -30,10 +34,7 @@ const MAX_MEMBERS = 160
 const MAX_EXPERIMENTS = 20
 const MAX_NOTES = 30
 const MAX_LEDGER_ROUNDS = 30
-const MAX_LIST = 12
-const TEXT = 400
 const LONG_TEXT = 800
-const SHORT_TEXT = 160
 
 /**
  * Empty state for a Session.
@@ -41,7 +42,7 @@ const SHORT_TEXT = 160
  * @returns state with no runs.
  */
 export function initResearchState(agentPreset: string | null = null): ResearchState {
-  return { v: 1, runs: [], calls: {}, agentPreset, skillLoaded: false }
+  return { v: 2, runs: [], papers: initPaperRuns(), calls: {}, agentPreset, skillLoaded: false }
 }
 
 /**
@@ -51,6 +52,10 @@ export function initResearchState(agentPreset: string | null = null): ResearchSt
  * @returns the next state, or `state` itself when the event is unrelated.
  */
 export function reduceResearchEvent(state: ResearchState, event: SessionEvent): ResearchState {
+  return reducePaperEvent(reduceLoopEvent(state, event), event)
+}
+
+function reduceLoopEvent(state: ResearchState, event: SessionEvent): ResearchState {
   switch (event.type) {
     case 'tool/call':
       return onToolCall(state, event.data.callId, event.data.name, event.data.arguments)
@@ -83,65 +88,7 @@ function withPreset(state: ResearchState, agentPreset: string): ResearchState {
   return state.agentPreset === agentPreset ? state : { ...state, agentPreset }
 }
 
-// ---------------------------------------------------------------- small helpers
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function clip(text: string, limit: number): string {
-  return text.length <= limit ? text : `${text.slice(0, limit)}…`
-}
-
-function str(value: unknown, limit = TEXT): string | undefined {
-  return typeof value === 'string' && value.length > 0 ? clip(value, limit) : undefined
-}
-
-function num(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
-}
-
-function strings(value: unknown, limit = MAX_LIST): string[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === 'string').slice(0, limit).map(item => clip(item, SHORT_TEXT))
-    : []
-}
-
-function parseObject(text: string): Record<string, unknown> | undefined {
-  try {
-    const value: unknown = JSON.parse(text)
-    return isRecord(value) ? value : undefined
-  } catch {
-    // Not one JSON document; callers fall back to scanning lines.
-    return undefined
-  }
-}
-
-function textOf(content: readonly ContentBlock[]): string {
-  return content.flatMap(block => (block.type === 'text' ? [block.text] : [])).join('\n')
-}
-
-function pushBounded<T>(list: readonly T[], item: T, limit: number): T[] {
-  const next = [...list, item]
-  return next.length > limit ? next.slice(next.length - limit) : next
-}
-
-function compact<T extends object>(value: T): T {
-  return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined)) as T
-}
-
 // ---------------------------------------------------------------- tool calls
-
-/** `workflow` tool arguments naming the research loop: its workspace, else `undefined`. */
-function loopCall(name: string, argumentsJson: string): { readonly workspace?: string | undefined } | undefined {
-  if (name !== 'workflow' && name !== 'workflow_run') return undefined
-  const args = parseObject(argumentsJson)
-  if (args === undefined) return undefined
-  const meta = isRecord(args['meta']) ? args['meta'] : undefined
-  if (args['name'] !== RESEARCH_WORKFLOW && meta?.['name'] !== RESEARCH_WORKFLOW) return undefined
-  const scriptArgs = isRecord(args['args']) ? args['args'] : parseObject(typeof args['args'] === 'string' ? args['args'] : '')
-  return { workspace: str(scriptArgs?.['workspace']) }
-}
 
 const STATUS_COMMAND = /(?:^|[\s;&|(])(?:\S*\/)?(?:sagent|sa)\b[^;&|\n]*?\bresearch\s+status\b/u
 const WORKSPACE_FLAG = /(?:-w|--workspace)(?:\s+|=)(?:"([^"]+)"|'([^']+)'|(\S+))/u
@@ -164,30 +111,17 @@ function onToolCall(state: ResearchState, callId: string, name: string, argument
   if (name === 'skill' && !state.skillLoaded && parseObject(argumentsJson)?.['name'] === RESEARCH_SKILL) {
     return { ...state, skillLoaded: true }
   }
-  const loop = loopCall(name, argumentsJson)
+  const loop = workflowCall(name, argumentsJson, RESEARCH_WORKFLOW)
   if (loop !== undefined) return { ...state, calls: { ...state.calls, [callId]: compact({ purpose: 'loop' as const, workspace: loop.workspace }) } }
   const status = statusCall(name, argumentsJson)
   if (status !== undefined) return { ...state, calls: { ...state.calls, [callId]: compact({ purpose: 'status' as const, workspace: status.workspace }) } }
   return state
 }
 
-/** JSON payloads in a tool result: the workflow return value, one document, or a sagent envelope per line. */
-function payloadsOf(text: string): Record<string, unknown>[] {
-  const marker = text.indexOf('Return value:')
-  const body = marker === -1 ? text : text.slice(marker + 'Return value:'.length)
-  const whole = parseObject(body.trim())
-  const candidates = whole === undefined
-    ? body.split('\n').map(line => parseObject(line.trim())).filter((value): value is Record<string, unknown> => value !== undefined)
-    : [whole]
-  return candidates.flatMap((value) => {
-    if (value['ok'] === true) return isRecord(value['data']) ? [value['data']] : []
-    return value['ok'] === false ? [] : [value]
-  })
-}
-
 function onToolResult(state: ResearchState, callId: string, text: string, failed: boolean, time: number): ResearchState {
   const binding = state.calls[callId]
-  if (binding === undefined) return state
+  // A paper-writing call settles in the paper fold.
+  if (binding === undefined || binding.purpose === 'paper') return state
   const { [callId]: _settled, ...calls } = state.calls
   let next: ResearchState = { ...state, calls }
   const payloads = failed ? [] : payloadsOf(text)
@@ -289,10 +223,6 @@ function onAgentStart(state: ResearchState, runId: string, seq: number, label: s
   })
 }
 
-function settled(outcome: string): ResearchStatus {
-  return outcome === 'completed' ? 'completed' : outcome === 'cancelled' ? 'cancelled' : 'failed'
-}
-
 function onAgentEnd(state: ResearchState, runId: string, seq: number, outcome: string, time: number): ResearchState {
   return updateRun(state, runId, (run) => {
     if (run.writeUp?.seq === seq) return { ...run, writeUp: { ...run.writeUp, status: settled(outcome), endedAt: time } }
@@ -373,7 +303,7 @@ function onLog(state: ResearchState, runId: string, message: string, time: numbe
 
 function onRunEnd(state: ResearchState, runId: string, stopReason: string, time: number): ResearchState {
   return updateRun(state, runId, (run) => {
-    const status: ResearchStatus = stopReason === 'completed' ? 'completed' : stopReason === 'cancelled' ? 'cancelled' : 'failed'
+    const status = settled(stopReason)
     // Members still running when the run ends never report their own end; they settle with the run.
     const settle = (member: ResearchMember): ResearchMember => (member.status === 'running' ? { ...member, status, endedAt: time } : member)
     const rounds = run.rounds.map(round => (round.status === 'running'

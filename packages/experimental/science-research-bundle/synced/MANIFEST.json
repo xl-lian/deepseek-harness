@@ -1,7 +1,15 @@
 {
-  "sourceVersion": "0.3.0",
+  "sourceVersion": "0.4.0",
   "sources": {
     "examples/objective.research.yaml": "3baf93c587e1516e006fcb81ee1809b5302bfd49716f21a832b2447fda3e615a",
+    "plugin/agents/paper-audit.md": "9e641305623ad5a71c7a346702bd4eff4c0fa33b037bb4b05ec8d8cd3ab7e8c9",
+    "plugin/agents/paper-fix.md": "f5798d188e8a6b712d8c2e19c1c1f3f1210bd85a9ee4b8161b817656fb79b179",
+    "plugin/agents/paper-item.md": "425cad7960a59de6061ee476915bdd0c75ace82672a9a8829b500ebcf4d64b41",
+    "plugin/agents/paper-outline.md": "b17f62afda1cf6e954cc1388f30027f88918f61d28c2c5204a5e6a0ac8aa4225",
+    "plugin/agents/paper-references.md": "3dd7645b5f547e77f9bfb85702ddc4d15da21f35a76983390ceecb4630ae6e12",
+    "plugin/agents/paper-review.md": "d1f7577cf7574ae26623cab4f55dc56cc684d0a49a0cca1b584c3beb094a8f53",
+    "plugin/agents/paper-revise.md": "fde811a97986f5f2fbb0ff4c0d9929dd7d6fea8c750b13ccab34460cdb8acfb8",
+    "plugin/agents/paper-section.md": "99513eaf92af01f2ad51dd129d015275c12e298bc230edfbedf1b114a89c2098",
     "plugin/agents/research-experiment-build.md": "434d671d05ef48b9f995315ed6e9ea6361707c86a5217f38e126593801a080a0",
     "plugin/agents/research-experiment-debug.md": "38a37ff579dd4338b4d9f6331587fda0c611b5e13a8ae1edcbb7c2c5e1cb51a2",
     "plugin/agents/research-experiment-run.md": "096dfb3ae4e4f91691ee19eb9a3b00db1fabcef74b823d2215b23b25f1e1dcd4",
@@ -18,14 +26,24 @@
     "plugin/hooks/guard.py": "23be1f434ca557c5580a99b46b502b53f1229391f4a2a131a21c6fe2e43779db",
     "plugin/hooks/round_trigger.py": "e69ec3642ac4a8c5327affa4c0fd5c53b4c9ed1f062a5a1499a67459c4890af6",
     "plugin/scripts/mcp-server.sh": "dc42b12e6f5830590ff99df07149b4db1c76eda7ca90898e8e49de37c0374baf",
+    "plugin/skills/science-paper/SKILL.md": "1658f6f8f9335da176125aad75eba749d131b0cc21cfd51c3f5f94a5fad94ab4",
     "plugin/skills/science-research/SKILL.md": "331a73da35e9fbbfd0ded753f4afae6a14b52bc02e9574e88b51f6f8130aec5e",
+    "plugin/workflows/paper-writing.js": "e7f31c14cb7760495d09b0df1a1fe4772def9b9d314d7f4e97387024a6ad0335",
     "plugin/workflows/research-loop.js": "be5993d094b94109870e5de243573b71b6a50cdd820ee6e7a1372b5e82605d48",
-    "pyproject.toml": "a2d12a2a8f37b9330d56dc3711edb4eb25c4e97a9e6a9ce7a42a27647d13b594"
+    "pyproject.toml": "b469111be6aa305231a455e5547fe938bf2e424de126869827f17a16c89d7f98"
   },
   "files": {
     "synced/examples/objective.research.yaml": "3baf93c587e1516e006fcb81ee1809b5302bfd49716f21a832b2447fda3e615a",
     "synced/hooks/guard.py": "7d77e56a39eefd883c0cdd6a255f1e91b907ba8061bcfbf2216f81bd965ab389",
     "synced/hooks/round_trigger.py": "965800f31e73345c32584360161c5022ade1c205fd3da8a6ccb0212967858343",
+    "synced/personas/paper-audit.md": "171015fd47e18072cf7bdae714c17b8b80acde6963f45d37550c6dcd9979dffa",
+    "synced/personas/paper-fix.md": "d7504959c481c6e3fcd6e88b2354aed27116877b5c0ce4ba276222d2a9be0766",
+    "synced/personas/paper-item.md": "f7f9e5c7ee4bd295507c30dcff7383f0f9fa9a9f5b6d0b33d78ed1b994156c44",
+    "synced/personas/paper-outline.md": "7e829f773caa980e85303731cb510d782b7b10bb2fe5cee7a0867ca0fd159ef0",
+    "synced/personas/paper-references.md": "9daae42e110ce59883b16209451bb46fe457beeae06b2661012b267fb139a2f3",
+    "synced/personas/paper-review.md": "9c97e1d2f7da185480e49ea30154137724c515632768012f4a74e92f048522b0",
+    "synced/personas/paper-revise.md": "17d76b3dd949b672f373d3cfe41791d90e7e2131bb73a379594eb2ac4d94ad4f",
+    "synced/personas/paper-section.md": "5ab0389cf4044cfc7e473cd94bf0c7e4b8bcaeb36d35928c4ed648f32921d65d",
     "synced/personas/research-experiment-build.md": "2d94518c3dc10d9eac5e6b63bdfd989587aa450387e16482e603a77b7aba8484",
     "synced/personas/research-experiment-debug.md": "07c48b7f3fd7d30fd30df10ce51c8245484a1a43494cb006980b53b0df8afc27",
     "synced/personas/research-experiment-run.md": "2eb5b0cac946365d247ca9b400a7872e96b555dfad240aacfa39382865dd0a10",
@@ -40,7 +58,10 @@
     "synced/personas/research-write-up.md": "47225337198dd7cbade7d830a1162fa28e28fcaa8d2a3eaa36b784162be35fc3",
     "synced/personas/sa-clerk.md": "3d258d93d2bf1cb99ef0283530b6692d6cc2b4aaf1f4820232fdc6fda4846f43",
     "synced/scripts/mcp-server.sh": "dc42b12e6f5830590ff99df07149b4db1c76eda7ca90898e8e49de37c0374baf",
+    "synced/skills/science-paper/SKILL.md": "8532933e1d0aa9b0f9a6ccab521d291b1a13e41990202c7377cfdf20f5e26e79",
     "synced/skills/science-research/SKILL.md": "b7a3a961446fa3bb8a474b4393f01cf426a99a838cad7281e56f70a934ae9823",
+    "synced/workflows/paper-writing.js": "bc4ba64adb70460bed5303d45802626976207a4682ac99b95cae68f91f96208c",
+    "synced/workflows/paper-writing.meta.json": "585a2b5e47266834d144910eebb0b33cc9defbe7f2e8b92036c269362fa854ce",
     "synced/workflows/research-loop.js": "7d79e1837059bcaf1a003c01e0aac6a00226fa04c1900f97dcec341393b468a5",
     "synced/workflows/research-loop.meta.json": "7a3dc6bc96c8726a8bb84030636a4a157e3eb3d3febdcbc9976d1f1a9a5fea18"
   }
