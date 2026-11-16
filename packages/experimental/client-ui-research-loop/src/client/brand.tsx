@@ -87,7 +87,7 @@ export function brandOccupants(words: () => BrandWords): BrandOccupants {
 }
 
 const FAVICON = `data:image/svg+xml,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="3" y="3" width="58" height="58" rx="14" fill="#fbfaf7" stroke="#534ab7" stroke-width="2.5"/><circle cx="32" cy="32" r="17" fill="none" stroke="#534ab7" stroke-width="3"/><circle cx="32" cy="15" r="5" fill="#534ab7"/><circle cx="48.2" cy="26.7" r="4" fill="#0f6e56"/><circle cx="42" cy="45.8" r="4" fill="#534ab7"/><circle cx="22" cy="45.8" r="4" fill="#534ab7"/><circle cx="15.8" cy="26.7" r="4" fill="#534ab7"/></svg>',
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="3" y="3" width="58" height="58" rx="14" fill="#f8faf5" stroke="#3d5a40" stroke-width="2.5"/><circle cx="32" cy="32" r="17" fill="none" stroke="#3d5a40" stroke-width="3"/><circle cx="32" cy="15" r="5" fill="#3d5a40"/><circle cx="48.2" cy="26.7" r="4" fill="#557a2f"/><circle cx="42" cy="45.8" r="4" fill="#3d5a40"/><circle cx="22" cy="45.8" r="4" fill="#3d5a40"/><circle cx="15.8" cy="26.7" r="4" fill="#3d5a40"/></svg>',
 )}`
 
 /**
