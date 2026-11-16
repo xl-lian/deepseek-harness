@@ -1,17 +1,23 @@
 /**
- * Notebook view tab beside Chat: study-level notebook shortcuts, then every
- * `research-loop` run of the Session with its rounds, oldest first. Each round
- * shows its stage rail, reading, pre-registered plan, experiments, and next
- * step, joined with the latest research status ledger.
+ * Notebook view tab beside Chat: study-level notebook shortcuts, then one
+ * timeline of the Session's research runs, campaign rounds, and paper runs,
+ * oldest first. A research round shows its stage rail, reading, pre-registered
+ * plan, experiments, and next step, joined with the latest research status
+ * ledger; a campaign round shows one stage ring per experiment.
  */
 
 import type { ConversationViewDefinition, ConversationViewNode } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { SessionReference } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { notebookPaths } from '../shared/labels.ts'
 import type { ResearchRun, ResearchView } from '../shared/schema.ts'
+import { assertNever } from '@deepseek-ai/dsh-util-values'
 import { resolveWorkspacePath } from '@deepseek-ai/dsh-util-workspace-path'
-import { elapsed, formatDuration, ledgerRound, stopText } from './model.ts'
+import type { ActivityView } from '../shared/activity-schema.ts'
+import { ActivitySection, PANE_TURNS } from './ActivitySection.tsx'
+import { CampaignRoundSection } from './CampaignRounds.tsx'
+import { elapsed, formatDuration, ledgerRound, notebookTimeline, stopText } from './model.ts'
 import { PaperRunSection } from './PaperSection.tsx'
 import { FileLink, NotebookBar, RunNotes, ResearchEmpty, RoundBody, StageRail, StatusMark, type ResearchTranslate } from './parts.tsx'
 
@@ -30,6 +36,8 @@ export interface ResearchNavigation {
   readonly openChild: (parentSessionId: SessionId, childId: string) => void
   /** Open a file of `sessionId` by absolute or workspace-relative path in the right Sidebar. */
   readonly openFile: (sessionId: SessionId, path: string) => void
+  /** Retain one member's child Session of `parentSessionId` until `signal` aborts; the caller releases the reference. */
+  readonly retainChild: (parentSessionId: SessionId, childId: string, signal: AbortSignal) => SessionReference
 }
 
 /** Injected props of the notebook view tab: navigation plus opening the right-Sidebar notebook tab. */
@@ -48,7 +56,7 @@ export type ResearchLoopViewProps =
 const CHAT_VIEW = 'chat'
 
 /** One loop run: header, rounds, write-up. */
-export function RunSection({ run, index, view, sessionId, openChild, openFile, t }: ResearchNavigation & {
+export function RunSection({ run, index, view, sessionId, openChild, openFile, t }: Pick<ResearchNavigation, 'openChild' | 'openFile'> & {
   readonly run: ResearchRun
   readonly index: number
   readonly view: ResearchView
@@ -101,6 +109,10 @@ export function RunSection({ run, index, view, sessionId, openChild, openFile, t
 export type NotebookContentProps = ResearchNavigation & {
   /** Projection view, or `undefined` before the first snapshot. */
   readonly view: ResearchView | undefined
+  /** Activity outside loops, or `undefined` before the first snapshot. */
+  readonly activity?: ActivityView | undefined
+  /** Most activity turns to show; all when omitted. */
+  readonly activityLimit?: number | undefined
   readonly sessionId: SessionId
   readonly t: ResearchTranslate
   /** Move the notebook beside Chat; omitted where it already sits beside Chat. */
@@ -108,10 +120,18 @@ export type NotebookContentProps = ResearchNavigation & {
 }
 
 /** The notebook body shared by the view tab and the right-Sidebar tab. */
-export function NotebookContent({ view, sessionId, openChild, openFile, openBeside, t }: NotebookContentProps): React.JSX.Element {
+export function NotebookContent({
+  view, activity, activityLimit, sessionId, openChild, openFile, retainChild, openBeside, t,
+}: NotebookContentProps): React.JSX.Element {
   const runs = view?.runs ?? []
   const papers = view?.papers ?? []
   const workspace = runs[runs.length - 1]?.workspace ?? view?.ledger?.workspace ?? papers[papers.length - 1]?.workspace
+  const timeline = view === undefined ? [] : notebookTimeline(view)
+  const campaign = {
+    openSessionFor: (childId: string) => { openChild(sessionId, childId) },
+    openFile: (path: string) => { openFile(sessionId, resolveWorkspacePath(workspace, path)) },
+    retainChild: (childId: string, signal: AbortSignal) => retainChild(sessionId, childId, signal),
+  }
   return (
     <div className="rl-view">
       <NotebookBar
@@ -121,37 +141,66 @@ export function NotebookContent({ view, sessionId, openChild, openFile, openBesi
         openBeside={openBeside}
         t={t}
       />
-      {view === undefined || (runs.length === 0 && papers.length === 0)
+      {timeline.length === 0 && (activity?.turns.length ?? 0) === 0
         ? <ResearchEmpty agentPreset={view?.agentPreset} skillLoaded={view?.skillLoaded ?? false} t={t} />
-        : runs.map((run, index) => (
-          <RunSection
-            key={run.runId}
-            run={run}
-            index={index}
-            view={view}
-            sessionId={sessionId}
-            openChild={openChild}
-            openFile={openFile}
-            t={t}
-          />
-        ))}
-      {papers.map((paper, index) => (
-        <PaperRunSection
-          key={paper.runId}
-          run={paper}
-          index={index}
-          openPath={(path) => { openFile(sessionId, resolveWorkspacePath(paper.workspace ?? workspace, path)) }}
-          openChild={(childId) => { openChild(sessionId, childId) }}
-          t={t}
-        />
-      ))}
+        : null}
+      {view === undefined
+        ? null
+        : timeline.map((entry) => {
+          switch (entry.kind) {
+            case 'research':
+              return (
+                <RunSection
+                  key={entry.key}
+                  run={entry.run}
+                  index={entry.index}
+                  view={view}
+                  sessionId={sessionId}
+                  openChild={openChild}
+                  openFile={openFile}
+                  t={t}
+                />
+              )
+            case 'campaign':
+              return (
+                <CampaignRoundSection
+                  key={entry.key}
+                  round={entry.round}
+                  index={entry.index}
+                  hasNextRound={entry.hasNextRound}
+                  {...campaign}
+                  t={t}
+                />
+              )
+            case 'paper':
+              return (
+                <PaperRunSection
+                  key={entry.key}
+                  run={entry.run}
+                  index={entry.index}
+                  openPath={(path) => { openFile(sessionId, resolveWorkspacePath(entry.run.workspace ?? workspace, path)) }}
+                  openChild={(childId) => { openChild(sessionId, childId) }}
+                  t={t}
+                />
+              )
+            default:
+              return assertNever(entry, 'notebook entry')
+          }
+        })}
+      <ActivitySection
+        view={activity}
+        secondary={timeline.length > 0}
+        limit={activityLimit}
+        openPath={(path) => { openFile(sessionId, resolveWorkspacePath(workspace, path)) }}
+        t={t}
+      />
     </div>
   )
 }
 
 /** Render the notebook view tab; its "Open beside chat" button opens the right-Sidebar notebook and selects Chat. */
 export function ResearchLoopView({
-  useProjection, sessionId, openChild, openFile, openNotebook, openView, completeViewRequest, t,
+  useProjection, sessionId, openChild, openFile, retainChild, openNotebook, openView, completeViewRequest, t,
 }: ResearchLoopViewProps): React.JSX.Element {
   const openBeside = (): void => {
     openNotebook()
@@ -162,9 +211,11 @@ export function ResearchLoopView({
   return (
     <NotebookContent
       view={useProjection('scienceResearchLoop')}
+      activity={useProjection('scienceResearchActivity')}
       sessionId={sessionId}
       openChild={openChild}
       openFile={openFile}
+      retainChild={retainChild}
       openBeside={openBeside}
       t={t}
     />
@@ -179,7 +230,14 @@ export type ResearchLoopPaneProps =
 
 /** Render the notebook in the right Sidebar, opened from its guide card, the view tab, the dock, and the Chat card. */
 export function ResearchLoopPane({ useProjection, ...rest }: ResearchLoopPaneProps): React.JSX.Element {
-  return <NotebookContent view={useProjection('scienceResearchLoop')} {...rest} />
+  return (
+    <NotebookContent
+      view={useProjection('scienceResearchLoop')}
+      activity={useProjection('scienceResearchActivity')}
+      activityLimit={PANE_TURNS}
+      {...rest}
+    />
+  )
 }
 
 /** Title chip of the right-Sidebar notebook tab. */

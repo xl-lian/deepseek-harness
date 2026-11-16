@@ -6,6 +6,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
+import type { SessionReference } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { installDocumentBrand, NotebookGuideIcon } from '../src/client/brand.tsx'
 import { en, zh } from '../src/client/locales.ts'
@@ -55,9 +56,10 @@ const runningRound: ResearchRound = {
 
 function view(runs: ResearchRun[]): ResearchView {
   return {
-    v: 2,
+    v: 3,
     runs,
     papers: [],
+    campaign: { rounds: [] },
     agentPreset: 'research',
     skillLoaded: true,
     ledger: {
@@ -83,6 +85,7 @@ const settledRun: ResearchRun = {
 }
 
 const noop = (): void => undefined
+const retainChild = (): SessionReference => { throw new Error('static rendering retains no child Session') }
 
 const paperRun: PaperRun = {
   runId: 'wf-p', workspace: '/ws/study', status: 'completed', startedAt: 1_000, endedAt: 9_000,
@@ -120,7 +123,7 @@ describe('research notebook', () => {
   it('renders notebook links, reading, plan, experiments with evidence class, and the write-up', () => {
     const opened: string[] = []
     const html = renderToStaticMarkup(
-      <NotebookContent view={view([settledRun])} sessionId={'s-1' as SessionId} openChild={noop} openFile={(_session, path) => { opened.push(path) }} t={t} />,
+      <NotebookContent view={view([settledRun])} sessionId={'s-1' as SessionId} openChild={noop} openFile={(_session, path) => { opened.push(path) }} retainChild={retainChild} t={t} />,
     )
     for (const text of ['Is the t-test calibrated?', 'State of knowledge', 'Next-step plan', '3 sources · 2 quote-checked citations',
       'Focus lit', 'Judged enough to plan', 'Registered before any run', 'False-positive rate', 'Supported', 'high confidence',
@@ -132,7 +135,7 @@ describe('research notebook', () => {
   })
 
   it('offers to open the notebook beside Chat only where a handler is given', () => {
-    const props = { view: view([settledRun]), sessionId: 's-1' as SessionId, openChild: noop, openFile: noop, t }
+    const props = { view: view([settledRun]), sessionId: 's-1' as SessionId, openChild: noop, openFile: noop, retainChild, t }
     expect(renderToStaticMarkup(<NotebookContent {...props} openBeside={noop} />)).toContain('Open beside chat')
     expect(renderToStaticMarkup(<NotebookContent {...props} />)).not.toContain('Open beside chat')
     const icon = renderToStaticMarkup(<NotebookGuideIcon />)
@@ -141,8 +144,8 @@ describe('research notebook', () => {
   })
 
   it('states why the notebook is empty', () => {
-    const empty = { v: 2 as const, runs: [], papers: [], agentPreset: 'science', skillLoaded: false }
-    expect(renderToStaticMarkup(<NotebookContent view={empty} sessionId={'s-1' as SessionId} openChild={noop} openFile={noop} t={t} />))
+    const empty = { v: 3 as const, runs: [], papers: [], campaign: { rounds: [] }, agentPreset: 'science', skillLoaded: false }
+    expect(renderToStaticMarkup(<NotebookContent view={empty} sessionId={'s-1' as SessionId} openChild={noop} openFile={noop} retainChild={retainChild} t={t} />))
       .toContain('does not run the Research Agent preset')
   })
 
@@ -187,7 +190,7 @@ describe('research notebook', () => {
     expect(card).toContain('False-positive rate at n = 5')
     expect(card).toContain('Pass 2: 1 blocking, 0 minor')
     expect(renderToStaticMarkup(<PaperCardBody view={withPapers([paperRun])} runId="other" openNotebook={noop} t={t} />)).toBe('')
-    const notebook = renderToStaticMarkup(<NotebookContent view={withPapers([paperRun])} sessionId={'s-1' as SessionId} openChild={noop} openFile={noop} t={t} />)
+    const notebook = renderToStaticMarkup(<NotebookContent view={withPapers([paperRun])} sessionId={'s-1' as SessionId} openChild={noop} openFile={noop} retainChild={retainChild} t={t} />)
     expect(notebook).toContain('Paper draft 1')
     expect(notebook).not.toContain('does not run the Research Agent preset')
   })

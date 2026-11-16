@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-experimental-client-ui-research-loop",
-  "description": "Live science-agent research loop view, dock, Chat card, and lab-notebook skin for the science-research bundle",
+  "description": "Live science-agent notebook for the science-research bundle: research loop runs, campaign rounds, paper runs, and activity in one view, dock, and Chat cards",
   "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"
@@ -64,10 +64,12 @@
     "@deepseek-ai/dsh-client-ui-slots": "workspace:*",
     "@deepseek-ai/dsh-client-ui-theme": "workspace:*",
     "@deepseek-ai/dsh-client-ui-workspace": "workspace:*",
+    "@deepseek-ai/dsh-jobs": "workspace:*",
     "@deepseek-ai/dsh-llm": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/dsh-session-projection": "workspace:*",
     "@deepseek-ai/dsh-tool-workflow": "workspace:*",
+    "@deepseek-ai/dsh-util-values": "workspace:*",
     "@deepseek-ai/dsh-util-workspace-path": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

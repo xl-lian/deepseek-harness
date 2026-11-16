@@ -1,9 +1,9 @@
 /**
- * Pure fold from committed Session events to research loop state. It follows
+ * Pure fold from committed Session events to notebook state. It follows
  * `research-loop` workflow runs (member lifecycle, narration lines, and the
  * final return value) and the latest `sagent research status` result, then
- * hands each event to the paper-writing fold. It performs no I/O and returns
- * the same state reference for unrelated events.
+ * hands each event to the paper-writing fold and the campaign-round fold. It
+ * performs no I/O and returns the same state reference for unrelated events.
  */
 
 import type {} from '@deepseek-ai/dsh-agent-preset-registry'
@@ -14,8 +14,9 @@ import {
   MAX_LIST, SHORT_TEXT, TEXT, clip, compact, isRecord, num, parseObject, payloadsOf,
   pushBounded, settled, str, strings, textOf, workflowCall,
 } from './fold-util.ts'
+import { initCampaignState, reduceCampaignEvent } from './campaign.ts'
 import { initPaperRuns, reducePaperEvent } from './paper.ts'
-import { RESEARCH_SKILL, RESEARCH_WORKFLOW } from '../shared/constants.ts'
+import { RESEARCH_WORKFLOW, SCIENCE_SKILLS } from '../shared/constants.ts'
 import {
   verdictSchema,
   type LedgerExperiment,
@@ -42,7 +43,7 @@ const LONG_TEXT = 800
  * @returns state with no runs.
  */
 export function initResearchState(agentPreset: string | null = null): ResearchState {
-  return { v: 2, runs: [], papers: initPaperRuns(), calls: {}, agentPreset, skillLoaded: false }
+  return { v: 3, runs: [], papers: initPaperRuns(), campaign: initCampaignState(), calls: {}, agentPreset, skillLoaded: false }
 }
 
 /**
@@ -52,7 +53,9 @@ export function initResearchState(agentPreset: string | null = null): ResearchSt
  * @returns the next state, or `state` itself when the event is unrelated.
  */
 export function reduceResearchEvent(state: ResearchState, event: SessionEvent): ResearchState {
-  return reducePaperEvent(reduceLoopEvent(state, event), event)
+  const next = reducePaperEvent(reduceLoopEvent(state, event), event)
+  const campaign = reduceCampaignEvent(next.campaign, event)
+  return campaign === next.campaign ? next : { ...next, campaign }
 }
 
 function reduceLoopEvent(state: ResearchState, event: SessionEvent): ResearchState {
@@ -108,7 +111,8 @@ function statusCall(name: string, argumentsJson: string): { readonly workspace?:
 }
 
 function onToolCall(state: ResearchState, callId: string, name: string, argumentsJson: string): ResearchState {
-  if (name === 'skill' && !state.skillLoaded && parseObject(argumentsJson)?.['name'] === RESEARCH_SKILL) {
+  const skill = name === 'skill' ? parseObject(argumentsJson)?.['name'] : undefined
+  if (!state.skillLoaded && typeof skill === 'string' && SCIENCE_SKILLS.includes(skill)) {
     return { ...state, skillLoaded: true }
   }
   const loop = workflowCall(name, argumentsJson, RESEARCH_WORKFLOW)

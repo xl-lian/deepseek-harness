@@ -231,7 +231,6 @@
     "packages/experimental/cua-macos/native/generate-protocol.ts",
     "packages/experimental/claude-code-mods/examples/*/index.ts",
     "packages/experimental/inspector/scripts/**/*.ts",
-    "packages/experimental/science-agent-bundle/scripts/**/*.ts",
     "packages/experimental/science-research-bundle/scripts/**/*.ts",
     "packages/llm/llm-pi-ai/scripts/**/*.ts",
     "scripts/**/*.ts",
@@ -265,8 +264,6 @@
 
     { "path": "./packages/experimental/client-ui-cot-translation/tsconfig.host.json" },
     { "path": "./packages/experimental/cot-translation-bundle" },
-    { "path": "./packages/experimental/client-ui-science-loop/tsconfig.host.json" },
-    { "path": "./packages/experimental/science-agent-bundle" },
     { "path": "./packages/experimental/client-ui-research-loop/tsconfig.host.json" },
     { "path": "./packages/experimental/science-research-bundle" },
     { "path": "./packages/experimental/session-search" },

@@ -86,6 +86,10 @@ The question is the user's. Take it from their words; do not sharpen it into a d
    methods, sources to trust or avoid, a stricter evidence bar). Editing it needs no reinstall.
 7. `sagent -w <dir> doctor --json`. Stop at the first failing step and name the missing command.
 
+If `sagent domain show --json` reports a metric pack (a Kaggle competition, a scored or equation
+task), this is not a research workspace: follow `science-agent-kaggle` or `science-agent` and run
+the `science-campaign` workflow instead (see the `science-agent` skill's **Which loop** table).
+
 ## Run the loop (default for "research this" and "continue")
 
 ```text

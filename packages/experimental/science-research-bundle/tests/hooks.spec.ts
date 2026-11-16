@@ -1,4 +1,4 @@
-/** The synced hooks start the research loop on research requests and guard `.sa/` under dsh tool names. */
+/** The synced hooks route requests to their loop, ask for intake outside a workspace, and guard `.sa/` under dsh tool names. */
 
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
@@ -24,13 +24,26 @@ describe.skipIf(!python3)('synced research hooks', () => {
     rmSync(scratch, { recursive: true, force: true })
   })
 
-  it('names the research-loop workflow for a continue-research request in a workspace', () => {
-    const context = (JSON.parse(runHook('round_trigger.py', { prompt: '继续研究这个问题', cwd: workspace })) as {
-      hookSpecificOutput: { additionalContext: string }
-    }).hookSpecificOutput.additionalContext
-    expect(context).toContain('RESEARCH REQUEST')
-    expect(context).toContain('{name: "research-loop"')
-    expect(runHook('round_trigger.py', { prompt: 'continue research', cwd: scratch })).toBe('')
+  const context = (prompt: string, cwd: string): string => (JSON.parse(runHook('round_trigger.py', { prompt, cwd })) as {
+    hookSpecificOutput: { additionalContext: string }
+  }).hookSpecificOutput.additionalContext
+
+  it('names both saved loops, in the dsh workflow tool, for a request in a workspace', () => {
+    for (const prompt of ['继续研究这个问题', '总结进展并继续后续实验', 'continue the experiment']) {
+      const text = context(prompt, workspace)
+      expect(text).toContain('EXPERIMENT REQUEST')
+      expect(text).toContain('the dsh `workflow` tool with ({name: "research-loop"')
+      expect(text).toContain('the dsh `workflow` tool with ({name: "science-campaign"')
+      expect(text).not.toContain('science-agent:')
+    }
+    expect(runHook('round_trigger.py', { prompt: '解释一下这个函数', cwd: workspace })).toBe('')
+  })
+
+  it('asks for intake when the folder has no workspace', () => {
+    const text = context('continue the experiment', scratch)
+    expect(text).toContain('no science-agent workspace')
+    expect(text).toContain('Intake')
+    expect(text).toContain('science-agent-kaggle')
   })
 
   it('denies writes into the run store under the lower-case write tool', () => {
@@ -39,5 +52,12 @@ describe.skipIf(!python3)('synced research hooks', () => {
     })) as { hookSpecificOutput: { permissionDecision: string } }).hookSpecificOutput.permissionDecision
     expect(decision).toBe('deny')
     expect(runHook('guard.py', { tool_name: 'write', tool_input: { path: join(workspace, 'research/guidance.md') }, cwd: workspace })).toBe('')
+  })
+
+  it('denies submission bypasses under the lower-case bash tool', () => {
+    const decision = (JSON.parse(runHook('guard.py', {
+      tool_name: 'bash', tool_input: { command: 'kaggle competitions submit -c x -f y -m z' }, cwd: workspace,
+    })) as { hookSpecificOutput: { permissionDecision: string } }).hookSpecificOutput.permissionDecision
+    expect(decision).toBe('deny')
   })
 })

@@ -4,7 +4,8 @@
  * science-agent owns the research-loop and paper-writing node prompts, the
  * `science-research` and `science-paper` skills, the guard and round-trigger
  * hooks, the MCP launcher, the example research objective, and the
- * `research-loop` and `paper-writing` workflows. This tool adapts them to dsh:
+ * `research-loop` and `paper-writing` workflows; `scripts/campaign-sync.ts`
+ * adds the campaign roles, skills, and workflows. This tool adapts them to dsh:
  * node personas gain a dsh runtime note; each workflow loses Claude Code-only
  * options and embeds every persona it calls; the research loop also loses the
  * `pattern` schema keyword and narrates rounds for the loop view through
@@ -21,7 +22,6 @@
  * files differ.
  */
 
-import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -29,17 +29,19 @@ import { parseArgs } from 'node:util'
 import {
   SyncAnchorError,
   adaptGuard,
+  buildCampaignAssets,
   adaptRoundTrigger,
   buildPersonas,
   diffSynced,
   manifestFile,
   replaceAllRequired,
   replaceOnce,
+  sha256,
+  text,
   workflowMeta,
   writeSynced,
-  type SyncedFile,
   type SyncedFiles,
-} from '@deepseek-ai/dsh-experimental-science-agent-bundle/scripts/sync.ts'
+} from './campaign-sync.ts'
 
 /** Absolute directory of the research bundle package. */
 export const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -87,8 +89,6 @@ export interface ResearchTemplates {
   readonly skillRuntime: string
   /** The dsh runtime section inserted into the paper skill. */
   readonly paperSkillRuntime: string
-  /** Replaces the round trigger hook's model context. */
-  readonly triggerContext: string
   /** Narration helpers inserted into the workflow ahead of the rounds. */
   readonly recordOutputs: string
 }
@@ -105,7 +105,6 @@ export function readTemplates(root: string = PACKAGE_ROOT): ResearchTemplates {
     paperRuntimeNote: read('paper-runtime-note.md'),
     skillRuntime: read('skill-runtime.md'),
     paperSkillRuntime: read('paper-skill-runtime.md'),
-    triggerContext: read('research-trigger-context.txt').trimEnd(),
     recordOutputs: read('loop-record-outputs.js'),
   }
 }
@@ -315,13 +314,6 @@ export function adaptPaperSkill(text: string, templates: ResearchTemplates): str
   return out.split('Without the Workflow tool').join('Without the `workflow` tool')
 }
 
-function text(value: string, mode?: number): SyncedFile {
-  return mode === undefined ? { data: Buffer.from(value, 'utf8') } : { data: Buffer.from(value, 'utf8'), mode }
-}
-
-function sha256(data: Buffer | string): string {
-  return createHash('sha256').update(data).digest('hex')
-}
 
 /** The derived files plus the hashes of every source file read. */
 export interface ResearchSyncResult {
@@ -369,7 +361,8 @@ export function buildResearchSynced(source: string, templates: ResearchTemplates
   files.set(`${SYNCED_DIR}/skills/science-paper/SKILL.md`, text(adaptPaperSkill(read('plugin/skills/science-paper/SKILL.md'), templates)))
   files.set(`${SYNCED_DIR}/examples/objective.research.yaml`, text(read('examples/objective.research.yaml')))
   files.set(`${SYNCED_DIR}/hooks/guard.py`, text(adaptGuard(read('plugin/hooks/guard.py'))))
-  files.set(`${SYNCED_DIR}/hooks/round_trigger.py`, text(adaptRoundTrigger(read('plugin/hooks/round_trigger.py'), templates.triggerContext)))
+  files.set(`${SYNCED_DIR}/hooks/round_trigger.py`, text(adaptRoundTrigger(read('plugin/hooks/round_trigger.py'))))
+  for (const [path, file] of buildCampaignAssets(source, read)) files.set(path, file)
   files.set(`${SYNCED_DIR}/scripts/mcp-server.sh`, text(read('plugin/scripts/mcp-server.sh'), 0o755))
 
   files.set(`${SYNCED_DIR}/MANIFEST.json`, manifestFile(read('pyproject.toml'), sources, files))

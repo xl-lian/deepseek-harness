@@ -61,10 +61,8 @@ Promotion requires a named product role, documented public behavior and limitati
 | [`translator`](translator/README.md) | Anonymous Google and Bing text translation | `ctx.translator` |
 | [`client-ui-cot-translation`](client-ui-cot-translation/README.md) | Expanded reasoning translation and original-text controls | `ctx.cotTranslation` |
 | [`cot-translation-bundle`](cot-translation-bundle/README.md) | Default-disabled reasoning translation composition | — |
-| [`science-agent-bundle`](science-agent-bundle/README.md) | Science Agent profile layer: locked research preset, role subagents, saved campaign workflows, guard hooks, and content synced from science-agent | — |
-| [`client-ui-science-loop`](client-ui-science-loop/README.md) | Live science-agent loop projection, view, dock, and Kaggle Arena skin | — |
-| [`science-research-bundle`](science-research-bundle/README.md) | Science Research profile layer: locked research preset, the research-loop workflow, guard hooks, and content synced from science-agent | — |
-| [`client-ui-research-loop`](client-ui-research-loop/README.md) | Research loop projection, notebook view, dock, Chat card, and lab-notebook skin | — |
+| [`science-research-bundle`](science-research-bundle/) | Science Research profile layer: one locked preset for research and experiments, the research-loop, campaign, and paper workflows, role subagents, guard hooks, and content synced from science-agent | — |
+| [`client-ui-research-loop`](client-ui-research-loop/) | Notebook projections, view, dock, and Chat cards for research runs, campaign rounds, paper runs, and activity outside loops, with the lab-notebook skin | — |
 | [`speech-to-text`](speech-to-text/README.md) | Named speech recognition providers | `ctx.speechToText` |
 | [`speech-to-text-sensevoice`](speech-to-text-sensevoice/README.md) | Managed local SenseVoice inference | — |
 | [`api-speech-to-text`](api-speech-to-text/README.md) | Authenticated transient transcription Remote | `ctx.speechController` |

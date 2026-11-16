@@ -61,10 +61,8 @@ kind: "package-group"
 | [`translator`](translator/README.zh.md) | 免登录 Google 与 Bing 文本翻译 | `ctx.translator` |
 | [`client-ui-cot-translation`](client-ui-cot-translation/README.zh.md) | 展开的思考内容翻译与原文控件 | `ctx.cotTranslation` |
 | [`cot-translation-bundle`](cot-translation-bundle/README.zh.md) | 默认禁用的思考内容翻译组合 | — |
-| [`science-agent-bundle`](science-agent-bundle/README.md) | Science Agent profile 层：锁定的研究 preset、角色子代理、保存的 campaign workflow、守卫 hook，以及从 science-agent 同步的内容 | — |
-| [`client-ui-science-loop`](client-ui-science-loop/README.md) | science-agent 实时循环投影、视图、dock 与 Kaggle Arena 皮肤 | — |
-| [`science-research-bundle`](science-research-bundle/README.md) | Science Research profile 层：锁定的研究 preset、research-loop workflow、守卫 hook，以及从 science-agent 同步的内容 | — |
-| [`client-ui-research-loop`](client-ui-research-loop/README.md) | 研究循环投影、研究笔记视图、dock、Chat 卡片与实验笔记本皮肤 | — |
+| [`science-research-bundle`](science-research-bundle/) | Science Research profile 层：研究与实验共用的锁定 preset、research-loop、campaign 与论文 workflow、角色子代理、守卫 hook，以及从 science-agent 同步的内容 | — |
+| [`client-ui-research-loop`](client-ui-research-loop/) | 研究笔记投影、视图、dock 与 Chat 卡片：研究循环、实验轮次、论文运行与循环之外的活动，并带实验笔记本皮肤 | — |
 | [`speech-to-text`](speech-to-text/README.zh.md) | 具名语音识别 Provider | `ctx.speechToText` |
 | [`speech-to-text-sensevoice`](speech-to-text-sensevoice/README.zh.md) | 托管本地 SenseVoice 推理 | — |
 | [`api-speech-to-text`](api-speech-to-text/README.zh.md) | 带认证的临时转写 Remote | `ctx.speechController` |

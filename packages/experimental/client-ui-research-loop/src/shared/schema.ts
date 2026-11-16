@@ -6,6 +6,7 @@
 
 import type {} from '@deepseek-ai/dsh-session-projection/types'
 import { z } from 'zod'
+import { campaignStateSchema, campaignViewSchema } from './campaign-schema.ts'
 import { MEMBER_KINDS, PAPER_MEMBER_KINDS, VERDICTS } from './constants.ts'
 
 /** Lifecycle of a run, round, or member. */
@@ -251,9 +252,10 @@ export const pendingCallSchema = z.object({
 
 /** The persisted fold state. */
 export const researchStateSchema = z.object({
-  v: z.literal(2),
+  v: z.literal(3),
   runs: z.array(runSchema),
   papers: z.array(paperRunSchema),
+  campaign: campaignStateSchema,
   calls: z.record(z.string(), pendingCallSchema),
   ledger: ledgerSchema.optional(),
   agentPreset: z.string().nullable(),
@@ -263,15 +265,15 @@ export const researchStateSchema = z.object({
 /** The persisted fold state. */
 export type ResearchState = z.infer<typeof researchStateSchema>
 
-/** The view sent to the browser: the state without pending call bindings. */
-export const researchViewSchema = researchStateSchema.omit({ calls: true })
+/** The view sent to the browser: the state without pending call bindings, with bounded campaign rounds. */
+export const researchViewSchema = researchStateSchema.omit({ calls: true, campaign: true }).extend({ campaign: campaignViewSchema })
 
-/** The view sent to the browser: the state without pending call bindings. */
+/** The view sent to the browser: the state without pending call bindings, with bounded campaign rounds. */
 export type ResearchView = z.infer<typeof researchViewSchema>
 
 declare module '@deepseek-ai/dsh-session-projection/types' {
   interface SessionProjectionMap {
-    /** Research loop runs, paper-writing runs, and the latest research status snapshot for one Session. */
+    /** Research loop runs, campaign rounds, paper-writing runs, and the latest research status snapshot for one Session. */
     scienceResearchLoop: ResearchView
   }
 }

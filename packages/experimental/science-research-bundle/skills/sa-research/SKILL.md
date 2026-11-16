@@ -16,8 +16,8 @@ Follow the `science-research` skill.
 2. If there is no workspace or no research objective, do the skill's **Intake**: take the question from the
    message or the conversation (never invent one), draft `objective.yaml` from the example objective, create
    and lock it, and run `sagent env init --profile research`. Ask before granting network access or naming an
-   API key in `research.resources`. If the workspace has a metric objective (`control: metric`), say that this
-   profile runs research objectives only and stop.
+   API key in `research.resources`. If the workspace has a metric objective (`control: metric`), say so and use
+   `/sa-campaign` (`/sa-kaggle` for a competition).
 3. Call the dsh `workflow` tool with `name: "research-loop"` and args `{workspace, saBin, maxRounds,
    runTimeoutSec}`. A numeric argument is `maxRounds`. Do not run nodes by hand first.
 4. When it returns, write `result.report.markdown` verbatim to `research/report.md` and record it with

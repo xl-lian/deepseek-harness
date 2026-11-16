@@ -1,6 +1,6 @@
 ---
 name: sa-doctor
-description: "Check the science-agent toolkit, sandbox, disk, ledger, and research workspace."
+description: "Check the science-agent toolkit, sandbox, disk, Kaggle credentials, ledger, and workspace."
 user-invocable: true
 disable-model-invocation: true
 ---
@@ -13,14 +13,18 @@ Run:
 sagent doctor --json
 sagent ledger verify --json
 sagent sandbox selftest --json
-sagent research status --json
+sagent domain show --json
 ```
 
+For a research workspace (`control: prompt`) also run `sagent research status --json`; for a Kaggle
+competition also run `sagent plugin status --json`.
+
 Report each check as pass/warn/fail. Explain the fix for failures:
-- missing `sagent`, or no `research` command: install the toolkit 0.3.0 or later
+- missing `sagent`, or no `research` command: install the toolkit 0.4.1 or later
   (`uv tool install --force "science-agent-toolkit[ml,mcp] @ file:///path/to/science-agent"`);
-- sandbox unavailable: portable mode is weaker; say so in every report;
+- missing Kaggle credentials: `~/.kaggle/kaggle.json` with mode 0600;
+- sandbox unavailable: portable mode is weaker; strict claims are blocked; say so in every report;
 - low disk: free space or `sagent gc`;
 - ledger mismatch: stop and inspect; do not run experiments;
-- workspace missing: `sagent init --workspace <dir> --type research`;
-- objective not locked: follow the `science-research` skill's **Intake**.
+- workspace missing or objective not locked: follow the matching skill's **Intake**
+  (`science-research` for a question, `science-agent-kaggle` for a competition, `science-agent` otherwise).

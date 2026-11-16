@@ -1,11 +1,13 @@
 /**
- * Display model derived from the research loop view: stage status per round,
- * focus rows, and experiment rows that join what the loop narrated with the
- * latest `sagent research status` ledger. Pure functions over the view.
+ * Display model derived from the notebook view: the timeline of research runs,
+ * campaign rounds, and paper runs; stage status per round; focus rows; and
+ * experiment rows that join what the loop narrated with the latest
+ * `sagent research status` ledger. Pure functions over the view.
  */
 
 import { memberStage } from '../shared/labels.ts'
 import { PAPER_STAGES, PAPER_STAGE_OF, RESEARCH_STAGES, type PaperStageId, type ResearchStageId } from '../shared/constants.ts'
+import type { LoopRound } from '../shared/campaign-types.ts'
 import type {
   LedgerExperiment,
   LedgerRound,
@@ -197,4 +199,42 @@ export function formatDuration(milliseconds: number): string {
   const parts = [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60]
   const [hours = 0, minutes = 0, rest = 0] = parts
   return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}` : `${minutes}:${String(rest).padStart(2, '0')}`
+}
+
+/** One entry of the notebook timeline. */
+export type TimelineEntry =
+  | { readonly kind: 'research'; readonly key: string; readonly run: ResearchRun; readonly index: number }
+  | { readonly kind: 'campaign'; readonly key: string; readonly round: LoopRound; readonly index: number; readonly hasNextRound: boolean }
+  | { readonly kind: 'paper'; readonly key: string; readonly run: PaperRun; readonly index: number }
+
+function startOf(entry: TimelineEntry): number {
+  const time = entry.kind === 'campaign' ? entry.round.startedAt : entry.run.startedAt
+  return time ?? Number.POSITIVE_INFINITY
+}
+
+/**
+ * Every research run, campaign round, and paper run of the view, oldest first.
+ * @param view - the notebook view.
+ * @returns the entries ordered by start time; entries without one keep their relative order at the end.
+ */
+export function notebookTimeline(view: ResearchView): TimelineEntry[] {
+  const rounds = view.campaign.rounds
+  const entries: TimelineEntry[] = [
+    ...view.runs.map((run, index) => ({ kind: 'research' as const, key: `research:${run.runId}`, run, index })),
+    ...rounds.map((round, index) => ({ kind: 'campaign' as const, key: `campaign:${round.id}`, round, index, hasNextRound: index < rounds.length - 1 })),
+    ...view.papers.map((run, index) => ({ kind: 'paper' as const, key: `paper:${run.runId}`, run, index })),
+  ]
+  return entries.sort((left, right) => startOf(left) - startOf(right))
+}
+
+/**
+ * The campaign round the dock follows: the active round, else the latest, while it still needs attention.
+ * @param view - the notebook view, if delivered.
+ * @returns the round, or `undefined` when none exists or the latest one completed, stopped, or was interrupted.
+ */
+export function liveCampaignRound(view: ResearchView | undefined): LoopRound | undefined {
+  const rounds = view?.campaign.rounds ?? []
+  const round = rounds.find(candidate => candidate.id === view?.campaign.activeRoundId) ?? rounds[rounds.length - 1]
+  if (round === undefined || round.status === 'completed' || round.status === 'cancelled' || round.status === 'interrupted') return undefined
+  return round
 }

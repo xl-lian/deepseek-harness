@@ -1,7 +1,8 @@
 /**
- * Browser half of the research loop UI: registers the Chat card Definition, the
- * notebook view tab, the dock, the right-Sidebar notebook tab, locale
- * dictionaries, scoped styles, the lab-notebook theme layer, and the brand.
+ * Browser half of the notebook UI: registers the Chat card Definitions for
+ * research runs, campaign rounds, and paper runs, the notebook view tab, the
+ * dock, the right-Sidebar notebook tab, locale dictionaries, scoped styles, the
+ * lab-notebook theme layer, and the brand.
  */
 
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
@@ -16,7 +17,8 @@ import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import { brandOccupants, installDocumentBrand, NotebookGuideIcon } from './brand.tsx'
-import { researchLoopDefinition, researchPaperDefinition } from './definition.ts'
+import { CampaignCard, type CampaignCardInjected } from './CampaignCard.tsx'
+import { researchCampaignDefinition, researchLoopDefinition, researchPaperDefinition } from './definition.ts'
 import { en, NS, zh } from './locales.ts'
 import { PaperCard, type PaperCardInjected } from './PaperSection.tsx'
 import { ResearchLoopCard, type ResearchLoopCardInjected } from './ResearchLoopCard.tsx'
@@ -44,6 +46,13 @@ export const inject = [
   'theme',
 ]
 
+declare module '@deepseek-ai/dsh-api-session-controller/client' {
+  interface SessionReferenceSourceMap {
+    /** A notebook campaign member row expanded to show its child Session. */
+    researchNotebookMember: unknown
+  }
+}
+
 const IMPLEMENTATION_ID = 'science-research-loop-ui'
 const TAB_KIND = 'research-notebook'
 
@@ -54,6 +63,7 @@ const TAB_KIND = 'research-notebook'
 export function apply(ctx: ClientContext): void {
   ctx.uiConversation.events.register(researchLoopDefinition)
   ctx.uiConversation.events.register(researchPaperDefinition)
+  ctx.uiConversation.events.register(researchCampaignDefinition)
   ctx.uiConversation.views.register(researchLoopViewDefinition)
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'science-research: dictionaries')
   ctx.effect(() => injectStyles(), 'science-research: styles')
@@ -74,6 +84,10 @@ export function apply(ctx: ClientContext): void {
   const navigation = (): ResearchNavigation => ({
     openChild: (parentSessionId, childId) => { ctx.uiWorkspace.openSession(childAddress(parentSessionId, childId)) },
     openFile: (sessionId, path) => { ctx.sidebarRight.openResource(sessionFileAddress(sessionId, path)) },
+    retainChild: (parentSessionId, childId, signal) => ctx.sessions.retain(
+      childAddress(parentSessionId, childId),
+      { source: 'researchNotebookMember', signal },
+    ),
   })
   const openNotebook = (): void => { ctx.sidebarRight.openTab(TAB_KIND) }
 
@@ -99,6 +113,13 @@ export function apply(ctx: ClientContext): void {
     locale: NS,
     inject: (): PaperCardInjected => ({ openNotebook }),
   }, PaperCard))
+
+  ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
+    name: 'conversation.chat.node',
+    key: 'research-campaign',
+    locale: NS,
+    inject: (): CampaignCardInjected => ({ openChild: navigation().openChild, openNotebook }),
+  }, CampaignCard))
 
   ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
     name: 'conversation.input.dock',

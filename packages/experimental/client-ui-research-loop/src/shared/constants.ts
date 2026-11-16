@@ -47,8 +47,11 @@ export const RESEARCH_WORKFLOW = 'research-loop'
 /** Agent preset id of the research profile. */
 export const RESEARCH_PRESET = 'research'
 
-/** Skill whose load the empty state reports. */
-export const RESEARCH_SKILL = 'science-research'
+/** Skills whose load the empty state reports: the research, paper, and campaign skills. */
+export const SCIENCE_SKILLS: readonly string[] = ['science-research', 'science-paper', 'science-agent', 'science-agent-kaggle']
+
+/** Campaign workflow names whose runs become campaign rounds. */
+export const CAMPAIGN_WORKFLOWS: readonly string[] = ['kaggle-round', 'science-round', 'science-campaign']
 
 /** Workflow name of the paper-writing runs the projection follows. */
 export const PAPER_WORKFLOW = 'paper-writing'

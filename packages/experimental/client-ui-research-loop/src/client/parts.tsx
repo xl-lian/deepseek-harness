@@ -9,6 +9,7 @@ import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import { notebookPaths } from '../shared/labels.ts'
 import { RESEARCH_PRESET, RESEARCH_STAGES } from '../shared/constants.ts'
 import type { LedgerRound, ResearchLedger, ResearchMember, ResearchRound, ResearchStatus, ResearchVerdict } from '../shared/schema.ts'
+import type { LoopStatus } from '../shared/campaign-types.ts'
 import type {} from './locales.ts'
 import { experimentRows, focusRows, formatTimestamp, stageStatus, type ExperimentRow } from './model.ts'
 
@@ -22,7 +23,7 @@ export type OpenPath = (path: string) => void
 export type OpenChild = (childId: string) => void
 
 /** A status dot with a text alternative. */
-export function StatusMark({ status, t }: { readonly status: ResearchStatus; readonly t: ResearchTranslate }): React.JSX.Element {
+export function StatusMark({ status, t }: { readonly status: LoopStatus; readonly t: ResearchTranslate }): React.JSX.Element {
   return <span className="rl-dot" data-status={status} role="img" aria-label={t(`status.${status}`)} />
 }
 
@@ -57,7 +58,7 @@ export function FileLink({ path, label, openPath }: {
 export interface RailStep {
   readonly key: string
   readonly label: string
-  readonly status: ResearchStatus
+  readonly status: LoopStatus
 }
 
 /** A numbered stage rail with live status per step. */

@@ -24,8 +24,10 @@
     { "path": "../../client/ui-workspace" },
     { "path": "../../core/session" },
     { "path": "../../preset/agent-preset-registry" },
+    { "path": "../../jobs/jobs" },
     { "path": "../../llm/llm" },
     { "path": "../../session/session-projection" },
+    { "path": "../../util/values" },
     { "path": "../../util/workspace-path" },
     { "path": "../../workflow/tool-workflow" }
   ]

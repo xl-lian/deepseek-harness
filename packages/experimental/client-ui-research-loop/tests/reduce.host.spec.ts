@@ -77,6 +77,10 @@ describe('research loop fold', () => {
       result('c2', `Return value:\n${JSON.stringify(loopReturn)}`),
     ])
     expect(state.skillLoaded).toBe(true)
+    for (const skill of ['science-agent', 'science-agent-kaggle', 'science-paper']) {
+      expect(fold([call('s', 'skill', { name: skill })]).skillLoaded).toBe(true)
+    }
+    expect(fold([call('s', 'skill', { name: 'other' })]).skillLoaded).toBe(false)
     expect(state.calls).toEqual({})
     const run = state.runs[0]
     expect(run).toMatchObject({ runId: 'wf-1', callId: 'c2', workspace: '/ws/study', status: 'completed', stop: { reason: 'decided' }, answer: 'Warmup widens the range.' })
@@ -138,12 +142,15 @@ describe('research loop fold', () => {
     ])
     for (const unrelated of [
       call('x', 'bash', { command: 'ls' }),
-      event('tool-workflow/run-start', { runId: 'wf-2', name: 'science-campaign' }),
       event('tool-workflow/log', { runId: 'wf-2', message: 'Round 1 (rd-1).' }),
       result('unknown', 'text'),
     ]) {
       expect(reduceResearchEvent(base, unrelated)).toBe(base)
     }
+    // A campaign run becomes a campaign round and leaves the research runs untouched.
+    const campaign = reduceResearchEvent(base, event('tool-workflow/run-start', { runId: 'wf-2', name: 'science-campaign' }))
+    expect(campaign.runs).toBe(base.runs)
+    expect(campaign.campaign.rounds.map(round => round.status)).toEqual(['running'])
     const interrupted = reduceResearchEvent(base, event('turn/end', { turn: 1, reason: { kind: 'interrupted' } }))
     expect(interrupted.runs[0]?.status).toBe('cancelled')
     expect(interrupted.runs[0]?.rounds[0]?.status).toBe('cancelled')

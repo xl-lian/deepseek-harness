@@ -4,7 +4,8 @@
 A model can spend a turn scouting manually instead of launching the audited
 round. When the prompt asks to continue or run experiments in a workspace that
 has ``.sa``, this hook adds that instruction directly to the model context for
-the turn.
+the turn. In a folder without ``.sa`` it adds the intake instruction instead,
+so hand-run experiments in such a folder are not continued outside the ledger.
 """
 
 from __future__ import annotations
@@ -21,7 +22,23 @@ EXPERIMENT_REQUEST = re.compile(
     re.IGNORECASE,
 )
 
-CONTEXT = "RESEARCH REQUEST (science-agent): start the loop in this turn. For a research objective (`sagent domain show --json` reports control=prompt) call the `workflow` tool with {name: \"research-loop\", args: {workspace, saBin: \"sagent\", maxRounds, runTimeoutSec}}. If the workspace holds a metric objective instead, say that this profile runs research objectives only. Do not answer with a summary or a plan first, and do not run node prompts yourself; the workflow owns the rounds and the node agents."
+CONTEXT = (
+    "EXPERIMENT REQUEST (science-agent): start the loop in this turn. "
+    "For a research objective (`sagent domain show --json` reports control=prompt) call "
+    "the dsh `workflow` tool with ({name: \"research-loop\", args: {workspace, saBin: \"sagent\", maxRounds}}). "
+    "Otherwise call the dsh `workflow` tool with ({name: \"science-campaign\", args: {workspace, saBin: \"sagent\", "
+    "roundArgs: {maxHypotheses, maxRuns, runTimeoutSec, templatesDir}}}). "
+    "Do not answer with a summary or a plan first, and do not delegate role agents directly; "
+    "the workflow owns the rounds and the node agents."
+)
+
+NO_WORKSPACE_CONTEXT = (
+    "EXPERIMENT REQUEST (science-agent): this folder has no science-agent workspace (`.sa/`), so nothing "
+    "here is recorded yet, even if it holds earlier hand-run experiments. Load the matching skill "
+    "(science-research for an open question, science-agent-kaggle for a Kaggle competition, science-agent "
+    "for another metric, scored, or equation task), do its Intake first, asking the user for anything it "
+    "needs, then start its loop. Do not continue the experiments as untracked shell commands."
+)
 
 
 def workspace_has_sa(path: str) -> bool:
@@ -41,14 +58,14 @@ def main() -> None:
         return
     prompt = str(payload.get("prompt") or "")
     cwd = str(payload.get("cwd") or os.getcwd())
-    if not EXPERIMENT_REQUEST.search(prompt) or not workspace_has_sa(cwd):
+    if not EXPERIMENT_REQUEST.search(prompt):
         return
     print(
         json.dumps(
             {
                 "hookSpecificOutput": {
                     "hookEventName": "UserPromptSubmit",
-                    "additionalContext": CONTEXT,
+                    "additionalContext": CONTEXT if workspace_has_sa(cwd) else NO_WORKSPACE_CONTEXT,
                 }
             }
         )

@@ -1,13 +1,18 @@
 /**
- * Dock above the composer while a research loop or a paper-writing run is
- * live: the current round or paper stage rail and the elapsed time. Clicking it opens the notebook view.
+ * Dock above the composer while a research loop, a campaign round, or a
+ * paper-writing run is live: the current round or paper stage rail and the
+ * elapsed time. It shows one strip: the research run, else the campaign round,
+ * else the paper run. Clicking it opens the notebook.
  */
 
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { activeStage, currentRun, elapsed, formatDuration } from './model.ts'
+import { STAGES } from '../shared/campaign-types.ts'
+import { activeStage, currentPaper, currentRun, elapsed, formatDuration, liveCampaignRound } from './model.ts'
 import type { ResearchView } from '../shared/schema.ts'
+import type { ActivityView } from '../shared/activity-schema.ts'
+import { ActivityDockStrip } from './ActivitySection.tsx'
 import { PaperDockStrip } from './PaperSection.tsx'
-import { StageRail, StatusMark, type ResearchTranslate } from './parts.tsx'
+import { Rail, StageRail, StatusMark, type ResearchTranslate } from './parts.tsx'
 
 /** Actions injected for the dock. */
 export interface ResearchLoopDockInjected {
@@ -44,13 +49,40 @@ export function DockStrip({ view, openNotebook, t }: ResearchLoopDockInjected & 
   )
 }
 
-/** Dock slot occupant: reads the projection and renders the loop strip and the paper strip. */
-export function ResearchLoopDock({ useProjection, openNotebook, t }: ResearchLoopDockProps): React.JSX.Element | null {
-  const view = useProjection('scienceResearchLoop')
+/** Render the live campaign round strip, or nothing when no round needs attention. */
+export function CampaignDockStrip({ view, openNotebook, t }: ResearchLoopDockInjected & {
+  readonly view: ResearchView | undefined
+  readonly t: ResearchTranslate
+}): React.JSX.Element | null {
+  const round = liveCampaignRound(view)
+  if (round === undefined) return null
+  const time = elapsed(round.startedAt, round.endedAt, Date.now())
+  const steps = STAGES.map(id => ({ key: id, label: t(`campaign.stage.${id}`), status: round.stages[id].status }))
   return (
-    <>
-      <DockStrip view={view} openNotebook={openNotebook} t={t} />
-      <PaperDockStrip view={view} openNotebook={openNotebook} t={t} />
-    </>
+    <button type="button" className="rl-dock" onClick={openNotebook}>
+      <StatusMark status={round.status} t={t} />
+      <span className="rl-dock-title">{t('campaign.title')}</span>
+      {round.roundId === undefined ? null : <code className="rl-dock-round">{round.roundId}</code>}
+      <Rail steps={steps} t={t} compact />
+      {time === undefined ? null : <span className="rl-elapsed">{formatDuration(time)}</span>}
+      <span className="rl-dock-open">{t('dock.open')}</span>
+    </button>
   )
+}
+
+/** Dock slot occupant: reads the projection and renders {@link DockBody}. */
+export function ResearchLoopDock({ useProjection, openNotebook, t }: ResearchLoopDockProps): React.JSX.Element | null {
+  return <DockBody view={useProjection('scienceResearchLoop')} activity={useProjection('scienceResearchActivity')} openNotebook={openNotebook} t={t} />
+}
+
+/** Render one strip: a running research run, else a live campaign round, else a running paper run, else running activity outside loops. */
+export function DockBody({ view, activity, openNotebook, t }: ResearchLoopDockInjected & {
+  readonly view: ResearchView | undefined
+  readonly activity?: ActivityView | undefined
+  readonly t: ResearchTranslate
+}): React.JSX.Element | null {
+  if (currentRun(view)?.status === 'running') return <DockStrip view={view} openNotebook={openNotebook} t={t} />
+  if (liveCampaignRound(view) !== undefined) return <CampaignDockStrip view={view} openNotebook={openNotebook} t={t} />
+  if (currentPaper(view)?.status === 'running') return <PaperDockStrip view={view} openNotebook={openNotebook} t={t} />
+  return <ActivityDockStrip view={activity} openNotebook={openNotebook} t={t} />
 }

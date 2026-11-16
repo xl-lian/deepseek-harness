@@ -1,8 +1,8 @@
 # @deepseek-ai/dsh-experimental-science-research-bundle
 
-The research science loop for dsh: give the Research Agent a question in any field (machine learning, data science, physics, chemistry, biology) and it answers it through recorded rounds of reading, pre-registered experiments, independent validation, and a decision about what to do next, then writes a report whose every number and citation traces back to the record. When the study is done, the same record becomes a LaTeX paper and a PDF.
+The research and experiment profile for dsh: give the Research Agent a question in any field (machine learning, data science, physics, chemistry, biology) and it answers it through recorded rounds of reading, pre-registered experiments, independent validation, and a decision about what to do next, then writes a report whose every number and citation traces back to the record. Give it a Kaggle competition or another scored task and it runs a campaign of verified rounds against the metric instead. When a study is done, the same record becomes a LaTeX paper and a PDF. The Notebook shows every loop and the agent's work outside a loop.
 
-**Contents:** [Architecture](#architecture) · [One round, step by step](#one-round-step-by-step) · [The steps](#the-steps) · [Loop arguments and hard limits](#loop-arguments-and-hard-limits) · [The objective](#the-objective) · [What makes a result trustworthy](#what-makes-a-result-trustworthy) · [The research notebook](#the-research-notebook) · [The Notebook view](#the-notebook-view) · [Write a paper](#write-a-paper) · [Run it](#run-it) · [Commands](#commands) · [Permissions and hooks](#permissions-and-hooks) · [How the bundle adapts science-agent](#how-the-bundle-adapts-science-agent) · [Troubleshooting](#troubleshooting)
+**Contents:** [Architecture](#architecture) · [One round, step by step](#one-round-step-by-step) · [The steps](#the-steps) · [Loop arguments and hard limits](#loop-arguments-and-hard-limits) · [The objective](#the-objective) · [What makes a result trustworthy](#what-makes-a-result-trustworthy) · [The research notebook](#the-research-notebook) · [The Notebook view](#the-notebook-view) · [Experiments and Kaggle campaigns](#experiments-and-kaggle-campaigns) · [Write a paper](#write-a-paper) · [Run it](#run-it) · [Commands](#commands) · [Permissions and hooks](#permissions-and-hooks) · [How the bundle adapts science-agent](#how-the-bundle-adapts-science-agent) · [Troubleshooting](#troubleshooting)
 
 ## Architecture
 
@@ -209,7 +209,23 @@ The [research loop view](../client-ui-research-loop/README.md) shows the study i
 | Next step | continue or stop with the reason, and any request for a human | narration |
 | Write-up | the stop reason, the answer, and a link to the report | narration and the workflow result |
 
-A strip above the composer follows the live round, and each run gets a card in Chat; both open the Notebook in the right sidebar. To read the Notebook while you chat, pick **Notebook** on the right sidebar's Start page, or press **Open beside chat** in the Notebook view tab: Chat stays on the left and the Notebook on the right. Evidence classes and objection states appear once the Research Agent runs `sagent research status`, which it does after every loop. The profile also applies a lab-notebook skin in light and dark mode: paper surfaces, an indigo accent, serif headings, and a graph-paper Notebook ground.
+Campaign rounds and paper runs share the same timeline (see [Experiments and Kaggle campaigns](#experiments-and-kaggle-campaigns) and [Write a paper](#write-a-paper)). An **Activity outside loops** section lists the commands and file changes the agent made that no loop recorded, per turn and newest first, with background jobs followed until they finish; it is the Notebook's main content before any loop runs and folds under the timeline afterwards. A strip above the composer follows the live round or activity, and each run or round gets a card in Chat; both open the Notebook in the right sidebar. To read the Notebook while you chat, pick **Notebook** on the right sidebar's Start page, or press **Open beside chat** in the Notebook view tab: Chat stays on the left and the Notebook on the right. Evidence classes and objection states appear once the Research Agent runs `sagent research status`, which it does after every loop. The profile also applies a lab-notebook skin in light and dark mode: paper surfaces, an indigo accent, serif headings, and a graph-paper Notebook ground.
+
+## Experiments and Kaggle campaigns
+
+The same agent runs metric work: a Kaggle competition, a local tabular, time-series, vision, or language modeling task, a scored artifact search such as packing, or equation discovery. science-agent's `science-agent` skill routes by the workspace objective (`sagent domain show --json`): a research question (`control: prompt`) runs the research loop; any metric objective runs the `science-campaign` workflow.
+
+| Step | Role | Does |
+|---|---|---|
+| Scout | `sa-scout` | profiles the data, metric, cross-validation, leakage risks, and baseline |
+| Hypotheses | `sa-hypothesis` | proposes falsifiable hypotheses through several lenses; `sagent hypothesis register --select` ranks them |
+| Engineer | `sa-engineer` | implements each selected hypothesis and runs it through `sagent run execute`, at most one repair |
+| Verifier | `sa-verifier` | runs the package-owned L0–L4 checks; the engineer never marks its own work verified |
+| Statistician | `sa-statistician` | reviews seeds, multiple comparisons, and budget fairness when an anomaly appears |
+| Decide | `sagent round close` | picks the winner from verified metrics and records eliminations |
+| Report | `sagent report build`/`check` | writes the strict, traceable round report |
+
+The campaign repeats rounds until a stop rule fires (target metric, round limit, no improvement, failures, deadline, spend). In a folder with no `.sa/` workspace, including one that holds earlier hand-run experiments, the agent does intake first: it asks for the competition slug, metric, target, and budget, never inventing them. Submission needs a human approval token from `sagent approve` in a terminal. In the Notebook each campaign round shows its seven-stage rail and one ring per experiment; selecting a stage shows its members, checks, metrics, candidates, and report.
 
 ## Write a paper
 
@@ -231,7 +247,7 @@ The Notebook shows each paper run below the loop runs: a stage rail (Outline, Fi
 
 ## Run it
 
-The profile needs the `sagent` toolkit 0.4.0 or later (0.3.0 has no `paper` commands) on `PATH` (or in `~/.local/bin`) and `python3` for the hooks. Install the toolkit from a science-agent checkout and create the profile once:
+The profile needs the `sagent` toolkit 0.4.1 or later (0.3.0 has no `paper` commands; 0.4.1 routes experiment requests outside a workspace to intake) on `PATH` (or in `~/.local/bin`) and `python3` for the hooks. Install the toolkit from a science-agent checkout and create the profile once:
 
 ```sh
 uv tool install --python 3.13 --force "science-agent-toolkit[ml,mcp] @ file:///path/to/science-agent"
@@ -253,7 +269,7 @@ Open the `dsh web: http://127.0.0.1:<port>/?token=…` URL the launcher prints; 
 4. runs `sagent env init --profile research` to build the experiment environment;
 5. starts the loop and, when it returns, saves and records the report and reports from `research status`.
 
-To continue a study, ask to "continue researching" or run `/sa-research <rounds>`. A workspace whose objective is a metric objective (Kaggle, scored artifacts, equation discovery) belongs in the `science` profile.
+To continue a study, ask to "continue researching" or run `/sa-research <rounds>`. For a Kaggle competition run `/sa-kaggle <slug>`; for another metric objective run `/sa-campaign`; "continue the experiment" in a campaign workspace starts the next campaign.
 
 ## Commands
 
@@ -263,7 +279,12 @@ To continue a study, ask to "continue researching" or run `/sa-research <rounds>
 | `/sa-research <rounds>` | more rounds on a locked study |
 | `/sa-research-status` | what is established: decisions, verdicts, evidence class, open objections, literature, next-step plan |
 | `/sa-paper [authors; venue]` | the paper-writing workflow over the study's record |
-| `/sa-doctor` | checks the toolkit, sandbox, disk, ledger, and the research workspace, with fixes |
+| `/sa-kaggle [rounds] [slug]` | intake for a competition, then a campaign |
+| `/sa-campaign [rounds]` | a campaign on a locked metric objective |
+| `/sa-round [quick\|full\|debug]` | exactly one campaign round |
+| `/sa-status` | campaign state, briefing, and ledger check |
+| `/sa-verify`, `/sa-report`, `/sa-submit` | L0–L4 verification, the strict report, and a gated submission |
+| `/sa-doctor` | checks the toolkit, sandbox, disk, Kaggle credentials, ledger, and workspace, with fixes |
 
 The step agents use the `sagent` CLI (`research open-round`, `record`, `results`, `close-round`, `status`, `prompt`; `paper init`, `check`, `compile`, `prompt`; `lit search`; `source add` and `show`; `evidence cite`; `run execute`; `verify run`; `run logs`) or the same operations through the `mcp__science-agent__sa_research`, `sa_run`, and `sa_verify` MCP tools.
 
@@ -274,17 +295,18 @@ Sessions start in Full access (`danger-full-access`): `sagent run execute` confi
 Two hooks run through the Claude Code hook bridge:
 
 - **Guard** (before `write`, `edit`, and `bash`): denies writes to `.sa/ledger`, `.sa/objects`, `.sa/manifests`, `.sa/private`, `.sa/state.json`, `.sa/holdouts.json`, and the installed verifier and citation-checking packages, and denies shell commands that delete `.sa/` or redirect into the ledger.
-- **Research trigger** (on each prompt): when the prompt asks to continue research or experiments (for example "继续研究", "continue research", "run another round") in a workspace with `.sa/`, it adds one sentence telling the agent to call the `research-loop` workflow in this turn.
+- **Loop trigger** (on each prompt): when the prompt asks to continue research or experiments (for example "继续实验", "继续研究", "continue the experiment", "run another round") in a workspace with `.sa/`, it adds one sentence telling the agent to call the `research-loop` or `science-campaign` workflow, by objective, in this turn; in a folder without `.sa/` it tells the agent to do the matching skill's intake first instead of untracked shell work.
 
 ## How the bundle adapts science-agent
 
-science-agent owns the research and paper step prompts, the `science-research` and `science-paper` skills, the hooks, the MCP launcher, the example objective, the LaTeX template and `sagent paper` commands, and the `research-loop` and `paper-writing` workflows. `scripts/sync.ts` copies the prompts, workflows, skills, hooks, and example into `synced/` and adapts them to dsh:
+science-agent owns the research, paper, and campaign role prompts, the `science-research`, `science-paper`, `science-agent`, and `science-agent-kaggle` skills, the hooks, the MCP launcher, the example objective, the LaTeX template and `sagent paper` commands, and the `research-loop`, `paper-writing`, `science-round`, and `science-campaign` workflows. `scripts/sync.ts` copies the prompts, workflows, skills, hooks, and example into `synced/` and adapts them to dsh; `scripts/campaign-sync.ts` holds the campaign half and the helpers both share:
 
 - every step prompt gains a runtime note (dsh tool names, never start a workflow; `templates/runtime-note.md` or `templates/paper-runtime-note.md`) and is embedded in its workflow script, which then needs no registered agent types;
 - both workflows lose Claude Code-only `agentType` and `effort` options; the research loop also loses the `pattern` schema keyword, which dsh's structured-output schema subset rejects (the script already normalizes experiment ids);
 - the workflow narrates each round through `log()`, `artifact()`, and `metric()` lines that the Notebook view reads (`templates/loop-record-outputs.js`), recording the experiments_validated and supported counts per round;
 - the paper workflow writes its own fixed-grammar narration upstream, so the sync only checks that the lines the view reads are still there;
-- each skill gains its dsh runtime section; the guard matches dsh's lower-case tool names; the trigger names the dsh `workflow` tool.
+- the campaign workflow inlines the round body (dsh workflows cannot nest), embeds each role persona, and records each round's delta, candidates, and report (`templates/campaign-record-outputs.js`); `kaggle-round` is the round saved under a second name; the six role personas (`templates/campaign-runtime-note.md`) also back the `sa_*` role presets in `presets/roles.patch.yml`;
+- each skill gains its dsh runtime section and `/sa-*` command names; the guard matches dsh's lower-case tool names; the trigger keeps science-agent's own routing text and names the dsh `workflow` tool.
 
 Every edit anchors on exact source text and fails with the file and anchor when science-agent changed it; the sync also fails when a step label or result field the view reads disappears. Refresh or verify after a science-agent change:
 
@@ -313,7 +335,7 @@ pnpm run sync-science-research-bundle --source /path/to/science-agent --check
 
 ## Model Experience
 
-The `research` preset carries a fixed persona that is stable across turns and stays in the KV-cache prefix; the `science-research` and `science-paper` skills load on demand, and a continue-research request in a workspace with `.sa/` adds one trigger sentence to that turn. Step prompts are embedded in the saved workflow script, which never enters the orchestrator's context; each step agent receives its prompt, the runtime note, and the workflow's per-step context message. The paper workflow's steps read the research record and the paper files from disk; the orchestrator sees only the workflow's result.
+The `research` preset carries a fixed persona that is stable across turns and stays in the KV-cache prefix; the `science-research`, `science-paper`, `science-agent`, and `science-agent-kaggle` skills load on demand, and a continue request adds one trigger sentence to that turn. The six `sa_*` role tools add their schemas to every request. Step prompts are embedded in the saved workflow script, which never enters the orchestrator's context; each step agent receives its prompt, the runtime note, and the workflow's per-step context message. The paper workflow's steps read the research record and the paper files from disk; the orchestrator sees only the workflow's result.
 
 ## Known Limitations and Deferred Work
 

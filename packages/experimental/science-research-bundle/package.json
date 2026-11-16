@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-experimental-science-research-bundle",
-  "description": "Science Research profile layer: science-agent's prompt-driven research loop (retrieve, plan, experiment, validate, next step) with guard hooks and a lab-notebook loop view",
+  "description": "Science Research profile layer: science-agent's research loop, experiment campaigns (Kaggle, scored, equation), and paper workflow with guard hooks and a lab-notebook view",
   "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"
@@ -19,12 +19,14 @@
       "default": "./lib/index.js"
     },
     "./cordis.patch.yml": "./cordis.patch.yml",
+    "./presets/roles.patch.yml": "./presets/roles.patch.yml",
     "./src/*": "./src/*",
     "./package.json": "./package.json"
   },
   "files": [
     "lib/index.js",
     "cordis.patch.yml",
+    "presets/roles.patch.yml",
     "hooks/hooks.json",
     "skills",
     "synced",
@@ -34,7 +36,8 @@
   "dsh": {
     "bundle": {
       "patch": [
-        "./cordis.patch.yml"
+        "./cordis.patch.yml",
+        "./presets/roles.patch.yml"
       ],
       "listedByDefault": false
     }
@@ -76,7 +79,6 @@
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
     "@deepseek-ai/cordis-plugin-include": "workspace:~",
-    "@deepseek-ai/dsh-experimental-science-agent-bundle": "workspace:*",
     "js-yaml": "^4.3.2"
   }
 }
