@@ -1,9 +1,9 @@
 /**
- * Lab-notebook skin for the research profile: warm paper surfaces, ink labels,
- * an indigo accent for brand, focus, primary actions, and running state, teal
- * for success, and serif markdown headings. Light and dark modes follow the
- * stored theme preference; the layer is a theme override, so the preference
- * and every other profile stay untouched.
+ * Lab-notebook skin for the research profile: sage-tinted surfaces and ink
+ * labels, a forest-green accent for brand, focus, primary actions, and running
+ * state, an olive green for success, and serif markdown headings. Light
+ * and dark modes follow the stored theme preference; the layer is a theme
+ * override, so the preference and every other profile stay untouched.
  */
 
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
@@ -17,29 +17,29 @@ export const NOTEBOOK_THEME_SOURCE = 'science-research-notebook'
 
 /** Palette roles; each tuple is `[light, dark]`. */
 const PALETTE = {
-  paper: ['#fbfaf7', '#1b1a18'],
-  surface: ['#ffffff', '#242321'],
-  sunken: ['#f6f4ee', '#211f1d'],
-  raised: ['#efece4', '#2e2c29'],
-  rule1: ['#ece9e1', '#2f2e2b'],
-  rule2: ['#e3e1d9', '#3a3935'],
-  rule3: ['#d6d3c9', '#46443f'],
-  rule4: ['#c4c0b5', '#55534d'],
-  ink: ['#232321', '#f1efe8'],
-  ink2: ['#4a4945', '#d3d1c9'],
-  ink3: ['#6b6963', '#b4b2a9'],
-  caption: ['#7d7a72', '#9a988f'],
-  dimmed: ['#97948b', '#84827a'],
-  indigo: ['#534ab7', '#afa9ec'],
-  indigoHover: ['#463ea3', '#c4bff2'],
-  indigoWash: ['#eeedfe', '#2b2750'],
-  onIndigo: ['#ffffff', '#1b1a18'],
-  teal: ['#0f6e56', '#5dcaa5'],
-  amber: ['#a15c07', '#f2b53d'],
-  red: ['#b42318', '#f28b82'],
-  code: ['#f1efe8', '#2c2b28'],
-  hover: ['#f1efe8', '#2a2926'],
-  active: ['#e9e6dd', '#33312e'],
+  paper: ['#f8faf5', '#141a16'],
+  surface: ['#ffffff', '#1b221d'],
+  sunken: ['#f1f3e9', '#171d19'],
+  raised: ['#e9eedf', '#252d27'],
+  rule1: ['#e5e9e1', '#252d27'],
+  rule2: ['#dfe4d6', '#2f3830'],
+  rule3: ['#cfd7c3', '#3b453c'],
+  rule4: ['#b8c2a9', '#4b564c'],
+  ink: ['#1c2e26', '#e8eee6'],
+  ink2: ['#48544a', '#c6cfc3'],
+  ink3: ['#646e60', '#a4ad9f'],
+  caption: ['#81887a', '#8c9588'],
+  dimmed: ['#9ca393', '#737c70'],
+  accent: ['#3d5a40', '#9cc49a'],
+  accentHover: ['#304834', '#b3d4b0'],
+  accentWash: ['#e1e8d4', '#253425'],
+  onAccent: ['#ffffff', '#141a16'],
+  success: ['#557a2f', '#b5cf6b'],
+  amber: ['#9a6408', '#e8b04a'],
+  red: ['#b0412e', '#ef8a7a'],
+  code: ['#f1f4ec', '#202721'],
+  hover: ['#eef1e7', '#1f2721'],
+  active: ['#e3e9d8', '#283129'],
 } as const satisfies Record<string, readonly [string, string]>
 
 type Role = keyof typeof PALETTE
@@ -70,7 +70,7 @@ const TOKEN_ROLES: Readonly<Record<string, Role>> = {
   '--dsw-alias-bg-layer-3': 'raised',
   '--dsw-alias-bg-overlay': 'surface',
   '--dsw-alias-bg-module-platform': 'sunken',
-  '--dsw-alias-bg-multi-select': 'indigoWash',
+  '--dsw-alias-bg-multi-select': 'accentWash',
   '--dsw-alias-bg-skeleton': 'raised',
   '--dsw-alias-interactive-bg-hover': 'hover',
   '--dsw-alias-interactive-bg-active': 'active',
@@ -84,22 +84,22 @@ const TOKEN_ROLES: Readonly<Record<string, Role>> = {
   '--dsw-alias-label-tertiary': 'ink3',
   '--dsw-alias-label-caption': 'caption',
   '--dsw-alias-label-dimmed': 'dimmed',
-  '--dsw-alias-label-primary-inverted': 'onIndigo',
-  '--dsw-alias-brand-primary': 'indigo',
-  '--dsw-alias-brand-primary-new-colorprimary-new-color': 'indigo',
-  '--dsw-alias-state-business-primary': 'indigo',
-  '--dsw-alias-state-business-tertiary': 'indigoWash',
-  '--dsw-alias-state-success-primary': 'teal',
+  '--dsw-alias-label-primary-inverted': 'onAccent',
+  '--dsw-alias-brand-primary': 'accent',
+  '--dsw-alias-brand-primary-new-colorprimary-new-color': 'accent',
+  '--dsw-alias-state-business-primary': 'accent',
+  '--dsw-alias-state-business-tertiary': 'accentWash',
+  '--dsw-alias-state-success-primary': 'success',
   '--dsw-alias-state-warn-primary': 'amber',
   '--dsw-alias-state-error-primary': 'red',
   '--dsw-alias-state-idle-primary': 'dimmed',
-  '--dsw-alias-link': 'indigo',
-  '--dsw-alias-button-primary-fill': 'indigo',
-  '--dsw-alias-button-primary-hover': 'indigoHover',
+  '--dsw-alias-link': 'accent',
+  '--dsw-alias-button-primary-fill': 'accent',
+  '--dsw-alias-button-primary-hover': 'accentHover',
   '--dsw-alias-markdown-code-block': 'code',
   '--dsw-alias-markdown-code-block-banner': 'raised',
   '--dsw-alias-markdown-inline-code': 'code',
-  '--dsw-alias-markdown-citation': 'indigoWash',
+  '--dsw-alias-markdown-citation': 'accentWash',
   '--dsw-alias-markdown-tag': 'raised',
   '--dsw-specific-sidebar-fill': 'sunken',
   '--dsw-specific-input-major': 'surface',

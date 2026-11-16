@@ -7,19 +7,19 @@
  */
 
 const SERIF = 'var(--dsw-font-markdown-h3-font-family, "Iowan Old Style", Palatino, "Songti SC", Georgia, serif)'
-const INK = 'var(--dsw-alias-label-primary, #232321)'
-const INK2 = 'var(--dsw-alias-label-secondary, #4a4945)'
-const INK3 = 'var(--dsw-alias-label-tertiary, #6b6963)'
-const RULE = 'var(--dsw-alias-border-l2, #e3e1d9)'
-const RULE_FAINT = 'var(--dsw-alias-border-l1, #ece9e1)'
+const INK = 'var(--dsw-alias-label-primary, #1c2e26)'
+const INK2 = 'var(--dsw-alias-label-secondary, #48544a)'
+const INK3 = 'var(--dsw-alias-label-tertiary, #646e60)'
+const RULE = 'var(--dsw-alias-border-l2, #dfe4d6)'
+const RULE_FAINT = 'var(--dsw-alias-border-l1, #e5e9e1)'
 const SURFACE = 'var(--dsw-alias-bg-layer-1, #ffffff)'
-const SUNKEN = 'var(--dsw-alias-bg-layer-2, #f6f4ee)'
-const ACCENT = 'var(--dsw-alias-brand-primary, #534ab7)'
-const WASH = 'var(--dsw-alias-state-business-tertiary, #eeedfe)'
-const OK = 'var(--dsw-alias-state-success-primary, #0f6e56)'
-const WARN = 'var(--dsw-alias-state-warn-primary, #a15c07)'
-const BAD = 'var(--dsw-alias-state-error-primary, #b42318)'
-const IDLE = 'var(--dsw-alias-state-idle-primary, #97948b)'
+const SUNKEN = 'var(--dsw-alias-bg-layer-2, #f1f3e9)'
+const ACCENT = 'var(--dsw-alias-brand-primary, #3d5a40)'
+const WASH = 'var(--dsw-alias-state-business-tertiary, #e1e8d4)'
+const OK = 'var(--dsw-alias-state-success-primary, #557a2f)'
+const WARN = 'var(--dsw-alias-state-warn-primary, #9a6408)'
+const BAD = 'var(--dsw-alias-state-error-primary, #b0412e)'
+const IDLE = 'var(--dsw-alias-state-idle-primary, #9ca393)'
 
 const STYLES = `
 .rl-sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
