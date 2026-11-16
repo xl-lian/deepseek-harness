@@ -1,5 +1,5 @@
 /**
- * Lab-notebook skin for the research profile: sage-tinted surfaces and ink
+ * Lab-notebook skin for the research profile: neutral surfaces and ink
  * labels, a forest-green accent for brand, focus, primary actions, and running
  * state, an olive green for success, and serif markdown headings. Light
  * and dark modes follow the stored theme preference; the layer is a theme
@@ -17,29 +17,29 @@ export const NOTEBOOK_THEME_SOURCE = 'science-research-notebook'
 
 /** Palette roles; each tuple is `[light, dark]`. */
 const PALETTE = {
-  paper: ['#f8faf5', '#141a16'],
-  surface: ['#ffffff', '#1b221d'],
-  sunken: ['#f1f3e9', '#171d19'],
-  raised: ['#e9eedf', '#252d27'],
-  rule1: ['#e5e9e1', '#252d27'],
-  rule2: ['#dfe4d6', '#2f3830'],
-  rule3: ['#cfd7c3', '#3b453c'],
-  rule4: ['#b8c2a9', '#4b564c'],
-  ink: ['#1c2e26', '#e8eee6'],
-  ink2: ['#48544a', '#c6cfc3'],
-  ink3: ['#646e60', '#a4ad9f'],
-  caption: ['#81887a', '#8c9588'],
-  dimmed: ['#9ca393', '#737c70'],
+  paper: ['#fafaf9', '#161616'],
+  surface: ['#ffffff', '#1d1d1d'],
+  sunken: ['#f4f4f3', '#191919'],
+  raised: ['#ececea', '#272727'],
+  rule1: ['#e8e8e6', '#262626'],
+  rule2: ['#e0e0dd', '#303030'],
+  rule3: ['#d0d0cc', '#3c3c3c'],
+  rule4: ['#b9b9b4', '#4c4c4c'],
+  ink: ['#222222', '#ececec'],
+  ink2: ['#4b4b49', '#cacaca'],
+  ink3: ['#666664', '#a6a6a6'],
+  caption: ['#82827f', '#8e8e8e'],
+  dimmed: ['#9d9d99', '#757575'],
   accent: ['#3d5a40', '#9cc49a'],
   accentHover: ['#304834', '#b3d4b0'],
   accentWash: ['#e1e8d4', '#253425'],
-  onAccent: ['#ffffff', '#141a16'],
+  onAccent: ['#ffffff', '#161616'],
   success: ['#557a2f', '#b5cf6b'],
   amber: ['#9a6408', '#e8b04a'],
   red: ['#b0412e', '#ef8a7a'],
-  code: ['#f1f4ec', '#202721'],
-  hover: ['#eef1e7', '#1f2721'],
-  active: ['#e3e9d8', '#283129'],
+  code: ['#f2f2f0', '#222222'],
+  hover: ['#f0f0ee', '#222222'],
+  active: ['#e6e6e3', '#2b2b2b'],
 } as const satisfies Record<string, readonly [string, string]>
 
 type Role = keyof typeof PALETTE

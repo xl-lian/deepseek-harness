@@ -33,7 +33,7 @@ The dock shows one strip: a running research run, else a live campaign round, el
 
 ## Skin and brand
 
-- A theme override layer (`src/client/theme.ts`, source `science-research-notebook`) with distinct light and dark values: sage-tinted surfaces and ink labels, a forest-green accent for brand, focus, primary actions, and running state, an olive green for success, and serif markdown headings. The stored theme preference is unchanged.
+- A theme override layer (`src/client/theme.ts`, source `science-research-notebook`) with distinct light and dark values: neutral surfaces and ink labels, a forest-green accent for brand, focus, primary actions, and running state, an olive green for success, and serif markdown headings. The stored theme preference is unchanged.
 - Scoped styles (`src/client/styles.ts`): a graph-paper ground behind the Notebook, serif section heads, ruled tables, tabular numerals, and monospace ids. Campaign rings use the same color constants, so they follow the light and dark values. Every verdict pairs its color with a text label.
 - Brand slots at priority −1 (`sidebar.brand.mark`, `sidebar.brand.name`, `conversation.hero.brand.mark`): a loop mark of five stage beads on a ring, and the Science Agent · Research wordmark; the document title gains the same suffix and a matching favicon.
 
