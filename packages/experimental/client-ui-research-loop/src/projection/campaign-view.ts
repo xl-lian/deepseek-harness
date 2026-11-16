@@ -149,17 +149,19 @@ function sanitizeReport(report: LoopReport | undefined): LoopReport | undefined 
 }
 
 function sanitizeRound(round: LoopRound): LoopRound {
+  const { scout, hypotheses, decision, report, design, ...rest } = round
+  // The view crosses the wire as lossless JSON: an absent section is omitted, never `undefined`.
   return {
-    ...round,
+    ...rest,
     suppressedAnchors: round.suppressedAnchors.slice(-MAX_SUPPRESSED_ANCHORS),
     stages: Object.fromEntries(
       STAGES.map(id => [id, sanitizeStage(round.stages[id])]),
     ) as Record<(typeof STAGES)[number], LoopStage>,
-    scout: sanitizeScout(round.scout),
-    hypotheses: sanitizeHypotheses(round.hypotheses),
-    decision: sanitizeDecision(round.decision),
-    report: sanitizeReport(round.report),
-    design: sanitizeDesign(round.design),
+    ...(scout === undefined ? {} : { scout: sanitizeScout(scout) }),
+    ...(hypotheses === undefined ? {} : { hypotheses: sanitizeHypotheses(hypotheses) }),
+    ...(decision === undefined ? {} : { decision: sanitizeDecision(decision) }),
+    ...(report === undefined ? {} : { report: sanitizeReport(report) }),
+    ...(design === undefined ? {} : { design: sanitizeDesign(design) }),
   }
 }
 

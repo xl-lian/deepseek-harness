@@ -69,6 +69,7 @@ export const InputBar = memo(function InputBar({
   const [activity, setActivity] = useState(false)
   useEffect(() => { setActivity(false) }, [sessionId])
   const promptError = useSession(s => s.promptError) ?? null
+  const agentError = useSession(s => s.lastAgentError) ?? null
   const running = useSession(s => s.running) ?? false
   const subagent = useSession(s => s.subagent) ?? null
   const removed = useSession(s => s.removed) ?? false
@@ -134,6 +135,11 @@ export const InputBar = memo(function InputBar({
   useEffect(() => {
     if (notice?.level === 'error') showToast(notice.text)
   }, [notice, showToast])
+  // A live Agent failure outside any turn, such as a background resume that
+  // failed after the history opened, has no turn row to carry it.
+  useEffect(() => {
+    if (agentError !== null) showToast(agentError)
+  }, [agentError, showToast])
   const rowRef = useRef<HTMLDivElement | null>(null)
   useLayoutEffect(() => {
     const row = rowRef.current

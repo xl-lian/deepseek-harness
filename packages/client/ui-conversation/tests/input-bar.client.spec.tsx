@@ -88,6 +88,7 @@ interface BenchOptions {
   workspacePickerOpen?: boolean
   onRequestWorkspace?: () => void
   promptError?: SessionSnapshot['promptError']
+  lastAgentError?: SessionSnapshot['lastAgentError']
   /** Authoritative queue rows served to the machine overlay (empty = none). */
   queue?: InboxState['next-turn']
   nextStep?: InboxState['next-step']
@@ -136,6 +137,7 @@ function bench(over?: BenchOptions) {
     subagent: over?.subagent ?? null,
     removed: over?.disabled ?? false,
     promptError: over?.promptError ?? null,
+    lastAgentError: over?.lastAgentError ?? null,
   }))
   type ShellDeps = ConstructorParameters<typeof SessionInputShell>[0]
   const shell = new SessionInputShell({
@@ -638,6 +640,11 @@ describe('image draft rail', () => {
       promptError: { op: 'send', error: new RemoteError('gateway/internal', 'boom', {}) },
     })
     expect(other.view.getByRole('alert').textContent).toContain('boom (gateway/internal)')
+  })
+
+  it('announces a live Agent failure outside any turn', () => {
+    const result = bench({ lastAgentError: 'resume failed for session "s": Error: listener failed' })
+    expect(result.view.getByRole('alert').textContent).toContain('resume failed for session "s": Error: listener failed')
   })
 
   it('marks the attachment slot unavailable while the composer is locked', () => {

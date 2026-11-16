@@ -79,3 +79,17 @@ describe('wire schema', () => {
     expect(parsed.rounds[0]?.report?.issues.length).toBeLessThanOrEqual(20)
   })
 })
+
+describe('wire view JSON', () => {
+  it('omits absent round sections so the view survives a JSON round trip', () => {
+    const bare: LoopRound = {
+      id: 'round-2', roundId: 'rd-2', mode: 'full', status: 'running', startedAt: 2,
+      anchor: { kind: 'workflow', id: 'run:run-2' }, suppressedAnchors: [], stages,
+    }
+    const view = toCampaignView({ rounds: [bare, round], calls: {}, runs: {} })
+    for (const key of ['scout', 'hypotheses', 'decision', 'report', 'design']) {
+      expect(view.rounds[0]).not.toHaveProperty(key)
+    }
+    expect(JSON.parse(JSON.stringify(view))).toStrictEqual(view)
+  })
+})

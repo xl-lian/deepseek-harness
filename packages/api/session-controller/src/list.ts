@@ -10,6 +10,7 @@ import type { ProjectionSnapshot } from '@deepseek-ai/dsh-session-projection'
 import type {} from '@deepseek-ai/dsh-session-projection-cache'
 import { SessionQueryError, type SessionRecord, type SessionSearchCursor } from '@deepseek-ai/dsh-session-query'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
+import { isJsonValue } from '@deepseek-ai/dsh-util-values'
 import { z } from 'zod'
 import {
   SESSION_SEARCH_RESULT_LIMIT,
@@ -293,6 +294,26 @@ export class ApiSessionList {
     }
   }
 
+  /**
+   * Remove live projection columns that are not lossless JSON. A summary is a
+   * forwarded Remote event argument, and one malformed unit view would
+   * otherwise reject the Agent publication that announces the row.
+   */
+  private losslessColumns(sessionId: SessionId, block: ProjectionSnapshot | undefined): ProjectionSnapshot | undefined {
+    if (block === undefined) return undefined
+    const entries = Object.entries(block.values)
+    const lossless = entries.filter(([key, value]) => {
+      if (isJsonValue(value)) return true
+      this.ctx.logger.error(
+        `api-session.list: projection column "${key}" for "${sessionId}" is not lossless JSON; serving the row without it`,
+      )
+      return false
+    })
+    return lossless.length === entries.length
+      ? block
+      : { ...block, values: Object.fromEntries(lossless) }
+  }
+
   private projectionsFor(
     header: SessionHeader,
     session: Session | undefined,
@@ -306,7 +327,7 @@ export class ApiSessionList {
       if (session !== undefined) {
         // The live registry computed the block for this Session: its watermark
         // shares the sequence space of the Session's baselines and frames.
-        return hintsOf('sequenced', this.ctx.sessionProjections.cachedSnapshot(session, keys))
+        return hintsOf('sequenced', this.losslessColumns(header.id, this.ctx.sessionProjections.cachedSnapshot(session, keys)))
       }
       // A cold row reads the persisted cache by header alone; the cache serves
       // seeded and unseeded lifecycles alike because a listing never seeds a

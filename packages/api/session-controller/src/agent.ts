@@ -163,6 +163,15 @@ export class ApiSessionAgentController {
   }
 
   /**
+   * Report whether a cold resume of one Session is in flight.
+   * @param sessionId - ordinary Session identity.
+   * @returns true from the resume's start until it settles, including its rollback.
+   */
+  isResuming(sessionId: SessionId): boolean {
+    return this.resumes.has(sessionId)
+  }
+
+  /**
    * Resolve one ordinary Session from an already-retained exact observation.
    * @param observation - Host-owned observation whose preparation stays pinned through setup.
    * @returns the live Agent or a stable Session-domain failure.

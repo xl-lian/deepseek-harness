@@ -213,6 +213,9 @@ export class SessionController extends TypertRemoteService {
       ctx.emit('api-session/added', this.listState.summaryFor(session))
     })
     ctx.on('session/disposed', (session) => {
+      // A failed resume disposes the Session it published but leaves it stored;
+      // its row stays listed and the failure reaches the caller or `api-session/error`.
+      if (this.agents.isResuming(session.id)) return
       ctx.emit('api-session/removed', session.id)
     })
     const publishAgentAvailability = ({ agent }: { agent: Agent }): undefined => {
