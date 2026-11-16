@@ -69,11 +69,13 @@ export function installWorkspaceShortcuts(
     ? t('shortcut.noPicker')
     : controls.state.getSnapshot().directoryBusy ? t('shortcut.directoryBusy') : null
   const register = (id: string, label: () => string, aliases: string[], code: string,
-    modifiers: ('primary' | 'alt' | 'shift')[], webModifiers: ('primary' | 'alt' | 'shift')[], resolve: ShortcutCommand['resolve']): void => {
+    modifiers: ('primary' | 'alt' | 'shift')[], webModifiers: ('primary' | 'alt' | 'shift')[] | null, resolve: ShortcutCommand['resolve']): void => {
     ctx.effect(() => ctx.shortcuts.register({
       id: id as ShortcutCommandId, label, aliases, defaults: {
         'desktop:macos': { code, modifiers }, 'desktop:windows': { code, modifiers }, 'desktop:linux': { code, modifiers },
-        'web:macos': { code, modifiers: webModifiers }, 'web:windows': { code, modifiers: webModifiers },
+        ...webModifiers === null ? {} : {
+          'web:macos': { code, modifiers: webModifiers }, 'web:windows': { code, modifiers: webModifiers },
+        },
       },
       regions: ['page', 'editable'], modals: [], resolve,
     }), `ui-workspace: ${id}`)
@@ -93,7 +95,7 @@ export function installWorkspaceShortcuts(
       ? { status: 'blocked', reason: t('shortcut.noSession') }
       : { status: 'handled', run: () => { controls.rename(target.id, target.title?.trim() ?? '') } }
   })
-  register('session.fork', () => t('menu.fork'), ['fork session'], 'KeyF', ['primary', 'alt'], ['primary', 'shift'], () => {
+  register('session.fork', () => t('menu.fork'), ['fork session'], 'KeyF', ['primary', 'alt'], null, () => {
     const target = current()
     if (target === undefined) return { status: 'blocked', reason: t('shortcut.noSession') }
     if (target.blank) return { status: 'blocked', reason: t('shortcut.noCompletedTurn') }
