@@ -12,6 +12,7 @@ import {
   adaptGuard,
   adaptKaggleSkill,
   adaptRoundTrigger,
+  assertRoundLog,
   buildPersonas,
   dshWorkflowBody,
   readCampaignTemplates,
@@ -57,6 +58,9 @@ describe('science-agent research sync', () => {
     expect(failure(() => workflowMeta('const x = 1\n', 'w.js')).anchor).toContain('export const meta')
     expect(failure(() => dshWorkflowBody("const s = { type: ['string', 'null'] }\n", 'w.js')).anchor).toContain('type: [')
     expect(failure(() => buildPersonas(new Map([['sa-scout.md', 'body']]), 'note')).anchor).toContain('sa-clerk')
+    expect(failure(() => { assertRoundLog('log(`Round ${i + 1}: ${rid}`)\n', 'c.js') }).anchor).toContain('round log line')
+    const synced = readFileSync(resolve(root, 'synced/workflows/science-campaign.js'), 'utf8')
+    expect(() => { assertRoundLog(synced, 'c.js') }).not.toThrow()
   })
 
   it('builds personas from front matter names and the runtime note', () => {

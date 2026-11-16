@@ -154,6 +154,74 @@ describe('loop reducer', () => {
     expect(round.endedAt).toBeDefined()
   })
 
+  it('splits a campaign run into one round per round log line', () => {
+    const campaignCall = event('tool/call', {
+      turn: 1,
+      step: 1,
+      callId: 'call-c',
+      name: 'workflow',
+      arguments: JSON.stringify({ name: 'science-campaign', args: { workspace: '/ws', maxRounds: 5 } }),
+    })
+    const log = (message: string): SessionEvent => event('tool-workflow/log', { runId: 'run-c', message })
+    const before = reduce([
+      campaignCall,
+      event('tool-workflow/run-start', { runId: 'run-c', name: 'science-campaign' }),
+      event('tool-workflow/agent-start', { runId: 'run-c', seq: 1, label: 'round-begin-1', phase: 'Plan', childId: 'child-1' }),
+      event('tool-workflow/agent-end', { runId: 'run-c', seq: 1, outcome: 'completed' }),
+      log('Campaign cp-1 (scored): up to 5 round(s), controller tree.'),
+    ])
+    expect(reduceCampaignEvent(before, log('Round rd-a: no_change. Next mode: full'))).toBe(before)
+    const state = [
+      log('Round 1: rd-a mode=full — '),
+      log('Round 1: rd-a mode=full — '),
+      event('tool-workflow/agent-start', { runId: 'run-c', seq: 2, label: 'engineer-h-a', phase: 'Implement & Execute', childId: 'child-2' }),
+      event('tool-workflow/agent-end', { runId: 'run-c', seq: 2, outcome: 'completed' }),
+      log('Round 2: rd-b mode=quick — highest UCB'),
+      event('tool-workflow/agent-start', { runId: 'run-c', seq: 3, label: 'engineer-h-b', phase: 'Implement & Execute', childId: 'child-3' }),
+    ].reduce(reduceCampaignEvent, before)
+
+    expect(state.rounds.map(round => [round.roundId, round.mode, round.status])).toEqual([
+      ['rd-a', 'full', 'completed'],
+      ['rd-b', 'quick', 'running'],
+    ])
+    const [first, second] = state.rounds
+    expect(first?.endedAt).toBeDefined()
+    expect(first?.stages.engineer.members.map(member => member.label)).toEqual(['engineer-h-a'])
+    expect(second?.stages.engineer.members.map(member => member.label)).toEqual(['engineer-h-b'])
+    expect(second?.anchor).toEqual(first?.anchor)
+    expect(state.activeRoundId).toBe(second?.id)
+    expect(reduceCampaignEvent(state, event('tool-workflow/log', { runId: 'run-other', message: 'Round 1: rd-z mode=full — ' }))).toBe(state)
+  })
+
+  it('starts a new round for a workflow after a hand-opened round was aborted', () => {
+    const bash = (callId: string, command: string): SessionEvent => event('tool/call', {
+      turn: 1,
+      step: 1,
+      callId,
+      name: 'bash',
+      arguments: JSON.stringify({ command }),
+    })
+    const state = reduce([
+      bash('call-begin', 'sagent round begin --mode full --json'),
+      toolResult('call-begin', { round_id: 'rd-open', mode: 'full', stages: [] }),
+      bash('call-end', 'sagent round end rd-open --outcome aborted --json | python3 -c "print(1)"'),
+      toolResult('call-end', 'rd-open aborted'),
+      event('tool/call', {
+        turn: 1,
+        step: 2,
+        callId: 'call-c',
+        name: 'workflow',
+        arguments: JSON.stringify({ name: 'science-campaign', args: { workspace: '/ws' } }),
+      }),
+      event('tool-workflow/run-start', { runId: 'run-c', name: 'science-campaign' }),
+      event('tool-workflow/log', { runId: 'run-c', message: 'Round 1: rd-next mode=full — ' }),
+    ])
+    expect(state.rounds.map(round => [round.roundId, round.status])).toEqual([
+      ['rd-open', 'cancelled'],
+      ['rd-next', 'running'],
+    ])
+  })
+
   it('ignores unrelated events without changing the state reference', () => {
     const state = initCampaignState()
     expect(reduceCampaignEvent(state, event('turn/start', { turn: 1 }))).toBe(state)

@@ -32,6 +32,22 @@ describe('classifyToolCall', () => {
     }
   })
 
+  it('ignores ledger reads, which add no round work', () => {
+    for (const command of ['sagent hypothesis list --round rd-1 --json', 'sagent hypothesis show h-1', 'sagent experiment list']) {
+      expect(classifyToolCall('bash', JSON.stringify({ command }))).toEqual([])
+    }
+    expect(classifyToolCall('bash', JSON.stringify({ command: 'sagent hypothesis register --round rd-1' }))[0]?.purpose).toBe('hypothesis')
+  })
+
+  it('takes round ids only from literal tokens', () => {
+    const roundIds = (command: string): (string | undefined)[] => classifyToolCall('bash', JSON.stringify({ command })).map(entry => entry.roundId)
+    expect(roundIds('for r in rd-1 rd-2; do sagent decide --round $r; done')).toEqual([undefined])
+    expect(roundIds('sagent round end rd-9 --outcome aborted')).toEqual(['rd-9'])
+    expect(roundIds('sagent round end --outcome aborted')).toEqual([undefined])
+    const [workflow] = classifyToolCall('workflow', JSON.stringify({ name: 'science-round', args: { roundId: '${ROUND}' } }))
+    expect(workflow?.roundId).toBeUndefined()
+  })
+
   it('classifies workflow calls and keeps the round binding', () => {
     const [classification] = classifyToolCall('workflow', JSON.stringify({
       meta: { name: 'kaggle-round' },

@@ -20,7 +20,7 @@ export const t = ((key: keyof typeof en, params?: Record<string, string | number
 export function campaignView(rounds: readonly LoopRound[]): ResearchView {
   const active = rounds[rounds.length - 1]
   return {
-    v: 3,
+    v: 4,
     runs: [],
     papers: [],
     campaign: active === undefined ? { rounds: [] } : { rounds: [...rounds], activeRoundId: active.id },

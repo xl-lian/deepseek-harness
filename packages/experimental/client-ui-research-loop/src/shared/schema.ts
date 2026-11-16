@@ -252,7 +252,7 @@ export const pendingCallSchema = z.object({
 
 /** The persisted fold state. */
 export const researchStateSchema = z.object({
-  v: z.literal(3),
+  v: z.literal(4),
   runs: z.array(runSchema),
   papers: z.array(paperRunSchema),
   campaign: campaignStateSchema,

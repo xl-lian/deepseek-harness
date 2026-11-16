@@ -222,6 +222,19 @@ const LOOP_VIEW_FIELDS = [
   'tokenDelta:',
 ] as const
 
+/** The round log line client-ui-research-loop's campaign fold splits a campaign run's rounds by. */
+const ROUND_LOG = 'log(`Round ${i + 1}: ${rid} mode=${mode} — '
+
+/**
+ * Require the round log line in the campaign workflow.
+ * @param campaign - adapted `science-campaign.js` text.
+ * @param file - upstream path named in the failure.
+ * @throws {SyncAnchorError} when the line is missing.
+ */
+export function assertRoundLog(campaign: string, file: string): void {
+  if (!campaign.includes(ROUND_LOG)) throw new SyncAnchorError(file, `round log line ${JSON.stringify(ROUND_LOG)} missing`)
+}
+
 const RECORD_MARKER = '    if (!c.report || !c.report.strict_ok) log('
 const INLINED_COMMENT = '// <runRound> inlined science-round body (dsh workflows cannot nest).\n'
 
@@ -289,6 +302,7 @@ export function adaptWorkflows(
     throw new SyncAnchorError(campaignFile, 'campaign still calls workflow(); the round must be inlined')
   }
   campaign = replaceOnce(campaign, RECORD_MARKER, recordOutputs + RECORD_MARKER, campaignFile)
+  assertRoundLog(campaign, campaignFile)
 
   return new Map([
     ['science-round.js', roundStandalone],

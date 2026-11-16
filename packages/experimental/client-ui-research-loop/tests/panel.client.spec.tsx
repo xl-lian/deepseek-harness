@@ -50,10 +50,10 @@ const round: LoopRound = {
   },
 }
 
-function card(anchorId: string): string {
+function card(anchorId: string, rounds: readonly LoopRound[] = [round]): string {
   return renderToStaticMarkup(
     <CampaignCardBody
-      view={campaignView([round])}
+      view={campaignView(rounds)}
       anchorId={anchorId}
       openFile={() => {}}
       openSessionFor={() => {}}
@@ -74,6 +74,13 @@ describe('CampaignCardBody', () => {
     }
     expect(html).toContain('sa-engineer')
     expect(html).toContain('data-status="running"')
+  })
+
+  it('follows the latest round of a campaign run that anchors several', () => {
+    const first: LoopRound = { ...round, id: 'round-0', roundId: 'rd-0', status: 'completed' }
+    const html = card('run:run-1', [first, round])
+    expect(html).toContain('rd-1')
+    expect(html).not.toContain('rd-0')
   })
 
   it('renders nothing for a suppressed or unknown anchor', () => {

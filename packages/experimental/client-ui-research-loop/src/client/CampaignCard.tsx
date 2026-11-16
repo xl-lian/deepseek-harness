@@ -29,7 +29,8 @@ export type CampaignCardProps =
   & CampaignCardInjected
 
 function findRound(rounds: readonly LoopRound[], anchorId: string): LoopRound | undefined {
-  return rounds.find(round => round.anchor.id === anchorId)
+  // A campaign run anchors every round it runs; its card follows the latest one.
+  return rounds.findLast(round => round.anchor.id === anchorId)
 }
 
 /** Chat node slot occupant: reads the projection and renders {@link CampaignCardBody} for its round. */

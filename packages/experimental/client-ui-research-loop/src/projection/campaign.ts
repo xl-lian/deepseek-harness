@@ -77,6 +77,8 @@ export function reduceCampaignEvent(state: CampaignState, event: SessionEvent): 
     case 'tool-workflow/run-start':
       // Research-loop and paper-writing runs belong to the other notebook folds.
       return SCIENCE_WORKFLOWS.has(event.data.name) ? onRunStart(state, event.data.runId, event.time) : state
+    case 'tool-workflow/log':
+      return onRunLog(state, event.data.runId, event.data.message, event.time)
     case 'tool-workflow/agent-start':
       return onAgentStart(state, event.data, event.time)
     case 'tool-workflow/agent-end':
@@ -229,7 +231,10 @@ function ensureRound(
     ? undefined
     : state.rounds.find(round => round.roundId === options.roundId)
   const active = state.rounds.find(round => round.id === state.activeRoundId)
-  const existing = byRoundId ?? active
+  // A new workflow call never continues a round that already ended or ran its own workflow.
+  const reusable = options.anchorKind === 'direct'
+    || (active?.endedAt === undefined && active?.workflow?.runId === undefined)
+  const existing = byRoundId ?? (reusable ? active : undefined)
   if (existing !== undefined) {
     const updated: LoopRound = {
       ...existing,
@@ -387,7 +392,7 @@ function deriveRoundStatus(round: LoopRound): LoopStatus {
   // `sagent round end` is authoritative. The workflow engine reports
   // stopReason "error" when any child agent fails, including an optional
   // hypothesis lens the script tolerated; a recorded round outcome outranks it.
-  if (round.status === 'completed' || round.status === 'failed') return round.status
+  if (round.status === 'completed' || round.status === 'failed' || round.status === 'cancelled') return round.status
   if (round.workflow?.stopReason === 'cancelled') return 'cancelled'
   if (round.workflow?.stopReason === 'error') return 'failed'
   if (round.endedAt !== undefined) {
@@ -447,6 +452,40 @@ function onRunStart(state: CampaignState, runId: string, time: number): Campaign
   }
   const runs = { ...next.runs, [runId]: round.id }
   return { ...next, runs }
+}
+
+/**
+ * The line `science-campaign` logs when it begins a round, `Round <n>: <round id> mode=<mode> — <reason>`.
+ * science-research-bundle's sync fails when the synced workflow stops producing it.
+ */
+const CAMPAIGN_ROUND_LOG = /^Round (\d+): ([A-Za-z0-9][\w.-]*) mode=(\S+)/u
+
+/**
+ * One `science-campaign` run holds every round of the campaign. Its round log
+ * names the round id; a different id than the run's current round closes that
+ * round and starts the next one under the same run anchor.
+ */
+function onRunLog(state: CampaignState, runId: string, message: string, time: number): CampaignState {
+  const match = CAMPAIGN_ROUND_LOG.exec(message)
+  if (match === null) return state
+  const [, number = '', roundId, mode] = match
+  const round = findRound(state, state.runs[runId])
+  if (round === undefined || round.roundId === roundId) return state
+  if (round.roundId === undefined) return withRound(state, { ...round, roundId, mode: round.mode ?? mode })
+  const closed = withRound(state, recomputeStages({ ...round, endedAt: round.endedAt ?? time }))
+  const next: LoopRound = {
+    id: `round-run-${runId}-${number}`,
+    roundId,
+    mode,
+    status: 'running',
+    startedAt: time,
+    anchor: round.anchor,
+    suppressedAnchors: [],
+    stages: emptyStages(),
+    workflow: { runId, startedAt: time },
+  }
+  const opened = withRound(closed, next)
+  return { ...opened, runs: { ...opened.runs, [runId]: next.id } }
 }
 
 interface WorkflowAgentStartData {
@@ -724,7 +763,7 @@ function onToolResult(
     const outcome = binding.roundOutcome
     const status: LoopStatus = failed
       ? 'failed'
-      : outcome === 'failed' ? 'failed' : outcome === 'blocked' ? 'blocked' : 'completed'
+      : outcome === 'failed' ? 'failed' : outcome === 'blocked' ? 'blocked' : outcome === 'aborted' ? 'cancelled' : 'completed'
     next = updateRound(next, binding.roundId, round => ({ ...round, status, endedAt: time }))
   }
 

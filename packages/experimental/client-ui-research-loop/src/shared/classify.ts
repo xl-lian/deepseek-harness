@@ -331,6 +331,8 @@ function classifySubcommand(sub: readonly string[]): ToolCallClassification | un
     return { purpose: 'scout', stage: 'scout', role: 'sa-scout', agent: 'sagent', label: 'sagent data profile', anchors: true }
   }
   if (first === 'hypothesis' || first === 'experiment') {
+    // `list` and `show` read the ledger; only writes contribute to a round.
+    if (second === 'list' || second === 'show') return undefined
     return {
       purpose: 'hypothesis',
       stage: 'hypotheses',
@@ -343,9 +345,16 @@ function classifySubcommand(sub: readonly string[]): ToolCallClassification | un
   return undefined
 }
 
+/** A round id token as `sagent` prints it; shell expansions such as `$r` are not ids. */
+const LITERAL_ROUND_ID = /^[A-Za-z0-9][\w.-]*$/u
+
 function invocationRoundId(sub: readonly string[]): string | undefined {
-  if (sub[0] === 'round' && (sub[1] === 'stage' || sub[1] === 'close')) return sub[2]
-  return optionValue(sub, '--round')
+  const positional = sub[0] === 'round' && (sub[1] === 'stage' || sub[1] === 'close' || sub[1] === 'end') && !(sub[2] ?? '').startsWith('-')
+  return literalRoundId(positional ? sub[2] : optionValue(sub, '--round'))
+}
+
+function literalRoundId(value: string | undefined): string | undefined {
+  return value !== undefined && LITERAL_ROUND_ID.test(value) ? value : undefined
 }
 
 function classifyMappedTool(name: string, args: Record<string, unknown> | undefined): ToolCallClassification[] {
@@ -390,7 +399,7 @@ function classifyMappedTool(name: string, args: Record<string, unknown> | undefi
         role: 'orchestrator',
         agent: 'mcp',
         label: 'sa_round close',
-        roundId: stringField(args, 'round_id'),
+        roundId: literalRoundId(stringField(args, 'round_id')),
         anchors: false,
       }]
     }
@@ -447,7 +456,7 @@ export function classifyToolCall(name: string, argumentsJson: string): ToolCallC
   if (name === 'workflow' || name === 'workflow_run') {
     const args = parseJsonObject(argumentsJson)
     const scriptArgs = isRecord(args?.['args']) ? args['args'] : undefined
-    const roundId = stringField(scriptArgs, 'roundId') ?? stringField(args, 'roundId')
+    const roundId = literalRoundId(stringField(scriptArgs, 'roundId') ?? stringField(args, 'roundId'))
     const mode = stringField(scriptArgs, 'mode') ?? stringField(args, 'mode')
     const meta = isRecord(args?.['meta']) ? args['meta'] : undefined
     const label = stringField(meta, 'name') ?? stringField(args, 'name') ?? 'kaggle-round'

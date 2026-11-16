@@ -43,7 +43,7 @@ const LONG_TEXT = 800
  * @returns state with no runs.
  */
 export function initResearchState(agentPreset: string | null = null): ResearchState {
-  return { v: 3, runs: [], papers: initPaperRuns(), campaign: initCampaignState(), calls: {}, agentPreset, skillLoaded: false }
+  return { v: 4, runs: [], papers: initPaperRuns(), campaign: initCampaignState(), calls: {}, agentPreset, skillLoaded: false }
 }
 
 /**

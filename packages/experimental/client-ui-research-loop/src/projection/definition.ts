@@ -17,7 +17,7 @@ import { initResearchState, reduceResearchEvent } from './reduce.ts'
  */
 export function toResearchView(state: ResearchState): ResearchView {
   const view: ResearchView = {
-    v: 3,
+    v: 4,
     runs: state.runs,
     papers: state.papers,
     campaign: toCampaignView(state.campaign),
@@ -31,7 +31,7 @@ export function toResearchView(state: ResearchState): ResearchView {
 /** The research loop projection unit registered by the host plugin. */
 export const researchLoopProjection = {
   key: 'scienceResearchLoop',
-  stateVersion: 3,
+  stateVersion: 4,
   stateSchema: researchStateSchema,
   init: header => initResearchState(header.agentPreset ?? null),
   apply: reduceResearchEvent,
