@@ -1,5 +1,5 @@
 {
-  "sourceVersion": "0.9.0",
+  "sourceVersion": "0.10.0",
   "sources": {
     "examples/objective.research.yaml": "3baf93c587e1516e006fcb81ee1809b5302bfd49716f21a832b2447fda3e615a",
     "plugin/agents/paper-audit.md": "9e641305623ad5a71c7a346702bd4eff4c0fa33b037bb4b05ec8d8cd3ab7e8c9",
@@ -35,7 +35,7 @@
     "plugin/skills/science-agent-kaggle/SKILL.md": "9585b4a1c11e1dad60e6b132ec091d7552a50aa8e7b7be1cbfc04e5122b4b9f9",
     "plugin/skills/science-agent-kaggle/references/architecture.md": "b527cd5a321f426504ae41bc5a44e9bd90b65464be1f492221a648dcf310b42a",
     "plugin/skills/science-agent-kaggle/references/benchmark.md": "6d2fad9cf9737dadd60929e8e41c5de621b61c6d43bc96ea1878e2a5c41dc50b",
-    "plugin/skills/science-agent-kaggle/references/cli-reference.md": "b0d40b0fe3fac30f25c4e378f8d730d920602cac2bdef5a8102b73978d805231",
+    "plugin/skills/science-agent-kaggle/references/cli-reference.md": "7351b392a4f63b804620a510291733cbaaf3939637e8faf8f76795dc9a19c97b",
     "plugin/skills/science-agent-kaggle/references/desktop-mcp.md": "b6ce7796281508629f83569f609e9bd5bef098fe5aac0fbcc6a24ab6fa690516",
     "plugin/skills/science-agent-kaggle/references/kaggle-playbook.md": "dce4cb13245fb6c10c2e06c67aa9dde2d4c24eb352a646b65e8871fc33e1d4ba",
     "plugin/skills/science-agent-kaggle/references/reporting.md": "d14c4de6bfa4b73ca2410578605b50fc14fdfe1c05070be1c6aed15775a31f0b",
@@ -49,8 +49,8 @@
     "plugin/workflows/research-loop.js": "789e5ec3117586feaeb52bc0b1a72d354acc394c4d3d461cff429199e6080880",
     "plugin/workflows/science-campaign.js": "64d8e5bb1f7df7f76b22d6e84412c6f2ad9dfc029cf4529350ae470e50755a29",
     "plugin/workflows/science-round.js": "ae2710d4eddc707d08899276ad304dbe5c03e16e85200bf43b36db5df7a10de4",
-    "pyproject.toml": "9b8d203fc1bf75707678fa58325ffbc56c913f3d5a1401113cdd4dfcd98c626b",
-    "src/science_agent/domains/predictive.json": "e6098352370e2566b26c1323535b065426ddcb8fbc8257c3498965c6af106d59"
+    "pyproject.toml": "f7f9f8aa8954a8b32b39974f4aa44a293ee99e2b9e9962376c4368d15b697636",
+    "src/science_agent/domains/predictive.json": "d552eed6aa74dfcf249ced7098210dc4697cfdc632c06409f02e01e2c8f9ebe8"
   },
   "files": {
     "synced/examples/objective.research.yaml": "3baf93c587e1516e006fcb81ee1809b5302bfd49716f21a832b2447fda3e615a",
@@ -87,7 +87,7 @@
     "synced/skills/science-agent-kaggle/SKILL.md": "e140ccc933fdfc5cbb56809e5ca40a9e78a211b353e6c207eb43ef7fad18aa6e",
     "synced/skills/science-agent-kaggle/references/architecture.md": "b527cd5a321f426504ae41bc5a44e9bd90b65464be1f492221a648dcf310b42a",
     "synced/skills/science-agent-kaggle/references/benchmark.md": "6d2fad9cf9737dadd60929e8e41c5de621b61c6d43bc96ea1878e2a5c41dc50b",
-    "synced/skills/science-agent-kaggle/references/cli-reference.md": "b0d40b0fe3fac30f25c4e378f8d730d920602cac2bdef5a8102b73978d805231",
+    "synced/skills/science-agent-kaggle/references/cli-reference.md": "7351b392a4f63b804620a510291733cbaaf3939637e8faf8f76795dc9a19c97b",
     "synced/skills/science-agent-kaggle/references/desktop-mcp.md": "b6ce7796281508629f83569f609e9bd5bef098fe5aac0fbcc6a24ab6fa690516",
     "synced/skills/science-agent-kaggle/references/kaggle-playbook.md": "dce4cb13245fb6c10c2e06c67aa9dde2d4c24eb352a646b65e8871fc33e1d4ba",
     "synced/skills/science-agent-kaggle/references/reporting.md": "d14c4de6bfa4b73ca2410578605b50fc14fdfe1c05070be1c6aed15775a31f0b",
@@ -107,6 +107,6 @@
     "synced/workflows/science-campaign.meta.json": "d707a15e009adf931f5b93be7a96f8c8379575f35c4edb7b5d8b468171e22be6",
     "synced/workflows/science-round.js": "08e7cdc3d4b83f6b12a0bf3037384cb8cbb4c455966f25d2b69eb771b87ff51f",
     "synced/workflows/science-round.meta.json": "0e0ac928d82739381e49a0d73aba9d003e0ec2233ce741957327babc6c9157fa",
-    "tests/fixtures/science-agent/predictive.json": "e6098352370e2566b26c1323535b065426ddcb8fbc8257c3498965c6af106d59"
+    "tests/fixtures/science-agent/predictive.json": "d552eed6aa74dfcf249ced7098210dc4697cfdc632c06409f02e01e2c8f9ebe8"
   }
 }

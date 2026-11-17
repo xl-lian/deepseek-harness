@@ -44,7 +44,8 @@
       "{sa} -w \"{ws}\" state briefing --json",
       "If a competition slug exists: {sa} -w \"{ws}\" kaggle info --competition <slug> --json",
       "Optionally read the cached profile at .sa/profile.json.",
-      "If the objective has a competition slug and allows public notebooks (constraints.no_public_notebooks is false): {sa} -w \"{ws}\" kaggle sources --top 5 --json; report each notebook as an evidence card (URL, title, one-line idea) for idea families, and never copy its code."
+      "If the objective has a competition slug and allows public notebooks (constraints.no_public_notebooks is false): {sa} -w \"{ws}\" kaggle sources --top 5 --json; report each notebook as an evidence card (URL, title, one-line idea) for idea families, and never copy its code.",
+      "{sa} -w \"{ws}\" memory search --for-workspace --json; report the idea families that held on similar tasks in earlier competitions (supported over tried) as evidence cards with source \"memory\"."
     ],
     "guidance": "If data is not frozen or the objective is not locked, status=\"blocked\" and explain the exact missing step. Populate cv_recommendation from the profile: time column -> time; group candidates -> group; classification -> stratified; else kfold."
   },
@@ -66,7 +67,7 @@
     "run.yaml": "copy as run.yaml"
   },
   "notes": {
-    "hypothesis": "Propose falsifiable modeling strategies. The independent variable is one of: feature set, model family, preprocessing, CV design, ensemble, or ablation. Predict the metric delta vs the current best/baseline; isolate the variable with controls, seeds, and CV; state cost and leakage risk. No test labels, no public leaderboard probing, no external data unless the objective allows it. Prefer a baseline first; do not propose another baseline if one exists. Name each candidate's operator (draft, improve, debug, ablate, tune, merge), its idea family, and its parent runs; fill the controller's work slots first.",
+    "hypothesis": "Propose falsifiable modeling strategies. The independent variable is one of: feature set, model family, preprocessing, CV design, ensemble, or ablation. Predict the metric delta vs the current best/baseline; isolate the variable with controls, seeds, and CV; state cost and leakage risk. No test labels, no public leaderboard probing, no external data unless the objective allows it. Prefer a baseline first; do not propose another baseline if one exists. Name each candidate's operator (draft, improve, debug, ablate, tune, merge), its idea family, and its parent runs; fill the controller's work slots first. Families that held on similar tasks in earlier competitions (the scout's memory cards) are good first drafts; families that failed there need a reason to expect otherwise.",
     "engineer": "Read data only from SA_DATA_DIR; write only to SA_OUTPUT_DIR. Emit metrics.json, prediction_oof.csv, prediction_test.csv, folds.csv, cv_design.json. Do not fabricate metrics. Do not read holdout labels. Use SA_DATA_DIR/cv_folds.csv for cross-validation when it exists, so runs pair fold by fold and their OOF files can be ensembled.",
     "repair": "",
     "verify": "",

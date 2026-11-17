@@ -229,6 +229,8 @@ The campaign repeats rounds until a stop rule fires (target metric, round limit,
 
 Long and GPU runs go out detached: `sagent run execute --detach` runs in a background process, `--backend kaggle` pushes a private GPU kernel (weekly GPU hours tracked), and `--backend ssh` runs on your GPU host from `.sa/config.toml` `[backends.ssh]`; `sagent run wait` collects them and the metric is recomputed locally. The Research Agent preset mounts the time context, so the model knows the date against campaign deadlines and quota windows, and the schedule tool, so it can check back on a run that outlasts the session.
 
+Each campaign's resolved hypotheses and best verified result go to a cross-competition memory (`sagent memory search`), and the scout of the next competition reads which idea families held on similar tasks.
+
 Each role can run on its own model. Add an `[agents.models]` table to the workspace's `.sa/config.toml`, keyed by role (`clerk`, `scout`, `hypothesis`, `engineer`, `verifier`, `statistician`, `reporter`, or a research or paper node name), with a model name, a `{ provider, model }` table naming a route from this profile, or a list that rotates across the parallel hypothesis lenses. The campaign reads it through `sagent domain show`; a role without an entry uses the session model.
 
 ```toml
