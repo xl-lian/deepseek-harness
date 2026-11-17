@@ -1,4 +1,4 @@
-- text: Inactive Goal guard rapid clear clicks
+- button "Inactive Goal Round 0/256 guard rapid clear clicks"
 - button "Resume goal"
 - button "Edit goal"
 - button "Clear goal"

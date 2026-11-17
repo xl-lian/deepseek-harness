@@ -3,29 +3,32 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/client/ui-goal/README.md
 /:
-  en: dd1d437b386e4216
-  zh: 4b59a2d565d99a0c
+  en: bf3087b866108c9c
+  zh: 9216734d9d4748db
 /deepseek-ai-dsh-client-ui-goal:
   en: fde8c9d75ef5c79b
   zh: 177db802d4dac57a
 /deepseek-ai-dsh-client-ui-goal/summary:
-  en: 615de8980e1b06c3
-  zh: 7fc3284c2bb00f20
+  en: 820887e17a863e28
+  zh: 153894633284e9ea
 /deepseek-ai-dsh-client-ui-goal/table-of-contents:
   en: d152484eb41ac6b4
   zh: 09388d293f9be9cb
 /deepseek-ai-dsh-client-ui-goal/use-this-package:
-  en: 4f6e6353d793a0de
-  zh: cde6e470f7dd9057
+  en: b063da9efabd4cef
+  zh: 3ffd96e190b2ed18
 /deepseek-ai-dsh-client-ui-goal/use-this-package/the-command-input-bubble:
   en: 05f0360b6c6dd3e9
   zh: d14c3f15dc4cea5b
+/deepseek-ai-dsh-client-ui-goal/use-this-package/goal-cards-and-the-goal-mode-chip:
+  en: f815fc6475de87b7
+  zh: 3d36b0df870c72f0
 /deepseek-ai-dsh-client-ui-goal/use-this-package/failures:
   en: 097bbdd748dc17e5
   zh: 867d341d046ba609
 /deepseek-ai-dsh-client-ui-goal/understand-the-implementation:
-  en: ab510274586c2d1d
-  zh: 4f65fc3b8e367e1e
+  en: b5de64f3387476df
+  zh: 713adba37656fc5a
 /deepseek-ai-dsh-client-ui-goal/further-exploration:
   en: 591a317a4f0af7d9
   zh: b1665ca4f6fb811e

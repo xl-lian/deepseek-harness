@@ -405,6 +405,24 @@ describe('built-in conversation node Definitions', () => {
     expect(node(current, 'context')?.data).toMatchObject({ content: [{ type: 'text', text: 'workspace context' }] })
   })
 
+  it('leaves a command result that cites its domain event to that event\'s presentation', () => {
+    const value = assembler([
+      at(1, 'command/run', { commandId: 'goal-1', name: 'goal', args: ' ship it', source: { kind: 'user' } }),
+      at(2, 'command/done', { commandId: 'goal-1', kind: 'success', text: 'Goal created', sourceEventSeq: 1 }),
+      at(3, 'command/run', { commandId: 'goal-2', name: 'goal', args: '', source: { kind: 'user' } }),
+      at(4, 'command/done', { commandId: 'goal-2', kind: 'success', text: 'Goal' }),
+      at(5, 'command/run', { commandId: 'goal-3', name: 'goal', args: ' pause', source: { kind: 'user' } }),
+      at(6, 'command/done', { commandId: 'goal-3', kind: 'error', text: 'No goal is currently set.' }),
+    ])
+    const current = snapshot(value)
+    const visible = current.order.map(key => current.nodes.get(key))
+    expect(visible.map(candidate => candidate?.data)).toEqual([
+      expect.objectContaining({ commandId: 'goal-2', outcome: { kind: 'success', text: 'Goal' } }),
+      expect.objectContaining({ commandId: 'goal-3', outcome: { kind: 'error', text: 'No goal is currently set.' } }),
+    ])
+    expect(current.nodes.values().filter(candidate => candidate.kind === 'command')).toHaveLength(3)
+  })
+
   it('projects one reversible process window before the finalized answer', () => {
     const value = assembler([
       at(1, 'turn/start', { turn: 1 }),

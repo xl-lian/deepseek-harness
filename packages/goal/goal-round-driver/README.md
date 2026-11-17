@@ -46,7 +46,7 @@ Mount the driver beside the goal service and the goal tools; the driver itself t
 
 ### What each round does
 
-With an exact live agent idle, an active armed goal, and remaining capacity, the driver queues one goal-round prompt. It names the JSON-quoted objective, round number, and cap, and tells the model to use current workspace, tool results, and durable state as authority. An accepted round starts a distinct request series, so Chat renders its self-contained request header before the goal message. The round enters history as a goal-sourced user message; only an entered goal message consumes the cap, while human messages and stale reservations do not. Goal lifecycle mutations still require the independent authority checks in `dsh-tool-goal`.
+With an exact live agent idle, an active armed goal, and remaining capacity, the driver queues one goal-round prompt. It names the JSON-quoted objective, the exact goal id and revision, the round number, and the cap. Round 1 asks the model to state checkable completion criteria and milestones before working; later rounds continue from the previous round's progress note and re-check those criteria against the current workspace, tool results, and durable state. Every round ends with a progress note, and completion uses the goal id and revision from the prompt without a separate goal read. An accepted round starts a distinct request series, so Chat renders its self-contained request header before the goal message. The round enters history as a goal-sourced user message; only an entered goal message consumes the cap, while human messages and stale reservations do not. Goal lifecycle mutations still require the independent authority checks in `dsh-tool-goal`.
 
 ### When continuation stops
 
@@ -82,7 +82,7 @@ This section explains how the driver schedules rounds without races; the observa
 
 ### The round prompt
 
-The retained prompt is one text block: the JSON-quoted objective and `round/maxGoalRounds` on the first lines, then the working instructions.
+The retained prompt is one text block: the JSON-quoted objective, the JSON-quoted goal id with its revision, and `round/maxGoalRounds` on the first lines, then the working instructions. Round 1 uses the kickoff instructions and later rounds the continuation instructions; both end with the same progress-note and completion protocol.
 
 </details>
 
@@ -105,11 +105,29 @@ The driver consumes the goal state and defers policy to the goal tools; read the
 
 #### What the model sees
 
-Each admitted round is one retained user-role `<goal_round>` block naming the full objective and positive round number. Earlier human messages, goal-state snapshots, assistant output, and tool records remain in the same session history.
+Each admitted round is one retained user-role `<goal_round>` block naming the full objective, the exact goal id and revision, and the positive round number. Earlier human messages, goal-state snapshots, assistant output, and tool records remain in the same session history. Rounds 2 and later replace the kickoff sentences with the continuation sentences below; the header and the protocol sentences are identical.
+
+##### Round 1
+
+```markdown
+<goal_round>
+Objective: "<objective>"
+Goal: id "<goal id>", revision <revision>
+Round: 1/<maxGoalRounds>
+
+This is the first round of a persisted goal. This session continues automatically, one round at a time, until the goal is marked complete or blocked. Before working, state the completion criteria: concrete, checkable conditions that together mean the whole objective is achieved. Then list the milestones and start on the first one. Make concrete progress and verify it. End the round with a short progress note: what was completed and verified, what remains, and the next step. If work remains, leave the goal active for the next round. When every completion criterion is met and verified, call update_goal with the goal id and revision above, action complete, and every other field left empty; read the goal again only if that call rejects them. Follow the configured goal-tool policy before reporting a blocker.
+</goal_round>
+```
+
+##### Later rounds
+
+```markdown
+Continue from the previous round's progress note. Check the completion criteria against the current workspace, tool results, and durable session state instead of assuming earlier narration is still current; if the criteria are no longer in this session, restate them first. Work on the next unfinished milestone.
+```
 
 #### Token effect
 
-One fixed instruction block plus the objective is added per admitted round. Later requests resend retained rounds until compaction shadows them; no fresh agent or copied conversation prefix is created.
+One fixed instruction block plus the objective and goal reference is added per admitted round. Completion needs no `get_goal` call, which saves one model step per autonomous completion. Later requests resend retained rounds until compaction shadows them; no fresh agent or copied conversation prefix is created.
 
 #### KV Cache effect
 

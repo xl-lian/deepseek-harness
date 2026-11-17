@@ -138,6 +138,7 @@ async function bench(options: {
     name: 'root', children: {
       'conversation.input.dock': { kind: 'list', scope: 'session' },
       'conversation.chat.node': { kind: 'keyed', scope: 'session' },
+      'conversation.input.left': { kind: 'list', scope: 'session' },
     },
   } as never, (() => null) as never)
   ctx.provide('locale', new LocaleRuntime(ctx))
@@ -162,6 +163,8 @@ async function bench(options: {
       }
     },
     chatEntry: () => ctx.slots.entries('conversation.chat.node')[0],
+    chatEntries: () => ctx.slots.entries('conversation.chat.node'),
+    chipEntry: () => ctx.slots.entries('conversation.input.left')[0],
   }
 }
 
@@ -225,15 +228,19 @@ describe('ui-goal browser plugin', () => {
     }
   })
 
-  it('registers the GoalBar dock, command input Definition, and keyed Chat renderer', async () => {
+  it('registers the GoalBar dock, goal Definitions, keyed Chat renderers, and the composer chip', async () => {
     const b = await bench()
     await b.fiber.await()
     expect(b.entry()).toMatchObject({ id: 'goal', order: 10, locale: 'goal' })
     expect(b.entry()?.inject).toBeTypeOf('function')
     expect(() => b.entry()!.inject!(sid('missing'))).toThrow(/unavailable/)
-    expect(b.definitions().map(definition => definition.kind)).toEqual(['goal-command-input'])
-    expect(b.chatEntry()?.options).toMatchObject({ key: 'command-input' })
-    expect(b.chatEntry()?.locale).toBe('goal')
+    expect(b.definitions().map(definition => definition.kind)).toEqual(['goal-command-input', 'goal-change'])
+    expect(b.chatEntries().map(entry => [entry.options.key, entry.locale])).toEqual([
+      ['command-input', 'goal'],
+      ['goal-change', 'goal'],
+    ])
+    expect(b.chipEntry()?.options).toMatchObject({ id: 'goal-mode' })
+    expect(b.chipEntry()?.locale).toBe('goal')
   })
 
   it('verbs read the CAS ref from the current projected value at call time', async () => {
@@ -327,16 +334,23 @@ describe('ui-goal browser plugin', () => {
     const b = await bench()
     await b.fiber.await()
     expect(b.entry()).toBeDefined()
-    expect(b.chatEntry()).toBeDefined()
-    expect(b.definitions()).toHaveLength(1)
+    expect(b.chatEntries()).toHaveLength(2)
+    expect(b.chipEntry()).toBeDefined()
+    expect(b.definitions()).toHaveLength(2)
     await b.fiber.dispose()
     expect(b.entry()).toBeUndefined()
-    expect(b.chatEntry()).toBeUndefined()
+    expect(b.chatEntries()).toHaveLength(0)
+    expect(b.chipEntry()).toBeUndefined()
     expect(b.definitions()).toHaveLength(0)
   })
 })
 
 describe('GoalDock adapter', () => {
+  type SessionHook = Parameters<typeof GoalDock>[0]['useSession']
+  /** Session hook over a snapshot whose only field the dock reads is `running`. */
+  const sessionRunning = (running: boolean): SessionHook =>
+    selector => selector({ running } as Parameters<Parameters<SessionHook>[0]>[0])
+
   it('renders the projected goal snapshot and nothing for absent/null', () => {
     const projection = makeProjection()
     const useProjection = vi.fn(() => projection)
@@ -352,15 +366,17 @@ describe('GoalDock adapter', () => {
     const t = makeTranslate(zh, commonZh)
     const dockProps = (up: () => GoalProjection | null | undefined) =>
       ({ useProjection: up, useGoalActivation, ...actions, t }) as unknown as Parameters<typeof GoalDock>[0]
-    const shown = render(<GoalDock {...dockProps(useProjection)} />)
+    const shown = render(<GoalDock {...dockProps(useProjection)} useSession={sessionRunning(true)} />)
     expect(shown.getByText('Ship it')).toBeTruthy()
+    expect(shown.getByText(`第 ${projection.roundsStarted}/${projection.goal.maxGoalRounds} 轮`)).toBeTruthy()
+    expect(shown.getByRole('img', { name: '本轮执行中' })).toBeTruthy()
     cleanup()
 
-    const empty = render(<GoalDock {...dockProps(() => null)} />)
+    const empty = render(<GoalDock {...dockProps(() => null)} useSession={sessionRunning(false)} />)
     expect(empty.container.firstChild).toBeNull()
     cleanup()
 
-    const absent = render(<GoalDock {...dockProps(() => undefined)} />)
+    const absent = render(<GoalDock {...dockProps(() => undefined)} useSession={sessionRunning(false)} />)
     expect(absent.container.firstChild).toBeNull()
   })
 
@@ -378,7 +394,7 @@ describe('GoalDock adapter', () => {
     }
     const t = makeTranslate(zh, commonZh)
     const props = { useProjection, useGoalActivation, ...actions, t } as unknown as Parameters<typeof GoalDock>[0]
-    const rendered = render(<GoalDock {...props} />)
+    const rendered = render(<GoalDock {...props} useSession={sessionRunning(false)} />)
     expect(rendered.getByText('已暂停的目标')).toBeTruthy()
     expect(screen.getByRole('button', { name: '恢复目标' })).toBeTruthy()
     expect(rendered.queryByRole('button', { name: '暂停目标' })).toBeNull()

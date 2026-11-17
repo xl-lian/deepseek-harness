@@ -1,5 +1,5 @@
 ---
-description: "Web GUI 的 goal 界面：显示当前目标并支持编辑、暂停、恢复或清除的 composer 上下文条带；供 goal 体验的用户与维护者阅读。"
+description: "Web GUI 的 goal 界面：显示当前目标并支持编辑、暂停、恢复或清除的 composer 上下文条带、goal 里程碑的对话卡片，以及 composer 中的目标模式 chip；供 goal 体验的用户与维护者阅读。"
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-Web GUI 的 goal 界面同时显示持久 goal 状态及当前的进程本地激活状态，供用户编辑、暂停、恢复或清除 goal；被拒绝的变更所产生的错误会内联显示。它把持久的 `/goal` 运行显示为 `Command input` 气泡，让用户或模型发出的命令在重新加载后仍然可见。goal 创建仍不归本包。除 `minimal` 外，随附的 Web preset 都会向 agent（智能体）提供 `/goal`。
+Web GUI 的 goal 界面同时显示持久 goal 状态及当前的进程本地激活状态，供用户编辑、暂停、恢复或清除 goal；被拒绝的变更所产生的错误会内联显示。它把持久的 `/goal` 运行显示为 `Command input` 气泡，让用户或模型发出的命令在重新加载后仍然可见；以对话卡片标记 goal 的创建、完成与受阻；并在 goal 进行中时于 composer 显示 `目标模式` chip。goal 创建仍不归本包。除 `minimal` 外，随附的 Web preset 都会向 agent（智能体）提供 `/goal`。
 
 ## 目录
 
@@ -25,11 +25,15 @@ Web GUI 的 goal 界面同时显示持久 goal 状态及当前的进程本地激
 <a id="use-this-package"></a>
 ## 使用本包
 
-与 `ui-conversation` 及 goal 领域包一起挂载本插件；只要会话存在目标，条带就会作为 composer 上下文堆栈的第二张卡片出现（位于 Todo 之后、Queue 之前）。Todo 与 Goal 使用相同的面板 elevation，使其位于 composer 层级之上。已 armed 的 active goal 提供暂停动作；active-but-disarmed 或 paused 的 goal 提供恢复；编辑在 ui-primitives 的 `InlineEditor` 中重写目标文本，多行目标编辑后仍保留换行；清除移除目标，并在投影追上之前抑制条带。
+与 `ui-conversation` 及 goal 领域包一起挂载本插件；只要会话存在目标，条带就会作为 composer 上下文堆栈的第二张卡片出现（位于 Todo 之后、Queue 之前）。Todo 与 Goal 使用相同的面板 elevation，使其位于 composer 层级之上。条带显示阶段标签、状态点（armed 的 Round 执行中显示旋转指示，armed 的两轮之间显示等待点，paused 或 disarmed 显示警示点，blocked 显示错误点）、已准入 Round 数与上限，以及截断的目标；激活该摘要会展开条带，显示完整目标，受阻时还显示原因。已 armed 的 active goal 提供暂停动作；active-but-disarmed 或 paused 的 goal 提供恢复；编辑在 ui-primitives 的 `InlineEditor` 中重写目标文本，多行目标编辑后仍保留换行；清除移除目标，并在投影追上之前抑制条带。
 
 ### 指令输入气泡
 
 每条持久的 `/goal` 运行都投影为一个右对齐的用户样式气泡，标签为 `Command input`（或 `指令输入`），渲染在通用命令结果行之前；开头的 `/goal` token 经共享的 `conversation.user.text` Factory 与 Goal 自有的 `command` renderer，使用 `facts.commands` 中的实际执行 token 范围， 以等宽代码字体渲染为指令引用 chip，目标文本保持正文字体。它不含时间戳、复制或分支操作，重新加载时会依据运行记录重建。
+
+### Goal 卡片与目标模式 chip
+
+每个创建、完成或阻塞 goal 的持久 `goal/change` 都会在该事件处渲染一张对话卡片：`已设定目标` 附 Round 上限，`目标已完成` 或 `目标受阻` 附已用 Round 数，并显示目标与受阻原因。卡片位于 Turn 折叠过程之外，因此自主运行的结果始终可见。`/goal` 创建会在命令结果中引用其 `goal/change` 事件，因此 Chat 显示卡片而不是通用文本行；`/goal` 的查看、编辑、暂停、恢复、清除与错误仍保留文本行。投影中的 goal 为 active 时，composer 工具行显示 `目标模式` chip，其提示说明自动续行；`ui-conversation` 会把 composer 占位文本换成"发消息可调整方向"。
 
 ### 失败
 
@@ -43,7 +47,7 @@ Web GUI 的 goal 界面同时显示持久 goal 状态及当前的进程本地激
 <details>
 <summary>实现细节——点击展开</summary>
 
-持久 goal 经 `useProjection('goal')` 到达（由历史尾页播种、`session/projection` 帧更新）。注入面携带注册方私有的激活钩子源与四个变更动词。该源仅在框架钩子观察它时启动；启动后会读取 `ctx.remote.goals.get`、订阅 `goal/activation-changed`，并在 running 状态或连接重置时刷新。实时事件 epoch 会让在途读取失效，因此较旧的 HTTP 响应不能覆盖较新的 activation 变化；running 刷新会保留最后一次已知 activation，直到读取完成。条带不持有领域存储或跨插件缓存。每个变更在调用时从会话当前投影值读取 CAS ref，比较并交换（RPC 的 CAS）就是陈旧性护栏。由于 React 的 pending 渲染无法拦住同一帧内的点击，条带会同步为变更建立 single-flight 防护。指令输入投影是独立的 Conversation Definition，在通用命令结果 Node 之前构建 `command-input` Chat Node；它绝不创建 `user/message` 或模型轮次。
+持久 goal 经 `useProjection('goal')` 到达（由历史尾页播种、`session/projection` 帧更新）。注入面携带注册方私有的激活钩子源与四个变更动词。该源仅在框架钩子观察它时启动；启动后会读取 `ctx.remote.goals.get`、订阅 `goal/activation-changed`，并在 running 状态或连接重置时刷新。实时事件 epoch 会让在途读取失效，因此较旧的 HTTP 响应不能覆盖较新的 activation 变化；running 刷新会保留最后一次已知 activation，直到读取完成。条带不持有领域存储或跨插件缓存。每个变更在调用时从会话当前投影值读取 CAS ref，比较并交换（RPC 的 CAS）就是陈旧性护栏。由于 React 的 pending 渲染无法拦住同一帧内的点击，条带会同步为变更建立 single-flight 防护。指令输入投影是独立的 Conversation Definition，在通用命令结果 Node 之前构建 `command-input` Chat Node；它绝不创建 `user/message` 或模型轮次。goal-change Definition 在持久历史边界解码每个 `goal/change` 事件，为 create、complete 与 block 各构建一个位于 group-tree 位置 `turn` 的 `goal-change` Chat Node；无法解码的事件会被忽略。chip 只读取投影中的阶段，不执行任何动作。
 
 激活状态读取持有临时的 `goalActivation` 客户端引用，仅在该会话首次历史打开成功后发送 `goals.get`。binding 已失效或打开失败时不发送 RPC。读取被拒绝时记录错误，不改变投影中的目标或最后一次已知激活状态；读取结束时释放临时引用。
 

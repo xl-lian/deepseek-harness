@@ -207,6 +207,47 @@ describe('GoalBar', () => {
     expect(screen.getByText('受阻的目标').closest('[title]')?.getAttribute('title')).toBe('No progress in 3 rounds')
   })
 
+  it('marks the run state: spinner while an armed round runs, waiting between rounds, warning when disarmed', () => {
+    const actions = makeActions()
+    const { container, rerender } = render(<GoalBar goal={makeGoal()} activation="armed" running {...actions} t={t} />)
+    expect(screen.getByRole('img', { name: '本轮执行中' })).toBeTruthy()
+    expect(container.querySelector('[data-goal-bar] > [data-state]')?.getAttribute('data-state')).toBe('ongoing')
+
+    rerender(<GoalBar goal={makeGoal()} activation="armed" running={false} {...actions} t={t} />)
+    expect(screen.getByRole('img', { name: '等待下一轮' })).toBeTruthy()
+
+    rerender(<GoalBar goal={makeGoal()} activation="disarmed" running {...actions} t={t} />)
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(container.querySelector('[data-goal-bar] > [data-state]')?.getAttribute('data-state')).toBe('warning')
+
+    rerender(<GoalBar goal={makeGoal({ phase: 'blocked' })} {...actions} t={t} />)
+    expect(container.querySelector('[data-goal-bar] > [data-state]')?.getAttribute('data-state')).toBe('error')
+  })
+
+  it('shows admitted rounds against the cap only when the projection supplies them', () => {
+    const actions = makeActions()
+    const { rerender } = render(<GoalBar goal={makeGoal()} {...actions} t={t} />)
+    expect(screen.queryByText(/^第 /)).toBeNull()
+    rerender(<GoalBar goal={makeGoal()} roundsStarted={2} {...actions} t={t} />)
+    expect(screen.getByText('第 2/4 轮')).toBeTruthy()
+  })
+
+  it('expands to the full objective and blocked reason, and collapses for a new goal', () => {
+    const actions = makeActions()
+    const goal = makeGoal({ phase: 'blocked', blockedReason: { code: 'stalled', message: 'No progress in 3 rounds' } })
+    const { rerender } = render(<GoalBar goal={goal} {...actions} t={t} />)
+    const summary = screen.getByRole('button', { expanded: false })
+    expect(screen.queryByText('原因')).toBeNull()
+
+    fireEvent.click(summary)
+    expect(summary.getAttribute('aria-expanded')).toBe('true')
+    const details = document.getElementById(summary.getAttribute('aria-controls') ?? '')
+    expect(details?.textContent).toBe('Ship the redesign原因No progress in 3 rounds')
+
+    rerender(<GoalBar goal={makeGoal({ id: 'g2' as GoalSnapshot['id'] })} {...actions} t={t} />)
+    expect(screen.getByRole('button', { expanded: false })).toBeTruthy()
+  })
+
   it('blocked goal without a reason carries no tooltip', () => {
     const actions = makeActions()
     render(<GoalBar goal={makeGoal({ phase: 'blocked' })} {...actions} t={t} />)

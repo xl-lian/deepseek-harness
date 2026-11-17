@@ -34,15 +34,15 @@ export function TurnTriggerNodeView({ node, t }: Pick<ChatNodeViewProps<'turn-tr
   const date = new Date(node.data.time)
   const time = formatMessageClock(node.data.time, t)
   return (
-    <section className={css.root} data-turn-trigger>
+    <section className={css.root} data-turn-trigger data-trigger-kind={details.kind || undefined}>
       <button className={css.header} type="button" aria-expanded={open} aria-controls={bodyId} onClick={() => { setOpen(!open) }}>
         <span className={css.icon} aria-hidden><TriggerIcon size={14} /></span>
-        <span className={css.title}>{t(details.title)}</span>
+        <span className={css.title}>{t(details.title, details.params)}</span>
         <time className={css.time} dateTime={date.toISOString()}>{time}</time>
         <IconChevronDownOutlineRegular size={12} className={open ? css.openChevron : css.chevron} />
       </button>
       {open && <div id={bodyId} className={css.body}>
-        <p className={css.explanation}>{t('message.trigger.explanation')}</p>
+        <p className={css.explanation}>{t(details.explanation)}</p>
         <div className={css.content}><NoticeBody content={node.data.content} source={node.data.source} t={t} /></div>
       </div>}
     </section>

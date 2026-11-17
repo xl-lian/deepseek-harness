@@ -12,9 +12,11 @@
   - button "Jump to turn 2"
   - button "Jump to turn 3"
 - group "Command input": /goal Keep working after Stop
-- 'button "goal Goal created Status: active Objective: Keep working after Stop Rounds: 0/256 Activation: armed Commands: /goal edit <objective>, /goal pause, /goal clear"'
-- button "Continuing goal {{clock}}":
-  - text: Continuing goal
+- region "Goal":
+  - text: Goal set Continues automatically for up to 256 rounds
+  - paragraph: Keep working after Stop
+- button "Goal round 1 {{clock}}":
+  - text: Goal round 1
   - time: {{clock}}
 - status: Stopped
 - button "Stopped" [disabled]
@@ -43,13 +45,15 @@
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}} Inactive Goal Keep working after Stop
+- text: {{clock}}
+- button "Inactive Goal Round 1/256 Keep working after Stop"
 - button "Resume goal"
 - button "Edit goal"
 - button "Clear goal"
-- textbox "Message or run a task, / commands, @ files or sessions"
+- 'textbox "Goal in progress: message to steer it, / for commands"'
 - button "Add files or run commands"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
+- text: Goal mode
 - button "Select model, current DeepSeek-V4-Flash": DeepSeek-V4-Flash
 - button "Send message" [disabled]
 - button "3 turns 3 steps · {{throughput}} tok/s": 3 turns 3 steps{{throughput}} tok/s

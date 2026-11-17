@@ -1,0 +1,73 @@
+/* Goal milestone card: the same bordered surface as Turn trigger notices, so
+   goal milestones and goal rounds read as one family in the transcript. */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 16px;
+  border: 0.5px solid var(--dsw-alias-border-l1);
+  border-radius: var(--dsw-radius-xl);
+  background: var(--dsw-alias-turn-trigger-bg, var(--dsw-alias-markdown-code-block));
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.card[data-goal-change='complete'] .icon {
+  color: var(--dsw-alias-state-success-primary);
+}
+
+.card[data-goal-change='block'] .icon {
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.title {
+  flex: none;
+  font-size: var(--dsh-content-font-size, 14px);
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary);
+}
+
+.meta {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  font: var(--dsw-font-xxs-12);
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.objective {
+  margin: 0 0 0 24px;
+  font-size: var(--dsh-content-font-size, 14px);
+  line-height: calc(22px + var(--dsh-content-font-delta, 0px));
+  color: var(--dsw-alias-label-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.reason {
+  margin: 0 0 0 24px;
+  font: var(--dsw-font-xxs-12);
+  color: var(--dsw-alias-state-error-primary);
+  overflow-wrap: anywhere;
+}
+
+.reasonLabel {
+  margin-right: 6px;
+  font-weight: 500;
+}

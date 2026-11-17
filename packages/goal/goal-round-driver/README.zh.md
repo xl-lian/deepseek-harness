@@ -46,7 +46,7 @@ kind: "package-reference"
 
 ### 每轮做什么
 
-当对应的活跃 agent 处于 idle，且存在 active、已启用续行、仍有容量的 goal 时，驱动器会排入一条 goal-round 提示词。它点明以 JSON 引用的目标、Round 编号与上限，并告诉模型以当前工作区、工具结果和持久状态为准。被接纳的 Round 会开启独立请求序列，因此 Chat 会在 goal 消息之前渲染其自包含请求 header。该 Round 以 goal 来源的用户消息进入历史；只有进入步骤的 goal 消息消耗上限，人类消息和陈旧预留不会消耗。goal 生命周期变更仍必须通过 `dsh-tool-goal` 的独立权限检查。
+当对应的活跃 agent 处于 idle，且存在 active、已启用续行、仍有容量的 goal 时，驱动器会排入一条 goal-round 提示词。它点明以 JSON 引用的目标、确切的 goal id 与 revision、Round 编号与上限。第 1 轮要求模型在动手前写出可检查的完成标准与里程碑；后续各轮从上一轮的进度说明继续，并对照当前工作区、工具结果和持久状态重新核对这些标准。每轮都以进度说明结束，标记完成时直接使用提示词中的 goal id 与 revision，无需另行读取 goal。被接纳的 Round 会开启独立请求序列，因此 Chat 会在 goal 消息之前渲染其自包含请求 header。该 Round 以 goal 来源的用户消息进入历史；只有进入步骤的 goal 消息消耗上限，人类消息和陈旧预留不会消耗。goal 生命周期变更仍必须通过 `dsh-tool-goal` 的独立权限检查。
 
 ### 何时停止续行
 
@@ -82,7 +82,7 @@ Round 只在整个 agent 进入 idle 时启动；加载了子 agent 服务时，
 
 ### Round 提示词
 
-保留的提示词是一个文本块：前几行为 JSON 引用的目标与 `round/maxGoalRounds`，其后是工作指令。
+保留的提示词是一个文本块：前几行为 JSON 引用的目标、JSON 引用的 goal id 及其 revision，以及 `round/maxGoalRounds`，其后是工作指令。第 1 轮使用启动指令，后续各轮使用续行指令；两者都以相同的进度说明与完成协议结尾。
 
 </details>
 
@@ -105,11 +105,29 @@ Round 只在整个 agent 进入 idle 时启动；加载了子 agent 服务时，
 
 #### 模型看到的内容
 
-每个已准入 Round 都是一段保留的用户角色 `<goal_round>` 块，其中点明完整目标与正数 Round 编号。更早的用户消息、goal 状态快照、assistant 输出与工具记录仍保留在同一会话历史中。
+每个已准入 Round 都是一段保留的用户角色 `<goal_round>` 块，其中点明完整目标、确切的 goal id 与 revision，以及正数 Round 编号。更早的用户消息、goal 状态快照、assistant 输出与工具记录仍保留在同一会话历史中。第 2 轮及以后把启动句替换为下方的续行句；头部与协议句完全相同。
+
+##### 第 1 轮
+
+```markdown
+<goal_round>
+Objective: "<objective>"
+Goal: id "<goal id>", revision <revision>
+Round: 1/<maxGoalRounds>
+
+This is the first round of a persisted goal. This session continues automatically, one round at a time, until the goal is marked complete or blocked. Before working, state the completion criteria: concrete, checkable conditions that together mean the whole objective is achieved. Then list the milestones and start on the first one. Make concrete progress and verify it. End the round with a short progress note: what was completed and verified, what remains, and the next step. If work remains, leave the goal active for the next round. When every completion criterion is met and verified, call update_goal with the goal id and revision above, action complete, and every other field left empty; read the goal again only if that call rejects them. Follow the configured goal-tool policy before reporting a blocker.
+</goal_round>
+```
+
+##### 后续各轮
+
+```markdown
+Continue from the previous round's progress note. Check the completion criteria against the current workspace, tool results, and durable session state instead of assuming earlier narration is still current; if the criteria are no longer in this session, restate them first. Work on the next unfinished milestone.
+```
 
 #### Token 影响
 
-每个已准入 Round 会增加一个固定指令块和目标。后续请求会重新发送保留的 Round，直到压缩（compaction）将其遮蔽；不会创建新 agent，也不会复制对话前缀。
+每个已准入 Round 会增加一个固定指令块、目标和 goal 引用。标记完成无需调用 `get_goal`，每次自主完成可省去一个模型步骤。后续请求会重新发送保留的 Round，直到压缩（compaction）将其遮蔽；不会创建新 agent，也不会复制对话前缀。
 
 #### KV Cache 影响
 

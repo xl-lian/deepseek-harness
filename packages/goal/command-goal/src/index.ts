@@ -9,6 +9,7 @@ import type { CommandInvocation, CommandResult } from '@deepseek-ai/dsh-commands
 import { GoalError } from '@deepseek-ai/dsh-goal'
 import type { GoalPhase, GoalRef, GoalView } from '@deepseek-ai/dsh-goal'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { SessionSeq } from '@deepseek-ai/dsh-session'
 
 export const name = 'command-goal'
 export const inject = ['commands', 'goals']
@@ -75,7 +76,7 @@ function commandHint(goal: GoalView): string {
 }
 
 /** Render direct UI output without exposing compare-and-set internals. */
-function renderGoal(title: string, goal: GoalView): CommandResult {
+function renderGoal(title: string, goal: GoalView): Extract<CommandResult, { kind: 'success' }> {
   const reason = goal.phase === 'blocked' ? goal.blockedReason : undefined
   /* v8 ignore next -- durable replay guarantees every blocked goal carries its validated reason */
   if (goal.phase === 'blocked' && reason === undefined) throw new TypeError('blocked goal is missing its reason')
@@ -93,6 +94,19 @@ function renderGoal(title: string, goal: GoalView): CommandResult {
       `Commands: ${commandHint(goal)}`,
     ].join('\n'),
   }
+}
+
+/**
+ * Create one goal and cite its durable `goal/change` event, so a presentation
+ * that renders goal creation can stand in for this command's text result.
+ * The goal service appends exactly one event, at the Session offset read
+ * immediately before the call.
+ */
+function createGoal(ctx: Context, invocation: CommandInvocation, objective: string): CommandResult {
+  const sourceEventSeq = SessionSeq(invocation.agent.session.seq)
+  const created = ctx.goals.create(invocation.agent, { objective })
+  submitObjectiveAttachments(invocation)
+  return { ...renderGoal('Goal created', created), sourceEventSeq }
 }
 
 /** Exact current compare-and-set ref. */
@@ -147,17 +161,11 @@ function executeGoalCommand(ctx: Context, invocation: CommandInvocation): Comman
             text: `A goal is already ${phaseLabel(current.phase)}. Use /goal edit <objective> to change it or /goal clear before replacing it.`,
           }
         }
-        const created = ctx.goals.create(invocation.agent, { objective: command.objective })
-        submitObjectiveAttachments(invocation)
-        return renderGoal('Goal created', created)
+        return createGoal(ctx, invocation, command.objective)
       }
       case 'edit': {
         if (current === undefined) return missingGoal('edit')
-        if (current.phase === 'complete') {
-          const replaced = ctx.goals.create(invocation.agent, { objective: command.objective })
-          submitObjectiveAttachments(invocation)
-          return renderGoal('Goal created', replaced)
-        }
+        if (current.phase === 'complete') return createGoal(ctx, invocation, command.objective)
         const edited = ctx.goals.edit(invocation.agent, goalRef(current), { objective: command.objective })
         submitObjectiveAttachments(invocation)
         return renderGoal('Goal updated', edited)

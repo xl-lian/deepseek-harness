@@ -151,25 +151,57 @@ async function waitForRequests(adapter: ScriptedAdapter, count: number): Promise
 }
 
 describe('goal-round outcome policy', () => {
-  it('renders the objective, round budget, authority boundary, and completion protocol', () => {
-    const goal: GoalView = {
-      id: GoalId('goal-prompt'),
-      revision: 4,
-      objective: 'Ship verified support',
-      phase: 'active',
-      maxGoalRounds: 9,
-      roundsStarted: 2,
-      createdAt: 1,
-      updatedAt: 2,
-      activation: 'armed',
-    }
-    const prompt = goalSession.renderGoalRoundPrompt(goal, 3)
+  const promptGoal: GoalView = {
+    id: GoalId('goal-prompt'),
+    revision: 4,
+    objective: 'Ship verified support',
+    phase: 'active',
+    maxGoalRounds: 9,
+    roundsStarted: 2,
+    createdAt: 1,
+    updatedAt: 2,
+    activation: 'armed',
+  }
+
+  /** Shared round protocol pinned verbatim in both prompt variants. */
+  const protocol = 'Make concrete progress and verify it. End the round with a short progress note: what was completed '
+    + 'and verified, what remains, and the next step. If work remains, leave the goal active for the next '
+    + 'round. When every completion criterion is met and verified, call update_goal with the goal id and '
+    + 'revision above, action complete, and every other field left empty; read the goal again only if that '
+    + 'call rejects them. Follow the configured goal-tool policy before reporting a blocker.'
+
+  function promptText(round: number): string {
+    const prompt = goalSession.renderGoalRoundPrompt(promptGoal, round)
     expect(prompt).toHaveLength(1)
     const block = prompt[0]
     if (block?.type !== 'text') throw new Error('expected a text goal-round prompt')
-    expect(block.text).toMatch(
-      /<goal_round>\nObjective: "Ship verified support"\nRound: 3\/9[\s\S]*current workspace[\s\S]*verify[\s\S]*mark it complete/,
-    )
+    return block.text
+  }
+
+  it('opens round 1 with completion criteria, milestones, and the exact goal reference', () => {
+    expect(promptText(1)).toBe('<goal_round>\n'
+      + 'Objective: "Ship verified support"\n'
+      + 'Goal: id "goal-prompt", revision 4\n'
+      + 'Round: 1/9\n\n'
+      + 'This is the first round of a persisted goal. This session continues automatically, one round at a '
+      + 'time, until the goal is marked complete or blocked. Before working, state the completion criteria: '
+      + 'concrete, checkable conditions that together mean the whole objective is achieved. Then list the '
+      + 'milestones and start on the first one. '
+      + `${protocol}\n`
+      + '</goal_round>')
+  })
+
+  it('continues later rounds from the previous progress note against the current workspace', () => {
+    expect(promptText(3)).toBe('<goal_round>\n'
+      + 'Objective: "Ship verified support"\n'
+      + 'Goal: id "goal-prompt", revision 4\n'
+      + 'Round: 3/9\n\n'
+      + 'Continue from the previous round\'s progress note. Check the completion criteria against the current '
+      + 'workspace, tool results, and durable session state instead of assuming earlier narration is still '
+      + 'current; if the criteria are no longer in this session, restate them first. Work on the next '
+      + 'unfinished milestone. '
+      + `${protocol}\n`
+      + '</goal_round>')
   })
 
   it('quotes multiline or tag-like objective text as one unambiguous data value', () => {

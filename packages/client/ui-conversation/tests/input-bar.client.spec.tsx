@@ -65,7 +65,7 @@ interface BenchOptions {
   /** The `plan` projection value the standard-kit useProjection serves. */
   plan?: { active: boolean; pending: boolean }
   /** The `goal` projection value used only to prove attachment intake remains ordinary. */
-  goal?: { phase: 'active'; objective: string }
+  goal?: { goal: { phase: 'active' | 'paused'; objective: string } }
   modelEntry?: React.ReactNode
   permissionEntry?: React.ReactNode
   /** Hot text-ref lexicon (injects a minimal slash stub exposing only lexicon()). */
@@ -1322,7 +1322,7 @@ describe('running and lock semantics', () => {
 
   it.each([
     ['active plan', { plan: { active: true, pending: false } }],
-    ['active goal', { goal: { phase: 'active' as const, objective: 'inspect files' } }],
+    ['active goal', { goal: { goal: { phase: 'active' as const, objective: 'inspect files' } } }],
   ])('%s keeps ordinary generic-file intake enabled', (_name, projection) => {
     const added = vi.fn(() => null)
     const { view, slotCalls, shell } = bench({ ...projection, addFiles: added })
@@ -1671,6 +1671,14 @@ describe('running and lock semantics', () => {
     // Owner placeholder outranks the plan swap.
     const custom = bench({ plan: { active: true, pending: false }, placeholder: 'Custom placeholder' })
     expect(custom.placeholder).toBe('Custom placeholder')
+  })
+
+  it('an active goal swaps the placeholder below plan mode; a paused goal does not', () => {
+    const goal = { goal: { phase: 'active' as const, objective: 'ship it' } }
+    expect(bench({ goal }).placeholder).toBe('目标进行中：发消息可调整方向，/ 调用指令')
+    expect(bench({ goal, plan: { active: true, pending: false } }).placeholder).toBe('描述你的任务以生成计划')
+    expect(bench({ goal: { goal: { phase: 'paused', objective: 'ship it' } } }).placeholder)
+      .toBe('发消息或创建任务, / 调用指令, @ 文件或对话')
   })
 })
 

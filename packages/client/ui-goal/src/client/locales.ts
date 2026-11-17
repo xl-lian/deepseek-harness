@@ -14,6 +14,17 @@ export const zh = {
   'action.resume': '恢复目标',
   'action.edit': '编辑目标',
   'action.clear': '清除目标',
+  'rounds': '第 {count}/{max} 轮',
+  'state.running': '本轮执行中',
+  'state.waiting': '等待下一轮',
+  'blocked.reason': '原因',
+  'card.aria': '目标',
+  'card.created': '已设定目标',
+  'card.complete': '目标已完成',
+  'card.blocked': '目标受阻',
+  'card.limit': '将自动逐轮执行，最多 {max} 轮',
+  'chip.goalMode': '目标模式',
+  'chip.tooltip': '目标进行中：智能体会自动逐轮继续，直到完成或受阻',
 } satisfies Record<string, string>
 
 /** The goal namespace key union. */
@@ -33,6 +44,17 @@ export const en = {
   'action.resume': 'Resume goal',
   'action.edit': 'Edit goal',
   'action.clear': 'Clear goal',
+  'rounds': 'Round {count}/{max}',
+  'state.running': 'Round in progress',
+  'state.waiting': 'Waiting for the next round',
+  'blocked.reason': 'Reason',
+  'card.aria': 'Goal',
+  'card.created': 'Goal set',
+  'card.complete': 'Goal complete',
+  'card.blocked': 'Goal blocked',
+  'card.limit': 'Continues automatically for up to {max} rounds',
+  'chip.goalMode': 'Goal mode',
+  'chip.tooltip': 'A goal is active: the agent continues automatically, round by round, until it is complete or blocked',
 } satisfies Record<GoalKey, string>
 
 /** Japanese copy, checked against the English keys. */
@@ -49,6 +71,17 @@ export const ja = {
   'action.resume': '目標を再開',
   'action.edit': '目標を編集',
   'action.clear': '目標をクリア',
+  'rounds': 'ラウンド {count}/{max}',
+  'state.running': 'ラウンド実行中',
+  'state.waiting': '次のラウンドを待機中',
+  'blocked.reason': '理由',
+  'card.aria': '目標',
+  'card.created': '目標を設定しました',
+  'card.complete': '目標を達成しました',
+  'card.blocked': '目標がブロックされました',
+  'card.limit': '最大 {max} ラウンドまで自動で継続します',
+  'chip.goalMode': '目標モード',
+  'chip.tooltip': '目標が進行中です。完了またはブロックされるまで、エージェントがラウンドごとに自動で継続します',
 } satisfies Record<keyof typeof en, string>
 
 /** Spanish dictionary, checked against the English keys. */
@@ -65,6 +98,17 @@ export const es = {
   'action.resume': 'Reanudar objetivo',
   'action.edit': 'Editar objetivo',
   'action.clear': 'Objetivo claro',
+  'rounds': 'Ronda {count}/{max}',
+  'state.running': 'Ronda en curso',
+  'state.waiting': 'Esperando la siguiente ronda',
+  'blocked.reason': 'Motivo',
+  'card.aria': 'Objetivo',
+  'card.created': 'Objetivo establecido',
+  'card.complete': 'Objetivo completado',
+  'card.blocked': 'Objetivo bloqueado',
+  'card.limit': 'Continúa automáticamente hasta {max} rondas',
+  'chip.goalMode': 'Modo objetivo',
+  'chip.tooltip': 'Hay un objetivo activo: el agente continúa automáticamente, ronda a ronda, hasta completarlo o quedar bloqueado',
 } satisfies Record<keyof typeof en, string>
 
 /** French dictionary, checked against the English keys. */
@@ -81,6 +125,17 @@ export const fr = {
   'action.resume': "Reprendre l'objectif",
   'action.edit': "Modifier l'objectif",
   'action.clear': 'Objectif clair',
+  'rounds': 'Tour {count}/{max}',
+  'state.running': 'Tour en cours',
+  'state.waiting': 'En attente du prochain tour',
+  'blocked.reason': 'Raison',
+  'card.aria': 'Objectif',
+  'card.created': 'Objectif défini',
+  'card.complete': 'Objectif atteint',
+  'card.blocked': 'Objectif bloqué',
+  'card.limit': "Continue automatiquement jusqu'à {max} tours",
+  'chip.goalMode': 'Mode objectif',
+  'chip.tooltip': "Un objectif est actif : l'agent continue automatiquement, tour après tour, jusqu'à ce qu'il soit atteint ou bloqué",
 } satisfies Record<keyof typeof en, string>
 
 /** German dictionary, checked against the English keys. */
@@ -97,6 +152,17 @@ export const de = {
   'action.resume': 'Ziel fortsetzen',
   'action.edit': 'Ziel bearbeiten',
   'action.clear': 'Klares Ziel',
+  'rounds': 'Runde {count}/{max}',
+  'state.running': 'Runde läuft',
+  'state.waiting': 'Wartet auf die nächste Runde',
+  'blocked.reason': 'Grund',
+  'card.aria': 'Ziel',
+  'card.created': 'Ziel festgelegt',
+  'card.complete': 'Ziel erreicht',
+  'card.blocked': 'Ziel blockiert',
+  'card.limit': 'Läuft automatisch bis zu {max} Runden weiter',
+  'chip.goalMode': 'Zielmodus',
+  'chip.tooltip': 'Ein Ziel ist aktiv: Der Agent arbeitet Runde für Runde automatisch weiter, bis es erreicht oder blockiert ist',
 } satisfies Record<keyof typeof en, string>
 
 /** Russian dictionary, checked against the English keys. */
@@ -113,6 +179,17 @@ export const ru = {
   'action.resume': 'Возобновить цель',
   'action.edit': 'Изменить цель',
   'action.clear': 'Четкая цель',
+  'rounds': 'Раунд {count}/{max}',
+  'state.running': 'Раунд выполняется',
+  'state.waiting': 'Ожидание следующего раунда',
+  'blocked.reason': 'Причина',
+  'card.aria': 'Цель',
+  'card.created': 'Цель задана',
+  'card.complete': 'Цель достигнута',
+  'card.blocked': 'Цель заблокирована',
+  'card.limit': 'Продолжается автоматически, не более {max} раундов',
+  'chip.goalMode': 'Режим цели',
+  'chip.tooltip': 'Цель активна: агент автоматически продолжает работу раунд за раундом, пока цель не будет достигнута или заблокирована',
 } satisfies Record<keyof typeof en, string>
 
 /** Portuguese dictionary, checked against the English keys. */
@@ -129,4 +206,15 @@ export const pt = {
   'action.resume': 'Retomar meta',
   'action.edit': 'Editar meta',
   'action.clear': 'Objetivo claro',
+  'rounds': 'Rodada {count}/{max}',
+  'state.running': 'Rodada em andamento',
+  'state.waiting': 'Aguardando a próxima rodada',
+  'blocked.reason': 'Motivo',
+  'card.aria': 'Meta',
+  'card.created': 'Meta definida',
+  'card.complete': 'Meta concluída',
+  'card.blocked': 'Meta bloqueada',
+  'card.limit': 'Continua automaticamente por até {max} rodadas',
+  'chip.goalMode': 'Modo meta',
+  'chip.tooltip': 'Há uma meta ativa: o agente continua automaticamente, rodada a rodada, até concluí-la ou ficar bloqueado',
 } satisfies Record<keyof typeof en, string>

@@ -1,0 +1,25 @@
+# Bilingual-pair consistency record for 2026-11-17-distinct-goal-mode.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-11-17-distinct-goal-mode.md
+/agent-note-distinct-goal-mode-prompt-and-presentation:
+  en: 5197e1206dd9b664
+  zh: ab52311727b42be5
+/agent-note-distinct-goal-mode-prompt-and-presentation/problem:
+  en: 42592eb4a5eb18ff
+  zh: 429b8f6cce7deb26
+/agent-note-distinct-goal-mode-prompt-and-presentation/decision:
+  en: a15c7c13f167e5ac
+  zh: 63bcc2ef60c2f344
+/agent-note-distinct-goal-mode-prompt-and-presentation/decision/round-prompt:
+  en: fa941b7c924f3fdd
+  zh: cf4b83ab63fa53af
+/agent-note-distinct-goal-mode-prompt-and-presentation/decision/presentation:
+  en: de68c40b18743a5a
+  zh: 85e2edaaaf82fc61
+/agent-note-distinct-goal-mode-prompt-and-presentation/alternatives-considered:
+  en: 9798f38f5021fbfd
+  zh: 1bbb73995696dca5
+/agent-note-distinct-goal-mode-prompt-and-presentation/consequences:
+  en: d01286f01a170671
+  zh: 5a8dda47144f8806

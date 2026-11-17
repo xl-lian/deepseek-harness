@@ -29,6 +29,7 @@ describe('Turn trigger notices', () => {
     [{ kind: 'tool-jobs' }, 'job', 'Background task updated'],
     [{ kind: 'cordis-host-runner' }, 'plugin', 'Plugin status updated'],
     [{ kind: 'goal' }, 'goal', 'Continuing goal'],
+    [{ kind: 'goal', goalId: 'g', revision: 1, round: 0 }, 'goal', 'Continuing goal'],
     [{ kind: 'agent-message' }, 'agent', 'Task message received'],
     [{ kind: 'team-message' }, 'team', 'Team message received'],
     [{ kind: 'subagent-settled' }, 'subagent', 'Subtask status updated'],
@@ -38,7 +39,12 @@ describe('Turn trigger notices', () => {
   ] as const)('presents the recorded %j source', (source, icon, title) => {
     const node = trigger(source)
     const details = turnTriggerDetails(node.data)
-    expect(details).toEqual({ title: `message.trigger.${icon}`, icon })
+    expect(details).toEqual({
+      title: `message.trigger.${icon}`,
+      explanation: icon === 'goal' ? 'message.trigger.goal.explanation' : 'message.trigger.explanation',
+      icon,
+      kind: source.kind,
+    })
     const t = makeTranslate(en)
     const view = render(<TurnTriggerNodeView node={node} t={t} />)
     expect(view.getByRole('button').textContent).toContain(title)
@@ -52,7 +58,9 @@ describe('Turn trigger notices', () => {
   ])('presents Team relays as Agent messages while retaining the sender name', (locale, title) => {
     const node = trigger({ kind: 'agent-message', form: 'relay', senderSessionId: 'sender' })
     node.data.content = [{ type: 'text', text: 'Team message from reviewer-2:' }, { type: 'text', text: 'Ready.' }]
-    expect(turnTriggerDetails(node.data)).toEqual({ title: 'message.trigger.agent', icon: 'agent' })
+    expect(turnTriggerDetails(node.data)).toEqual({
+      title: 'message.trigger.agent', explanation: 'message.trigger.explanation', icon: 'agent', kind: 'agent-message',
+    })
     const view = render(<TurnTriggerNodeView node={node} t={makeTranslate(locale)} />)
     expect(view.getByRole('button').textContent).toContain(title)
     fireEvent.click(view.getByRole('button'))
@@ -70,6 +78,25 @@ describe('Turn trigger notices', () => {
     expect(view.getByRole('button').querySelector('svg')?.outerHTML)
       .toBe(reference.container.querySelector('svg')?.outerHTML)
     expect(node.data.source).toEqual({ kind: 'schedule' })
+  })
+
+  it.each([
+    { locale: en, title: 'Goal round 3', explanation: 'The goal continued automatically for another round.' },
+    { locale: zh, title: '目标第 3 轮', explanation: '目标自动继续了一轮。' },
+  ])('numbers a recorded goal round as $title and explains the automatic continuation', ({ locale, title, explanation }) => {
+    const node = trigger({ kind: 'goal', goalId: 'g', revision: 2, round: 3 })
+    expect(turnTriggerDetails(node.data)).toEqual({
+      title: 'message.trigger.goal.round',
+      params: { round: 3 },
+      explanation: 'message.trigger.goal.explanation',
+      icon: 'goal',
+      kind: 'goal',
+    })
+    const view = render(<TurnTriggerNodeView node={node} t={makeTranslate(locale)} />)
+    expect(view.container.querySelector('[data-turn-trigger]')?.getAttribute('data-trigger-kind')).toBe('goal')
+    expect(view.getByRole('button').textContent).toContain(title)
+    fireEvent.click(view.getByRole('button'))
+    expect(view.container.textContent).toContain(explanation)
   })
 
   it('opens the recorded notice body and closes it independently of the Turn', () => {
@@ -92,8 +119,13 @@ describe('Turn trigger notices', () => {
       const details = turnTriggerDetails(trigger(source).data)
       const webhook = typeof source === 'object' && source !== null && 'kind' in source && source.kind === 'webhook'
       expect(details).toEqual(webhook
-        ? { title: 'message.trigger.webhook', icon: 'webhook' }
-        : { title: 'message.trigger.request', icon: 'request' })
+        ? { title: 'message.trigger.webhook', explanation: 'message.trigger.explanation', icon: 'webhook', kind: 'webhook' }
+        : {
+          title: 'message.trigger.request',
+          explanation: 'message.trigger.explanation',
+          icon: 'request',
+          kind: typeof source === 'object' && source !== null && 'kind' in source && typeof source.kind === 'string' ? source.kind : '',
+        })
     },
   )
 })

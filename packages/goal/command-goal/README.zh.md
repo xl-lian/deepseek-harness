@@ -76,6 +76,7 @@ kind: "package-reference"
 ### 设计
 
 - **语法，而非自由文本。** 解析器只在控制词（`clear`、`pause`、`resume`、`edit`）填满整个输入时识别它们；其他任何非空后缀都是目标。单独的 `edit` 无效，且 `edit` 拒绝直接替换未完成的 goal。
+- **创建引用其事件。** 成功的创建（包括对已完成 goal 执行 `/goal edit`）会返回 `sourceEventSeq`，指向它追加的 `goal/change` 事件，让渲染 goal 创建的客户端可以代替文本结果。
 - **领域拒绝变成稳定错误。** `GoalError` 结果会转换为带固定消息的直接命令错误；意外失败会重新抛出，使适配器报告命令失败而非领域结果。渲染输出绝不暴露带品牌类型的 id 或 revision。
 - **附件随目标提交。** create 或 edit 成功时，命令提交一条用户 followup 消息，按选择顺序携带已准入的图片块与文件块，再附加固定文本 `Reference attachments for the goal objective.`。其他路径不提交消息，因此分发方 composer 保留草稿和附件卡。
 

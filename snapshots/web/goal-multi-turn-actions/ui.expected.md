@@ -11,9 +11,11 @@
   - button "Jump to turn 1"
   - button "Jump to turn 2"
 - group "Command input": /goal 做两个turn，每个turn输出随机一个包的文件结构。注意你做完一个turn之后，直接输出内容，停止，我们的系统会帮你再开一个turn，你看着做一个类似的
-- 'button "goal Goal created Status: active Objective: 做两个turn，每个turn输出随机一个包的文件结构。注意你做完一个turn之后，直接输出内容，停止，我们的系统会帮你再开一个turn，你看着做一个类似的 Rounds: 0/256 Activation: armed Commands: /goal edit <objective>, /goal pause, /goal clear"'
-- button "Continuing goal {{clock}}":
-  - text: Continuing goal
+- region "Goal":
+  - text: Goal set Continues automatically for up to 256 rounds
+  - paragraph: 做两个turn，每个turn输出随机一个包的文件结构。注意你做完一个turn之后，直接输出内容，停止，我们的系统会帮你再开一个turn，你看着做一个类似的
+- button "Goal round 1 {{clock}}":
+  - text: Goal round 1
   - time: {{clock}}
 - status: Completed
 - button "Completed in {{duration}}"
@@ -36,8 +38,8 @@
 - button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}}
-- button "Continuing goal {{clock}}":
-  - text: Continuing goal
+- button "Goal round 2 {{clock}}":
+  - text: Goal round 2
   - time: {{clock}}
 - status: Completed
 - button "Completed in {{duration}}"
@@ -61,6 +63,9 @@
   - code: token-meter
   - text: ）。这一轮到此结束。
 - paragraph: 两个 turn 均已完成，目标达成，标记 goal 为完成。
+- region "Goal":
+  - text: Goal complete Round 2/256
+  - paragraph: 做两个turn，每个turn输出随机一个包的文件结构。注意你做完一个turn之后，直接输出内容，停止，我们的系统会帮你再开一个turn，你看着做一个类似的
 - paragraph: 两个 turn 都完成了 ✅
 - paragraph:
   - strong: 总结：

@@ -131,6 +131,10 @@ describe('/goal human command', () => {
     expect(created.text).toContain('Activation: armed')
     expect(test.ctx.goals.get(test.agent)?.objective).toBe('finish the release')
     expect(domainEvents(test.session).map(event => event.type)).toEqual(['goal/change'])
+    // The success result cites the durable creation event that owns the richer goal presentation.
+    expect(created).toMatchObject({ sourceEventSeq: domainEvents(test.session)[0]?.seq })
+    expect(test.session.snapshotEvents().find(event => event.type === 'command/done')?.data)
+      .toMatchObject({ kind: 'success', sourceEventSeq: domainEvents(test.session)[0]?.seq })
 
     const count = domainEvents(test.session).length
     await expect(run(test, ' replacement')).resolves.toEqual({
@@ -161,6 +165,7 @@ describe('/goal human command', () => {
     const updated = await run(test, ' EDIT\n  second  ')
     expect(updated.kind).toBe('success')
     expect(updated.text).toContain('Goal updated')
+    expect(updated).not.toHaveProperty('sourceEventSeq')
     expect(test.ctx.goals.get(test.agent)).toMatchObject({ id: first.id, objective: 'second', revision: 2 })
 
     const current = test.ctx.goals.get(test.agent)!
@@ -168,6 +173,9 @@ describe('/goal human command', () => {
     const replacement = await run(test, ' edit third')
     expect(replacement.kind).toBe('success')
     expect(replacement.text).toContain('Goal created')
+    const replacementEvent = domainEvents(test.session).at(-1)
+    expect(replacementEvent?.type).toBe('goal/change')
+    expect(replacement).toMatchObject({ sourceEventSeq: replacementEvent?.seq })
     expect(test.ctx.goals.get(test.agent)).toMatchObject({ objective: 'third', revision: 1 })
     expect(test.ctx.goals.get(test.agent)?.id).not.toBe(first.id)
   })

@@ -1,6 +1,8 @@
 /**
  * Goal surface plugin, browser half: the GoalBar entry in the
- * conversation.input.dock strip. The durable goal arrives through
+ * conversation.input.dock strip, the goal-mode chip in the composer tool row,
+ * and transcript cards for goal creation, completion, and blocking. The
+ * durable goal arrives through
  * `useProjection('goal')`. A registrant-private activation hook source owns
  * the live Remote read and event subscription; the inject face carries that
  * hook plus the four mutation verbs through the generated Goal Remote API.
@@ -30,8 +32,11 @@ import type { GoalProjection, GoalRef } from '@deepseek-ai/dsh-goal/client'
 import type { GoalActionResult, GoalBarInjected } from './slots.ts'
 import { createGoalActivationSource } from './activation-source.ts'
 import { GoalDock } from './GoalBar.tsx'
+import { GoalChangeCard } from './GoalChangeCard.tsx'
 import { GoalCommandInputView } from './GoalCommandInputView.tsx'
 import { GoalCommandReference } from './GoalCommandReference.tsx'
+import { GoalModeChip } from './GoalModeChip.tsx'
+import { goalChangeDefinition } from './goal-change.ts'
 import { goalCommandInputDefinition } from './goal-command-input.ts'
 import { goalCommandReferenceRule } from './user-text-rules.ts'
 export type {} from './user-text-rules.ts'
@@ -41,6 +46,7 @@ export { GoalBar, GoalDock } from './GoalBar.tsx'
 export type {
   GoalActionResult, GoalBarActions,
 } from './slots.ts'
+export type { GoalChangeCardData, GoalChangeCardOperation } from './goal-change.ts'
 export type { GoalKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-api-session-controller/client' {
@@ -69,6 +75,7 @@ export const inject = ['slots', 'sessions', 'remote', 'remote.goals', 'locale', 
  */
 export function apply(ctx: ClientContext): void {
   ctx.uiConversation.events.register(goalCommandInputDefinition)
+  ctx.uiConversation.events.register(goalChangeDefinition)
   ctx.uiConversation.userText.register(goalCommandReferenceRule)
   ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'ui-goal: dictionaries')
 
@@ -83,6 +90,18 @@ export function apply(ctx: ClientContext): void {
     key: 'command-input',
     locale: NS,
   }, GoalCommandInputView))
+
+  ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
+    name: 'conversation.chat.node',
+    key: 'goal-change',
+    locale: NS,
+  }, GoalChangeCard))
+
+  ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
+    name: 'conversation.input.left',
+    id: 'goal-mode',
+    locale: NS,
+  }, GoalModeChip))
 
   const sessions = ctx.sessions
 

@@ -1,4 +1,7 @@
-- text: Ongoing Goal guard rapid clear clicks
+- button "Ongoing Goal Waiting for the next round Round 0/256 guard rapid clear clicks":
+  - text: Ongoing Goal
+  - img "Waiting for the next round"
+  - text: Round 0/256 guard rapid clear clicks
 - button "Pause goal"
 - button "Edit goal"
 - button "Clear goal"

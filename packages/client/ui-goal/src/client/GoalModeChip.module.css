@@ -1,0 +1,26 @@
+/* Goal status uses the plan chip's compact geometry and business palette so
+   the composer's mode chips read as one family. */
+
+.chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--dsw-radius-sm);
+  background: var(--dsw-alias-state-business-tertiary);
+  color: var(--dsw-alias-state-business-primary);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.glyph {
+  display: inline-flex;
+  flex: none;
+  width: 14px;
+  height: 14px;
+}

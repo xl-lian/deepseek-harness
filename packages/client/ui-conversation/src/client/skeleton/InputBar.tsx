@@ -78,6 +78,8 @@ export const InputBar = memo(function InputBar({
   const planActive = useProjection('plan', plan => plan !== undefined && (plan.pending ? !plan.active : plan.active))
   // Absent (undefined: no frame yet) and cleared (null) both mean no goal.
   const hasGoal = useProjection('goal', goal => goal != null)
+  // An active goal continues on its own; the placeholder says messages steer it.
+  const goalActive = useProjection('goal', goal => goal != null && goal.goal.phase === 'active')
   // Session-maybe: the machine faces are absent together while no session is
   // current; the bar renders the same DOM inert instead of a parallel tree.
   const live = input !== undefined && keyboard !== undefined && inputActions !== undefined
@@ -393,7 +395,7 @@ export const InputBar = memo(function InputBar({
       // (the gate never consults plan mode), so the actionable hint wins.
       : canSteerQueue
         ? t('placeholder.steerQueue')
-        : planActive ? t('placeholder.plan') : t('placeholder.default'))
+        : planActive ? t('placeholder.plan') : goalActive ? t('placeholder.goal') : t('placeholder.default'))
 
   return (
     <div className={clsx(css.root, variant === 'hero' && css.hero)}>

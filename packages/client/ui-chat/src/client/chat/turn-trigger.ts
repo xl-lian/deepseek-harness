@@ -13,23 +13,36 @@ function field(source: Record<string, unknown>, key: string): string {
   return typeof source[key] === 'string' ? source[key] : ''
 }
 
+/** Recorded positive goal-round number, or undefined for a missing or malformed value. */
+function goalRound(source: Record<string, unknown>): number | undefined {
+  const round = source.round
+  return typeof round === 'number' && Number.isSafeInteger(round) && round > 0 ? round : undefined
+}
+
 /**
  * Describe a waking message using its recorded source.
  * @param node - durable context, including the original notification body.
- * @returns localized title key and source-family icon.
+ * @returns localized title key with its interpolation values, explanation key, source-family icon, and source kind.
  */
 export function turnTriggerDetails(node: ContextMessageNode): {
   title: ChatKey
+  params?: Record<string, number>
+  explanation: ChatKey
   icon: TurnTriggerIcon
+  kind: string
 } {
   const source = record(node.source)
   const kind = field(source, 'kind')
   let title: ChatKey = 'message.trigger.request'
+  let explanation: ChatKey = 'message.trigger.explanation'
   let icon: TurnTriggerIcon = 'request'
   switch (kind) {
     case 'goal': {
-      title = 'message.trigger.goal'
       icon = 'goal'
+      explanation = 'message.trigger.goal.explanation'
+      const round = goalRound(source)
+      if (round !== undefined) return { title: 'message.trigger.goal.round', params: { round }, explanation, icon, kind }
+      title = 'message.trigger.goal'
       break
     }
     case 'agent-message':
@@ -67,5 +80,5 @@ export function turnTriggerDetails(node: ContextMessageNode): {
       // Custom sources remain visible without attributing unrecorded identity or success.
       break
   }
-  return { title, icon }
+  return { title, explanation, icon, kind }
 }

@@ -21,13 +21,10 @@
   isolation: isolate;
   box-sizing: border-box;
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
   width: 100%;
   max-width: calc(var(--dsh-composer-card-max-width) - 4 * var(--dsh-composer-dock-inset));
-  height: 36px;
   margin: 0 auto;
-  padding: 4px 5px 4px 12px;
   border: 0;
   --dsw-elevation-stroke-color: var(--dsw-alias-border-l1);
   border-radius: var(--dsw-radius-md);
@@ -45,10 +42,98 @@
   pointer-events: none;
 }
 
+/* The always-visible strip line: summary toggle, inline error, then actions. */
+.row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 4px 5px 4px 12px;
+}
+
+/* The whole summary is one disclosure button; it carries no chrome of its own. */
+.summary {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .goalGlyph {
   display: inline-flex;
   flex: none;
   color: var(--dsw-alias-label-tertiary);
+}
+
+.bar[data-state='ongoing'] .goalGlyph {
+  color: var(--dsw-alias-label-primary);
+}
+
+.stateDot {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+}
+
+.rounds {
+  flex: none;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.chevron {
+  display: inline-flex;
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* ---- Expanded details ---- */
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding: 0 12px 10px 36px;
+  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+}
+
+.fullObjective {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.reason {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-state-error-primary);
+  overflow-wrap: anywhere;
+}
+
+.reasonLabel {
+  margin-right: 6px;
+  font-weight: 500;
 }
 
 /* Matches the Todo/Queue panel titles (13/24 medium, primary) so the three
@@ -87,8 +172,10 @@
 
 /* The edit strip grows with a multi-line objective; actions stay on the last line. */
 .editBar {
-  height: auto;
+  flex-direction: row;
+  gap: 10px;
   min-height: 36px;
+  padding: 4px 5px 4px 12px;
   align-items: flex-end;
   /* The editor scrolls inside this elevated menu-surface strip. */
   --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);

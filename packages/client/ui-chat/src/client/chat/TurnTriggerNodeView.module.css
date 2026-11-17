@@ -29,6 +29,9 @@
 .title { flex: none; font-size: var(--dsh-content-font-size, 14px); }
 .time { flex: none; margin-left: auto; color: inherit; font: var(--dsw-font-xxs-12); }
 .chevron, .openChevron { flex: none; color: inherit; }
+/* Goal rounds read as section markers in a long autonomous run. */
+.root[data-trigger-kind='goal'] .header { color: var(--dsw-alias-label-secondary); }
+.root[data-trigger-kind='goal'] .title { font-weight: 500; }
 .openChevron { transform: rotate(180deg); }
 .body { padding: 0 16px 12px 40px; }
 .explanation { margin: 8px 0; color: var(--dsw-alias-label-secondary); font: var(--dsw-font-xxs-12); }
