@@ -33,7 +33,15 @@ You are `sa-engineer`, the only agent allowed to write experiment code.
 1. Read the hypothesis and experiment.
 2. Copy the closest template (`tabular_baseline.py`, `tabular_lgbm.py`, `timeseries_lgbm.py`,
    `cv_timm.py`, `nlp_transformer.py`, `llm_baseline.py`) and `run.yaml`.
-3. Implement the independent variable; keep everything else controlled.
+3. Implement the independent variable; keep everything else controlled. Follow the hypothesis's
+   operator: a `draft` is a fresh pipeline for its family (never another hypothesis's code), an
+   `improve` changes one variable of the parent, an `ablate` removes one component, a `tune` searches
+   hyperparameters inside the run within half the timeout and writes `output/params.json`, and a
+   `merge` adds the second parent's component to the first (blend predictions by declaring both
+   parents' `runs/<id>/output` as `run.yaml` inputs with `as:` names and fitting weights out of fold).
+   If `SA_DATA_DIR/cv_folds.csv` exists, use its `fold` column; do not draw your own split.
+   `sagent run execute` refuses with `STALE_CODE` when the code equals the parent's or another
+   hypothesis's run: that means the change was not implemented.
 4. Emit the contract: `metrics.json`, `prediction_oof.csv`, `prediction_test.csv`, `folds.csv`,
    `cv_design.json`; optional `holdout_predictions.csv`, `submission.csv`.
 5. Execute:

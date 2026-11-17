@@ -40,6 +40,11 @@ Wrap-up     clerk: campaign end; sa-reporter: read-only summary from briefing + 
 - **Mode** is `campaign check`'s `next_mode`: `quick` when no baseline run exists, `debug` when the
   controller says debug, the last round failed, or >70% of the last 10 runs failed execution or
   verification, else `full`.
+- **Strategy** is `campaign check`'s `next_strategy`: `exploit` normally; after `no_improvement_rounds` flat rounds it
+  is `explore` for `stop.explore_rounds` more rounds (default the same number), in which half the slots draft idea
+  families not tried yet. `no_improvement_rounds` fires only when the explore rounds are spent and still flat.
+- **Slots and budget**: the check returns `next_actions.slots` (typed work from `search next --batch 8`) and
+  `round_budget` (the objective's `max_runs_per_round` and run timeout), which the campaign passes to each round.
 - **Stop rules** (all code): `target_metric`, `max_rounds`, `no_improvement_rounds`,
   `consecutive_failed_rounds`, `consecutive_blocked_rounds`, `deadline`, `max_usd`; blocking `ledger_tampered`,
   `objective_not_locked`.
@@ -128,7 +133,9 @@ The campaign stops early (without a stop rule) when a round cannot run at all: `
 | `pack` | fetched by the clerk | The domain pack object. |
 | `briefing`, `nextActions` | from the scout | Prior state and controller actions from `campaign check`. |
 | `scout`, `scoutFrom` | none | A cached scout report (and the round it came from); skips the scout agent. |
-| `maxHypotheses`, `maxRuns`, `runTimeoutSec` | 3, 6, 1800 | Budget; `maxRuns` counts seed runs. |
+| `maxHypotheses`, `maxRuns`, `runTimeoutSec` | 3, objective budget or 6, objective budget or 1800 | Budget; `maxRuns` counts seed runs. |
+| `maxScreen` | 6 | Most candidates screened on one seed before promotion. |
+| `strategy`, `slots`, `tabuFamilies` | `exploit`, none, none | From `campaign check`: explore rounds, typed work slots dealt round-robin to the lenses, and families to avoid. |
 | `templatesDir`, `bankReport`, `saBin`, `agentPrefix`, `useAgentTypes` | | As for the campaign. |
 
 Missing `workspace`/`roundId` returns `{started: false, reason: "missing-args"}` immediately.

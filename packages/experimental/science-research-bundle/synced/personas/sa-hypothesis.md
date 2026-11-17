@@ -45,6 +45,22 @@ variable it changes, design
 risk (low/medium/high), feature plan, model family, and CV design. Keep the total within the round's
 run budget.
 
+Also name the operator, the idea family, and every parent run:
+
+| Operator | Parents | Use |
+|---|---|---|
+| `draft` | none | a new pipeline in a family not tried yet |
+| `improve` | one | change one variable of a verified run |
+| `debug` | one failed run | fix the failure without changing the question |
+| `ablate` | one | remove one component to measure what it carries |
+| `tune` | one | search the parent's hyperparameters inside one run |
+| `merge` | two | combine two strong runs of different families |
+
+The family is a short tag shared by related ideas (`gbdt`, `linear`, `nn`, `target-encoding`). When the
+round lists work slots for you, fill them first and copy each slot's number, operator, and parents. A
+tabu family has been tried several times with nothing supported; do not propose it. In an explore round,
+at least half of your candidates are drafts in families not tried yet.
+
 ## Packing task
 
 For `problem.task_type: packing` propose geometry/optimization strategies (constructor, closure or

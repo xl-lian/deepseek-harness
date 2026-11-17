@@ -2,10 +2,28 @@
   "schema_version": "domain/1",
   "id": "predictive",
   "title": "Predictive modeling (Kaggle-style supervised learning)",
-  "task_types": ["binary_classification", "multiclass_classification", "regression", "tabular", "timeseries", "cv", "nlp", "llm"],
+  "task_types": [
+    "binary_classification",
+    "multiclass_classification",
+    "regression",
+    "tabular",
+    "timeseries",
+    "cv",
+    "nlp",
+    "llm"
+  ],
   "run_contract": {
-    "required": ["metrics.json", "prediction_oof.csv", "prediction_test.csv", "folds.csv", "cv_design.json"],
-    "optional": ["holdout_predictions.csv", "submission.csv"]
+    "required": [
+      "metrics.json",
+      "prediction_oof.csv",
+      "prediction_test.csv",
+      "folds.csv",
+      "cv_design.json"
+    ],
+    "optional": [
+      "holdout_predictions.csv",
+      "submission.csv"
+    ]
   },
   "verifier": {
     "metric": "builtin",
@@ -13,7 +31,11 @@
     "deliverable": "kaggle_csv",
     "holdout": "sealed_labels"
   },
-  "default_seeds": [42, 43, 44],
+  "default_seeds": [
+    42,
+    43,
+    44
+  ],
   "env_profile": "cpu-standard",
   "scout": {
     "commands": [
@@ -25,7 +47,11 @@
     ],
     "guidance": "If data is not frozen or the objective is not locked, status=\"blocked\" and explain the exact missing step. Populate cv_recommendation from the profile: time column -> time; group candidates -> group; classification -> stratified; else kfold."
   },
-  "lenses": ["data and feature engineering", "model family and optimization", "validation, leakage, and robustness"],
+  "lenses": [
+    "data and feature engineering",
+    "model family and optimization",
+    "validation, leakage, and robustness"
+  ],
   "templates": {
     "tabular_baseline.py": "tabular baseline",
     "tabular_lgbm.py": "tabular LightGBM",
@@ -36,8 +62,8 @@
     "run.yaml": "copy as run.yaml"
   },
   "notes": {
-    "hypothesis": "Propose falsifiable modeling strategies. The independent variable is one of: feature set, model family, preprocessing, CV design, ensemble, or ablation. Predict the metric delta vs the current best/baseline; isolate the variable with controls, seeds, and CV; state cost and leakage risk. No test labels, no public leaderboard probing, no external data unless the objective allows it. Prefer a baseline first; do not propose another baseline if one exists.",
-    "engineer": "Read data only from SA_DATA_DIR; write only to SA_OUTPUT_DIR. Emit metrics.json, prediction_oof.csv, prediction_test.csv, folds.csv, cv_design.json. Do not fabricate metrics. Do not read holdout labels.",
+    "hypothesis": "Propose falsifiable modeling strategies. The independent variable is one of: feature set, model family, preprocessing, CV design, ensemble, or ablation. Predict the metric delta vs the current best/baseline; isolate the variable with controls, seeds, and CV; state cost and leakage risk. No test labels, no public leaderboard probing, no external data unless the objective allows it. Prefer a baseline first; do not propose another baseline if one exists. Name each candidate's operator (draft, improve, debug, ablate, tune, merge), its idea family, and its parent runs; fill the controller's work slots first.",
+    "engineer": "Read data only from SA_DATA_DIR; write only to SA_OUTPUT_DIR. Emit metrics.json, prediction_oof.csv, prediction_test.csv, folds.csv, cv_design.json. Do not fabricate metrics. Do not read holdout labels. Use SA_DATA_DIR/cv_folds.csv for cross-validation when it exists, so runs pair fold by fold and their OOF files can be ensembled.",
     "repair": "",
     "verify": "",
     "l3": ""
