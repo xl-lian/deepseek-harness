@@ -120,6 +120,12 @@ Profiles: `cpu-light`, `cpu-standard`, `cpu-full`, `cv`, `nlp`, `llm`.
 |---|---|---|
 | `sagent run execute` | `--code DIR` (required, must exist), `--experiment ID`, `--hypothesis ID` (repeatable), `--seeds 42,43,44`, `--label TEXT`, `--round ID`, `--parent-run ID`, `--allow-network`, `--timeout SEC`, `--memory MB`, `--workspace/-w DIR`, `--json` | Create one run per seed in a sandbox, execute, commit declared outputs, and write manifests. Reuses an identical finished signature of the same hypothesis. Refuses with `STALE_CODE` when the code equals the parent run's code or a run of a different hypothesis: implement the change first. Writes `runs/<id>/supervisor.json` (owner pid, heartbeat) while the run executes. Exits 0 even if the experiment fails. |
 | `sagent run show` | `RUN_ID`, `--workspace/-w DIR`, `--json` | Show the run manifest. |
+| `sagent run execute --detach` | add `--detach` (local background process) or `--backend local,kaggle,ssh` | Create the runs and submit them without waiting; follow with `run wait`. |
+| `sagent run submit` | `RUN_ID`, `--backend local,kaggle,ssh`, `--timeout`, `--memory`, `--workspace/-w DIR`, `--json` | Start a created run on a backend. Kaggle: a private dataset with the staged job and a private kernel (GPU per `[backends.kaggle] gpu`, internet off unless the objective allows network); refused when the weekly GPU hours in `[backends.kaggle] weekly_gpu_hours` are used. SSH: rsync to `[backends.ssh] host:remote_root/<run>` and a detached wrapper with a heartbeat. |
+| `sagent run poll` | `RUN_ID`, `--workspace/-w DIR`, `--json` | One status check; a finished remote job is collected, its code hash echo checked, and the run finalized (isolation weak, so trust is at most medium). A stale heartbeat fails the run as `backend_lost`. |
+| `sagent run wait` | `[RUN_IDS...]`, `--timeout 540`, `--interval 15`, `--workspace/-w DIR`, `--json` | Poll until every run ends or the timeout passes; returns `done` and `pending`. |
+| `sagent run cancel` | `RUN_ID`, `--workspace/-w DIR`, `--json` | Stop a submitted run and fail it as `cancelled`. |
+| `sagent backend doctor` | `kaggle` or `ssh`, `--workspace/-w DIR`, `--json` | Check credentials, reachability, remote Python and GPU, and the Kaggle GPU hours used this week. |
 | `sagent run list` | `--status STATUS`, `--round ID`, `--workspace/-w DIR`, `--json` | List runs, optionally filtered and sorted by creation time. |
 | `sagent run logs` | `RUN_ID`, `--tail N` (default 80), `--workspace/-w DIR`, `--json` | Return the last N lines of stdout and stderr. |
 

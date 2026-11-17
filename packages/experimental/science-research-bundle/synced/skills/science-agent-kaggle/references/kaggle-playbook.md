@@ -195,7 +195,7 @@ free disk. The toolkit is installed with Python 3.13.
 | Limit | Effect | Practical response |
 |---|---|---|
 | Disk | `sagent doctor` warns below 5 GB free and treats below 2 GB as an error. `sagent kaggle download` refuses below 2 GB. | Download only the needed files, avoid duplicating archives, free space manually. `sagent gc` is referenced in some docs but is not implemented in the current CLI. |
-| No NVIDIA GPU | `cv`, `nlp`, and `llm` environments may install CPU-only torch or may not fit. | Use a small CPU smoke run, or keep the experiment as a remote-backend TODO. Do not claim a GPU result that was never run. |
+| No NVIDIA GPU | `cv`, `nlp`, and `llm` environments may install CPU-only torch or may not fit. | Run GPU work on a configured backend: `run execute --backend kaggle` (private GPU kernel, weekly hours tracked) or `--backend ssh` (your GPU host), then `run wait`. Check it first with `sagent backend doctor <name>`. Without one, use a small CPU smoke run. Do not claim a GPU result that was never run. |
 | Memory | Default run cap is 16384 MB, best-effort on macOS. | Reduce data size, use float32, avoid loading all folds at once, set `--memory` deliberately. |
 | Time | Default timeout is 1800 seconds. | Start with a small sample or a single fold, then scale. |
 | Network | Denied by default. | Prepare data and pretrained weights before the run, or use `--allow-network` only if the objective permits it. |

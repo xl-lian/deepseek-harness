@@ -53,6 +53,9 @@ sagent -w <workspace> run execute --code experiments/<round>/<hypothesis> \
 ```
 
 6. If it failed, read logs, fix, create a child run with `--parent-run <run_id>`. At most once.
+   A run that may outlast your shell's time limit goes out with `--detach` (or `--backend kaggle|ssh`
+   for a GPU, once `sagent backend doctor` passes); then repeat `sagent run wait <ids> --json` until
+   nothing is pending.
 7. Return run ids, reported metrics, and a short note. Do not claim verification.
 
 ## Packing task
