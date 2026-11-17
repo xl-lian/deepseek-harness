@@ -25,6 +25,7 @@ const clip = (value, limit) => typeof value === 'string'
 // A workflow reads state only through a clerk that copies JSON back, so each command gets a schema that
 // names the fields this script reads: a dropped field is a schema error the clerk must fix, not an
 // `undefined` that surfaces later. Commands run with --brief so the envelope stays small enough to copy.
+// `data` stays explicitly open: the named fields are a floor, and every other envelope field is copied too.
 const envelope = (fields) => ({
   type: 'object',
   required: ['ok'],
@@ -34,6 +35,7 @@ const envelope = (fields) => ({
       type: 'object',
       required: Object.keys(fields),
       properties: fields,
+      additionalProperties: true,
     },
     error: { type: 'object' },
   },
@@ -55,7 +57,7 @@ const withPersona = (name, prompt) => PERSONAS[name] + '\n\n---\n\n' + prompt
 const CLERK_OBJECT = envelope({})
 const CHECK_FIELDS = { campaign_id: { type: 'string' }, stop: { type: 'boolean' }, fired: { type: 'array' }, next_mode: { type: 'string' } }
 const SCHEMAS = {
-  domain: envelope({ id: { type: 'string' } }),
+  domain: envelope({ id: { type: 'string' }, control: { type: 'string' } }),
   begin: envelope({ campaign_id: { type: 'string' } }),
   check: envelope(CHECK_FIELDS),
   roundBegin: envelope({ round_id: { type: 'string' } }),
@@ -88,6 +90,7 @@ ${command}
 
 The command prints one JSON envelope on its last stdout line: {"ok": true, "data": ...} or {"ok": false, "error": {...}}.
 Return that envelope as the structured result, copying every value exactly; do not summarize, round, reorder, or add fields.
+The result schema names only the fields this workflow requires; copy every other field of the envelope as well.
 Never run the command a second time (not even to re-read its output): it may write state, and a second run writes it twice.
 If the command cannot run, or you lost its output, return {"ok": false, "error": {"code": "CLERK", "message": "<what happened>"}}.
 Do not edit files. Do not run any other command.`), {
@@ -425,6 +428,7 @@ ${command}
 
 The command prints one JSON envelope on its last stdout line: {"ok": true, "data": ...} or {"ok": false, "error": {...}}.
 Return that envelope as the structured result, copying every value exactly; do not summarize, round, reorder, or add fields.
+The result schema names only the fields this workflow requires; copy every other field of the envelope as well.
 If the command cannot run, return {"ok": false, "error": {"code": "CLERK", "message": "<what happened>"}}.
 Do not edit files. Do not run any other command.`), {
   label,

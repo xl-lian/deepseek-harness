@@ -334,6 +334,7 @@ ${command}
 
 The command prints one JSON envelope on its last stdout line: {"ok": true, "data": ...} or {"ok": false, "error": {...}}.
 Return that envelope as the structured result, copying every value exactly; do not summarize, round, reorder, or add fields.
+The result schema names only the fields this workflow requires; copy every other field of the envelope as well.
 If the command cannot run, return {"ok": false, "error": {"code": "CLERK", "message": "<what happened>"}}.
 Do not edit files. Do not run any other command.`), {
   label,
