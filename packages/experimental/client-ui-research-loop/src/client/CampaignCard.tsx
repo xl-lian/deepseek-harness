@@ -13,6 +13,7 @@ import { formatDuration } from './model.ts'
 import type { ResearchTranslate } from './parts.tsx'
 import { stageSummary } from './summary.ts'
 import type { ResearchView } from '../shared/schema.ts'
+import { RoundTags } from './CampaignRounds.tsx'
 
 /** Navigation actions injected from the plugin's client services. */
 export interface CampaignCardInjected {
@@ -87,6 +88,7 @@ export function CampaignCardBody({
         <span className="rlc-title">{t('campaign.title')}</span>
         {round.roundId === undefined ? null : <code className="rlc-round-id">{round.roundId}</code>}
         {round.mode === undefined ? null : <span className="rlc-mode">{round.mode}</span>}
+        <RoundTags round={round} t={t} className="rlc-mode" />
         <span className="rlc-status">{t(`status.${round.status}`)}</span>
         {activeMembers === 0
           ? null

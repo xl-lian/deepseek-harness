@@ -62,4 +62,16 @@ describe('campaign round section', () => {
     expect(renderToStaticMarkup(<NotebookContent {...notebookProps(campaignView([round]))} />)).not.toContain('Nothing recorded yet')
     expect(renderToStaticMarkup(<NotebookContent {...notebookProps(campaignView([]))} />)).toContain('Nothing recorded yet')
   })
+
+  it('tags an explore round and the ensemble it built or skipped', () => {
+    const explore: LoopRound = { ...round, strategy: 'explore', strategyReason: 'two flat rounds', ensemble: { built: true, members: 3, runs: 2, scores: [0.81, 0.8] } }
+    const html = renderToStaticMarkup(<NotebookContent {...notebookProps(campaignView([explore]))} />)
+    expect(html).toContain('data-tag="explore"')
+    expect(html).toContain('title="two flat rounds"')
+    expect(html).toContain('>Ensemble of 3<')
+    expect(html).toContain('title="0.81, 0.8"')
+    const skipped = renderToStaticMarkup(<NotebookContent {...notebookProps(campaignView([{ ...round, ensemble: { built: false, reason: 'one candidate' } }]))} />)
+    expect(skipped).toContain('>No ensemble<')
+    expect(skipped).not.toContain('data-tag="explore"')
+  })
 })

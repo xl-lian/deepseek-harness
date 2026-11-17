@@ -32,6 +32,33 @@ export interface CampaignNavigation {
  * @param t - translator.
  * @returns the label.
  */
+/**
+ * Tags for a round's search strategy and ensemble: an explore round after a plateau, and the blend it built or skipped.
+ * @param round - the campaign round.
+ * @param t - locale translator.
+ * @param className - tag class of the surface.
+ * @returns the tags, possibly none.
+ */
+export function RoundTags({ round, t, className }: { round: LoopRound; t: ResearchTranslate; className: string }) {
+  const ensemble = round.ensemble
+  return (
+    <>
+      {round.strategy === 'explore'
+        ? <span className={className} data-tag="explore" title={round.strategyReason}>{t('campaign.round.explore')}</span>
+        : null}
+      {ensemble === undefined
+        ? null
+        : ensemble.built
+          ? (
+            <span className={className} data-tag="ensemble" title={ensemble.scores === undefined ? undefined : ensemble.scores.join(', ')}>
+              {t('campaign.round.ensemble', { count: String(ensemble.members ?? 0) })}
+            </span>
+          )
+          : <span className={className} data-tag="no-ensemble" title={ensemble.reason}>{t('campaign.round.noEnsemble')}</span>}
+    </>
+  )
+}
+
 export function campaignRoundLabel(round: LoopRound, index: number, t: ResearchTranslate): string {
   return round.roundId ?? t('campaign.round.position', { number: index + 1 })
 }
@@ -72,6 +99,7 @@ export function CampaignRoundSection({
         <h3 className="rl-run-title">{t('campaign.title')}</h3>
         <code className="rl-round-id">{label}</code>
         {round.mode === undefined ? null : <span className="rl-tag">{round.mode}</span>}
+        <RoundTags round={round} t={t} className="rl-tag" />
         <span className="rl-muted">{t(`status.${round.status}`)}</span>
         {experiments.length > 1 || experiments[0]?.hypothesisId !== undefined
           ? <span className="rl-muted">{t('campaign.round.experiments', { count: String(experiments.length) })}</span>

@@ -56,7 +56,7 @@ const runningRound: ResearchRound = {
 
 function view(runs: ResearchRun[]): ResearchView {
   return {
-    v: 4,
+    v: 5,
     runs,
     papers: [],
     campaign: { rounds: [] },
@@ -144,7 +144,7 @@ describe('research notebook', () => {
   })
 
   it('states why the notebook is empty', () => {
-    const empty = { v: 4 as const, runs: [], papers: [], campaign: { rounds: [] }, agentPreset: 'science', skillLoaded: false }
+    const empty = { v: 5 as const, runs: [], papers: [], campaign: { rounds: [] }, agentPreset: 'science', skillLoaded: false }
     expect(renderToStaticMarkup(<NotebookContent view={empty} sessionId={'s-1' as SessionId} openChild={noop} openFile={noop} retainChild={retainChild} t={t} />))
       .toContain('does not run the Research Agent preset')
   })

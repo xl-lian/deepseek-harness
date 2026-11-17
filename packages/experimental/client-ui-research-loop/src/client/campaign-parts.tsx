@@ -569,6 +569,8 @@ export function RoundExtras({ stageId, round, openFile, t, ownRunIds }: {
             <Kvs t={t} entries={[
               ['campaign.detail.prediction', hypothesis.prediction],
               ['campaign.detail.rationale', hypothesis.rationale],
+              ['campaign.detail.operator', hypothesis.operator],
+              ['campaign.detail.family', hypothesis.family],
               ['campaign.detail.design', hypothesis.design],
               ['campaign.detail.expectedDelta', hypothesis.expectedDelta === undefined ? undefined : String(hypothesis.expectedDelta)],
               ['campaign.detail.cost', hypothesis.cost],

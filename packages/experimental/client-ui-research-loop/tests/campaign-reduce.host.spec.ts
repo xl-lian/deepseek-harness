@@ -193,6 +193,39 @@ describe('loop reducer', () => {
     expect(reduceCampaignEvent(state, event('tool-workflow/log', { runId: 'run-other', message: 'Round 1: rd-z mode=full — ' }))).toBe(state)
   })
 
+  it('records an explore round, its ensemble, and the clerk steps of a campaign', () => {
+    const log = (message: string): SessionEvent => event('tool-workflow/log', { runId: 'run-e', message })
+    const start = reduce([
+      event('tool/call', {
+        turn: 1,
+        step: 1,
+        callId: 'call-e',
+        name: 'workflow',
+        arguments: JSON.stringify({ name: 'science-campaign', args: { workspace: '/ws' } }),
+      }),
+      event('tool-workflow/run-start', { runId: 'run-e', name: 'science-campaign' }),
+      log('Round 1: rd-a mode=full — flat'),
+      log('Round 1 explores new idea families: 2 round(s) without improvement'),
+      event('tool-workflow/agent-start', { runId: 'run-e', seq: 1, label: 'ensemble', phase: 'Verify', childId: 'child-1' }),
+      log('Ensemble of 3 candidates: 2 blend run(s), nested scores 0.81, 0.8.'),
+    ])
+    const round = start.rounds[0]
+    expect(round?.strategy).toBe('explore')
+    expect(round?.strategyReason).toBe('2 round(s) without improvement')
+    expect(round?.ensemble).toEqual({ built: true, members: 3, runs: 2, scores: [0.81, 0.8] })
+    expect(round?.stages.decide.members.map(member => [member.label, member.role])).toEqual([['ensemble', 'sa-clerk']])
+    const next = [
+      log('Round 2: rd-b mode=full — UCB'),
+      log('No ensemble this round: one candidate on the frozen folds'),
+    ].reduce(reduceCampaignEvent, start)
+    expect(next.rounds[1]?.strategy).toBeUndefined()
+    expect(next.rounds[1]?.ensemble).toEqual({ built: false, reason: 'one candidate on the frozen folds' })
+    expect(next.rounds[0]?.ensemble?.built).toBe(true)
+    // Lines that are neither a round, strategy, nor ensemble note keep the state reference.
+    expect(reduceCampaignEvent(next, log('Screened out x9: did not beat the reference'))).toBe(next)
+    expect(toCampaignView(next).rounds[0]?.strategy).toBe('explore')
+  })
+
   it('starts a new round for a workflow after a hand-opened round was aborted', () => {
     const bash = (callId: string, command: string): SessionEvent => event('tool/call', {
       turn: 1,

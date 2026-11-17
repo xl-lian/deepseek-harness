@@ -196,6 +196,10 @@ export interface LoopHypothesis {
   readonly cost?: string | undefined
   readonly leakageRisk?: string | undefined
   readonly cvDesign?: string | undefined
+  /** Search operator: draft, improve, debug, ablate, tune, or merge. */
+  readonly operator?: string | undefined
+  /** Idea family the hypothesis belongs to (`gbdt`, `target-encoding`, ...). */
+  readonly family?: string | undefined
 }
 
 /** Statistician (L3 design) output carried by the workflow's structured return. */
@@ -227,6 +231,19 @@ export interface LoopReport {
   readonly issues: readonly LoopReportIssue[]
 }
 
+/** The code-owned blend a full round asked `sagent ensemble build` for. */
+export interface LoopEnsemble {
+  readonly built: boolean
+  /** Candidates blended, when built. */
+  readonly members?: number | undefined
+  /** Blend runs (one per shared seed), when built. */
+  readonly runs?: number | undefined
+  /** Nested out-of-fold score of each blend run. */
+  readonly scores?: readonly number[] | undefined
+  /** Why no blend was built. */
+  readonly reason?: string | undefined
+}
+
 /** One auditable round and its seven-stage trajectory. */
 export interface LoopRound {
   /** Projection-local stable identity (`round-<startedSeq>`). */
@@ -234,6 +251,10 @@ export interface LoopRound {
   /** sagent round id (`rd-...`) once observed. */
   readonly roundId?: string | undefined
   readonly mode?: string | undefined
+  /** `explore` when the campaign switched to new idea families after a plateau. */
+  readonly strategy?: 'exploit' | 'explore' | undefined
+  readonly strategyReason?: string | undefined
+  readonly ensemble?: LoopEnsemble | undefined
   readonly status: LoopStatus
   readonly startedAt?: number | undefined
   readonly endedAt?: number | undefined

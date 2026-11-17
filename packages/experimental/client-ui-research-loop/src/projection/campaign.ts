@@ -459,6 +459,29 @@ function onRunStart(state: CampaignState, runId: string, time: number): Campaign
  * science-research-bundle's sync fails when the synced workflow stops producing it.
  */
 const CAMPAIGN_ROUND_LOG = /^Round (\d+): ([A-Za-z0-9][\w.-]*) mode=(\S+)/u
+/** `Round <n> explores new idea families: <reason>`, logged right after the round line of an explore round. */
+const CAMPAIGN_EXPLORE_LOG = /^Round \d+ explores new idea families: (.*)$/su
+/** The round's ensemble line: `Ensemble of <k> candidates: <r> blend run(s), nested scores <a, b>.` or `No ensemble this round: <why>`. */
+const ENSEMBLE_LOG = /^Ensemble of (\d+) candidates: (\d+) blend run\(s\), nested scores (.*)\.$/su
+const NO_ENSEMBLE_LOG = /^No ensemble this round: (.*)$/su
+const MAX_ENSEMBLE_SCORES = 8
+
+/** Strategy and ensemble lines annotate the run's current round; other lines leave the state unchanged. */
+function onRoundNote(state: CampaignState, runId: string, message: string): CampaignState {
+  const explore = CAMPAIGN_EXPLORE_LOG.exec(message)
+  const built = explore === null ? ENSEMBLE_LOG.exec(message) : null
+  const skipped = explore === null && built === null ? NO_ENSEMBLE_LOG.exec(message) : null
+  if (explore === null && built === null && skipped === null) return state
+  const round = findRound(state, state.runs[runId])
+  if (round === undefined) return state
+  if (explore !== null) return withRound(state, { ...round, strategy: 'explore', strategyReason: clip(explore[1] ?? '', MAX_SUMMARY_CHARS) })
+  if (built !== null) {
+    const scores = (built[3] ?? '').split(',').map(part => Number(part.trim())).filter(Number.isFinite).slice(0, MAX_ENSEMBLE_SCORES)
+    const ensemble = { built: true, members: Number(built[1]), runs: Number(built[2]), ...(scores.length === 0 ? {} : { scores }) }
+    return withRound(state, { ...round, ensemble })
+  }
+  return withRound(state, { ...round, ensemble: { built: false, reason: clip(skipped?.[1] ?? '', MAX_SUMMARY_CHARS) } })
+}
 
 /**
  * One `science-campaign` run holds every round of the campaign. Its round log
@@ -467,7 +490,7 @@ const CAMPAIGN_ROUND_LOG = /^Round (\d+): ([A-Za-z0-9][\w.-]*) mode=(\S+)/u
  */
 function onRunLog(state: CampaignState, runId: string, message: string, time: number): CampaignState {
   const match = CAMPAIGN_ROUND_LOG.exec(message)
-  if (match === null) return state
+  if (match === null) return onRoundNote(state, runId, message)
   const [, number = '', roundId, mode] = match
   const round = findRound(state, state.runs[runId])
   if (round === undefined || round.roundId === roundId) return state
@@ -501,6 +524,8 @@ function workflowStage(label: string, phase: string | undefined): { stage: Stage
   if (label.startsWith('hypothesis-')) return { stage: 'hypotheses', role: 'sa-hypothesis' }
   if (label === 'register') return { stage: 'hypotheses', role: 'sa-clerk' }
   if (label === 'promote') return { stage: 'engineer', role: 'sa-clerk' }
+  if (label === 'ensemble') return { stage: 'decide', role: 'sa-clerk' }
+  if (label === 'submit-select') return { stage: 'report', role: 'sa-clerk' }
   if (label === 'domain' || label === 'doctor' || label === 'campaign-begin' || /^check-\d+$/.test(label) || label.startsWith('round-begin-')) {
     return { stage: 'scout', role: 'sa-clerk' }
   }
@@ -1189,6 +1214,8 @@ function mapHypotheses(value: unknown): LoopHypothesis[] | undefined {
     cost: str(item['cost']),
     leakageRisk: str(item['leakage_risk']),
     cvDesign: str(item['cv_design']) === undefined ? undefined : clip(str(item['cv_design']) ?? '', MAX_SUMMARY_CHARS),
+    operator: str(item['operator']),
+    family: str(item['family']) === undefined ? undefined : clip(str(item['family']) ?? '', 60),
   })).filter(item => item.statement.length > 0)
   return hypotheses.length === 0 ? undefined : hypotheses
 }

@@ -99,6 +99,16 @@ const hypothesisSchema = z.object({
   cost: z.string().optional(),
   leakageRisk: z.string().optional(),
   cvDesign: z.string().optional(),
+  operator: z.string().optional(),
+  family: z.string().optional(),
+})
+
+const ensembleSchema = z.object({
+  built: z.boolean(),
+  members: z.number().optional(),
+  runs: z.number().optional(),
+  scores: z.array(z.number()).optional(),
+  reason: z.string().optional(),
 })
 
 const l3Schema = z.object({
@@ -164,6 +174,9 @@ const roundSchema = z.object({
   id: z.string(),
   roundId: z.string().optional(),
   mode: z.string().optional(),
+  strategy: z.enum(['exploit', 'explore']).optional(),
+  strategyReason: z.string().optional(),
+  ensemble: ensembleSchema.optional(),
   status: statusSchema,
   startedAt: z.number().optional(),
   endedAt: z.number().optional(),
