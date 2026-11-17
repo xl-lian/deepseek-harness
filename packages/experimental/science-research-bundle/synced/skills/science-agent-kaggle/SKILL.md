@@ -84,6 +84,20 @@ skill's **Which loop** table).
 
 ## Intake (no workspace / no objective / no frozen data)
 
+For a Kaggle competition with labelled CSV data, intake is two commands with one human confirmation between them:
+
+```bash
+sagent -w <dir> kaggle intake <slug> --json          # downloads, drafts objective.draft.yaml with evidence per field
+sagent -w <dir> kaggle intake <slug> --lock --json   # after the user confirms: lock, freeze, profile, holdout, folds
+sagent -w <dir> env init --profile cpu-standard --json
+```
+
+Show the user the draft, each field's evidence, and every field listed in `needs_confirmation` (the external-data
+rule always is; a metric without its cutoff or with no Kaggle metadata is too). Edit `objective.draft.yaml` with
+their answers before `--lock`. Never lock a guessed metric.
+
+For other tasks (packing, code competitions, data outside Kaggle), build the workspace by hand:
+
 1. Initialize, or ask the user for the competition slug and local path:
 
 ```bash
@@ -117,6 +131,13 @@ a browser first.
 Rules acceptance happens on kaggle.com in a browser; if the CLI reports 403/rules, ask the user
 to accept the rules and retry. Do not proceed with missing data. If disk is low, report the number
 and stop; do not download a large competition silently.
+
+## Public notebooks
+
+When the objective allows them (`constraints.no_public_notebooks: false`, the intake default), the scout lists the
+competition's most-voted notebooks with `sagent kaggle sources --top 5 --json` as prior-art leads, and an explore round
+reads them for idea families not tried yet. Snapshot one with `--pull` before citing it; never copy its code. Public
+leaderboard scores are never evidence for a decision.
 
 ## Mode decision
 

@@ -43,7 +43,8 @@
       "{sa} -w \"{ws}\" status --json",
       "{sa} -w \"{ws}\" state briefing --json",
       "If a competition slug exists: {sa} -w \"{ws}\" kaggle info --competition <slug> --json",
-      "Optionally read the cached profile at .sa/profile.json."
+      "Optionally read the cached profile at .sa/profile.json.",
+      "If the objective has a competition slug and allows public notebooks (constraints.no_public_notebooks is false): {sa} -w \"{ws}\" kaggle sources --top 5 --json; report each notebook as an evidence card (URL, title, one-line idea) for idea families, and never copy its code."
     ],
     "guidance": "If data is not frozen or the objective is not locked, status=\"blocked\" and explain the exact missing step. Populate cv_recommendation from the profile: time column -> time; group candidates -> group; classification -> stratified; else kfold."
   },

@@ -458,7 +458,8 @@ ${OPERATORS}` : OPERATORS
   const strategyBlock = STRATEGY === 'explore' ? `
 This is an EXPLORE round: earlier rounds stopped improving. At least half of your candidates must be drafts in idea
 families that ${cmd('search next --batch 8 --json')} does not list under "families" yet. Prefer a different model class,
-representation, or problem formulation over another variant of the current best.` : ''
+representation, or problem formulation over another variant of the current best. When the objective allows public
+notebooks, ${cmd('kaggle sources --top 8 --json')} lists prior-art leads; take ideas, never code.` : ''
   return `You are sa-hypothesis, lens ${index}: ${lens}.${UNTRUSTED}
 
 Workspace: ${WS}
