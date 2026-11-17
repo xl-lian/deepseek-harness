@@ -281,6 +281,25 @@ Open the `dsh web: http://127.0.0.1:<port>/?token=…` URL the launcher prints; 
 
 To continue a study, ask to "continue researching" or run `/sa-research <rounds>`. For a Kaggle competition run `/sa-kaggle <slug>`; for another metric objective run `/sa-campaign`; "continue the experiment" in a campaign workspace starts the next campaign.
 
+## Benchmark
+
+`sagent bench` compares agent versions on sealed Kaggle tasks. `sagent bench prepare <task> --out <dir> --rep <n> --arm <label>` builds a locked workspace whose hidden labels stay outside it; `sagent bench run <workspace>` starts a headless research session with a wall-clock limit; `sagent bench grade` scores the run the agent's code chose and places it on the competition's leaderboard; `sagent bench report --arm A --arm B` reports the paired percentile gain with a bootstrap interval. A bench run starts in a headless profile; its prompt and the bench objective forbid web search, public notebooks, and outside data, but the research preset still mounts the web tools, so the seal is an instruction rather than an enforced boundary:
+
+`$DSH_HOME/profiles/research-headless/package.json` stacks the headless runner under this bundle, like the `research` profile stacks the Web app:
+
+```json
+{
+  "name": "dsh-profile-research-headless",
+  "private": true,
+  "dependencies": { "@deepseek-ai/dsh-experimental-science-research-bundle": "link:/path/to/deepseek-harness/packages/experimental/science-research-bundle" },
+  "dsh": { "profile": { "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-headless", "@deepseek-ai/dsh-experimental-science-research-bundle"] } }
+}
+```
+
+```sh
+export SA_BENCH_LAUNCHER='pnpm --dir /path/to/deepseek-harness dsh --profile research-headless {prompt}'
+```
+
 ## Commands
 
 | Command | Does |
@@ -295,6 +314,7 @@ To continue a study, ask to "continue researching" or run `/sa-research <rounds>
 | `/sa-status` | campaign state, briefing, and ledger check |
 | `/sa-verify`, `/sa-report`, `/sa-submit` | L0–L4 verification, the strict report, and a gated submission |
 | `/sa-doctor` | checks the toolkit, sandbox, disk, Kaggle credentials, ledger, and workspace, with fixes |
+| `/sa-bench [list\|prepare\|grade\|report]` | sealed benchmark tasks: prepare a workspace, grade the agent's chosen run against medal thresholds, compare agent versions |
 
 The step agents use the `sagent` CLI (`research open-round`, `record`, `results`, `close-round`, `status`, `prompt`; `paper init`, `check`, `compile`, `prompt`; `lit search`; `source add` and `show`; `evidence cite`; `run execute`; `verify run`; `run logs`) or the same operations through the `mcp__science-agent__sa_research`, `sa_run`, and `sa_verify` MCP tools.
 

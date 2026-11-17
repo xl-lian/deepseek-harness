@@ -317,3 +317,4 @@ Do not present a failed run's metric as a result. Do not merge public LB with CV
 - `references/desktop-mcp.md` — Claude Desktop round state machine and tool set.
 - `references/troubleshooting.md` — common failures and exact recovery commands.
 - `references/cli-reference.md` — full CLI surface.
+- `references/benchmark.md` — sealed benchmark tasks: prepare, run, grade, compare agent versions.

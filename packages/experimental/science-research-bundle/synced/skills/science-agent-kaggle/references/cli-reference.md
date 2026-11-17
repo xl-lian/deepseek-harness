@@ -237,7 +237,19 @@ subcommands. Use the stated alternative.
 If a command in this table is required, extend `cli.py` rather than assuming the design note is
 already wired.
 
-## 14. Per-role models
+## 14. Folds and benchmark
+
+| Command | Key flags | Description |
+|---|---|---|
+| `sagent folds freeze` | `--k 5`, `--strategy auto,stratified,kfold,group,time`, `--seed`, `--group-column`, `--time-column`, `--workspace/-w DIR`, `--json` | Write `data/public/cv_folds.csv` once (event `folds.frozen`). Runs read `SA_DATA_DIR/cv_folds.csv`; the shipped tabular templates use it, and L3 `cv.frozen_folds` warns when a run's `folds.csv` differs. Freezing again returns the record. |
+| `sagent folds show` | `--workspace/-w DIR`, `--json` | The frozen-folds record, or null. |
+| `sagent bench list` | `--json` | Benchmark packs and tasks. |
+| `sagent bench prepare` | `TASK`, `--out DIR`, `--pack`, `--rep`, `--arm`, `--json` | Seal a hidden split and build a locked bench workspace. |
+| `sagent bench run` | `WORKSPACE`, `--launcher CMD`, `--wall-minutes`, `--json` | Launch the agent with a wall-clock limit; reap afterwards. |
+| `sagent bench grade` | `WORKSPACE`, `--run ID`, `--arm`, `--results FILE`, `--json` | Score the chosen run on the sealed labels; medal, percentile, CV gap. |
+| `sagent bench report` | `--arm` (repeatable), `--results FILE`, `--json` | Per-arm summary and paired comparison of two arms. |
+
+## 15. Per-role models
 
 `.sa/config.toml` may route workflow roles to specific models. Each value is a model name, a `{provider, model}` table, or a
 non-empty list of those; a list rotates across parallel calls, so the hypothesis lenses can run on different models.

@@ -30,7 +30,16 @@ experiment, else its label), so `sagent run execute --seeds 42,43,44` satisfies 
 `metrics.json` must describe the metric the verifier will recompute. Unsupported metric names are a
 blocking L2 failure, even if the experiment computed them correctly. Supported canonical names:
 `roc_auc`, `log_loss`, `accuracy`, `precision`, `recall`, `f1`, `rmse`, `mae`, `r2`, `mape`, `smape`,
-`rmsle`, `qwk`, `spearman`, `pearson`.
+`rmsle`, `qwk`, `spearman`, `pearson`, and these, which need more than one prediction column or a ranked list:
+
+| Metric | Prediction files | Labels |
+|---|---|---|
+| `multi_logloss` | one `prediction_<class>` column per class; rows are divided by their sum | `problem.target_column` holds the class |
+| `mcrmse`, `mean_columnwise_rmsle`, `mean_columnwise_auc` | one `prediction_<target>` column per target | `problem.target_columns` lists the targets |
+| `map@K`, `mrr@K`, `ndcg@K` | `prediction` holds space-separated ids, best first | the target holds the space-separated relevant ids |
+
+When the workspace has frozen folds (`sagent folds freeze`), read `SA_DATA_DIR/cv_folds.csv` and use its `fold` column
+instead of drawing your own split: candidates then pair fold by fold and their OOF files can be ensembled.
 
 The runner also provides `SA_TARGET`, `SA_ID`, `SA_METRIC`, `SA_DIRECTION`, `SA_TASK_TYPE`,
 `SA_COMPETITION_TYPE`, `SA_CV_STRATEGY`, and, when configured, `SA_GROUP` and `SA_TIME`. Thread
