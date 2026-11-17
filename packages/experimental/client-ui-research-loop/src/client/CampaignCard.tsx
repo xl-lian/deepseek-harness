@@ -3,7 +3,7 @@
  * member details, and links to the run artifacts and child sessions.
  */
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { STAGE_ROLE, STAGES, type LoopRound, type StageId } from '../shared/campaign-types.ts'
@@ -69,6 +69,7 @@ export function CampaignCardBody({
   view, anchorId, openFile, openSessionFor, openNotebook, t,
 }: CampaignCardBodyProps): React.JSX.Element | null {
   const [openStage, setOpenStage] = useState<StageId | null>(null)
+  const panelId = useId()
   const round = view === undefined ? undefined : findRound(view.campaign.rounds, anchorId)
   if (round === undefined) return null
 
@@ -111,6 +112,7 @@ export function CampaignCardBody({
                 type="button"
                 className="rlc-stage-button"
                 aria-expanded={expanded}
+                aria-controls={expanded ? panelId : undefined}
                 onClick={() => { setOpenStage(expanded ? null : id) }}
               >
                 <span className="rl-dot" data-status={stage.status} aria-hidden="true" />
@@ -124,22 +126,28 @@ export function CampaignCardBody({
                   : <span className="rlc-verdict" data-verdict={stage.verdict}>{stage.verdict}</span>}
                 <StageSummaryLines lines={stageSummary(round, id, t).slice(0, 1)} className="rlc-node-summary" />
               </button>
-              {expanded
-                ? (
-                  <StageDetails
-                    stage={stage}
-                    round={round}
-                    openFile={openFile}
-                    openSessionFor={openSessionFor}
-                    t={t}
-                    summaryLines={stageSummary(round, id, t)}
-                  />
-                )
-                : null}
             </li>
           )
         })}
       </ol>
+      {openStage === null
+        ? null
+        : (
+          <section className="rlc-stage-panel" id={panelId} aria-label={t(`campaign.stage.${openStage}`)}>
+            <h3 className="rlc-stage-panel-title">
+              {t(`campaign.stage.${openStage}`)}
+              <span className="rlc-stage-role">{STAGE_ROLE[openStage]}</span>
+            </h3>
+            <StageDetails
+              stage={round.stages[openStage]}
+              round={round}
+              openFile={openFile}
+              openSessionFor={openSessionFor}
+              t={t}
+              summaryLines={stageSummary(round, openStage, t)}
+            />
+          </section>
+        )}
     </article>
   )
 }

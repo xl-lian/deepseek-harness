@@ -187,6 +187,12 @@ button.rl-chip:hover{border-color:${ACCENT}}
 .rlc-verdict[data-verdict="pass"]{color:${OK}}
 .rlc-verdict[data-verdict="warn"]{color:${WARN}}
 .rlc-verdict[data-verdict="fail"]{color:${BAD}}
+.rlc-stage-button[aria-expanded="true"]{background:${SUNKEN}}
+.rlc-stage:not([data-status="running"]) .rlc-stage-button[aria-expanded="true"]{border-color:${INK3}}
+.rlc-stage-panel{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border:1px solid ${RULE};border-radius:8px;background:${SUNKEN}}
+.rlc-stage-panel-title{display:flex;align-items:baseline;gap:8px;margin:0;font-family:${SERIF};font-size:14px;font-weight:400}
+.rlc-stage-panel .rlc-details{padding:0}
+.rlc-stage-panel .rlc-member{background:${SURFACE}}
 .rlc-details{width:100%;display:flex;flex-direction:column;gap:8px;padding:8px 6px 2px;box-sizing:border-box}
 .rlc-members{list-style:none;display:flex;flex-direction:column;gap:8px;margin:0;padding:0}
 .rlc-member{display:flex;flex-direction:column;gap:4px;padding:6px 8px;border-radius:8px;background:${SUNKEN}}
