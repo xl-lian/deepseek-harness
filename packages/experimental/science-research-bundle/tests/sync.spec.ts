@@ -12,6 +12,7 @@ import {
   adaptGuard,
   adaptKaggleSkill,
   adaptRoundTrigger,
+  assertPersonaOnEveryAgent,
   assertRoundLog,
   buildPersonas,
   dshWorkflowBody,
@@ -61,6 +62,17 @@ describe('science-agent research sync', () => {
     expect(failure(() => { assertRoundLog('log(`Round ${i + 1}: ${rid}`)\n', 'c.js') }).anchor).toContain('round log line')
     const synced = readFileSync(resolve(root, 'synced/workflows/science-campaign.js'), 'utf8')
     expect(() => { assertRoundLog(synced, 'c.js') }).not.toThrow()
+  })
+
+  it('refuses an adapted workflow with an agent() call that carries no persona', () => {
+    const bare = failure(() => { assertPersonaOnEveryAgent("const a = 1\nawait agent(withPersona('x', p), {})\nawait agent(prompt, {})\n", 'w.js') })
+    expect(bare.file).toBe('w.js')
+    expect(bare.anchor).toContain('line 3')
+    for (const name of ['science-campaign', 'science-round', 'research-loop', 'paper-writing']) {
+      const synced = readFileSync(resolve(root, `synced/workflows/${name}.js`), 'utf8')
+      expect(() => { assertPersonaOnEveryAgent(synced, name) }).not.toThrow()
+      expect(synced).toContain('...route(')
+    }
   })
 
   it('builds personas from front matter names and the runtime note', () => {

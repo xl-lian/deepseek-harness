@@ -225,7 +225,17 @@ The same agent runs metric work: a Kaggle competition, a local tabular, time-ser
 | Decide | `sagent round close` | picks the winner from verified metrics and records eliminations |
 | Report | `sagent report build`/`check` | writes the strict, traceable round report |
 
-The campaign repeats rounds until a stop rule fires (target metric, round limit, no improvement, failures, deadline, spend). In a folder with no `.sa/` workspace, including one that holds earlier hand-run experiments, the agent does intake first: it asks for the competition slug, metric, target, and budget, never inventing them. Submission needs a human approval token from `sagent approve` in a terminal. In the Notebook each campaign round shows its seven-stage rail and one ring per experiment; selecting a stage shows its members, checks, metrics, candidates, and report.
+The campaign repeats rounds until a stop rule fires (target metric, round limit, no improvement, failures, deadline, spend). In a folder with no `.sa/` workspace, including one that holds earlier hand-run experiments, the agent does intake first: it asks for the competition slug, metric, target, and budget, never inventing them. Submission needs a human approval token from `sagent approve` in a terminal. `campaign begin` and `round begin` first run `sagent reap`, which fails runs whose owning process died and aborts rounds and campaigns that a stopped session left open; a run whose code equals its parent's or another hypothesis's is refused as `STALE_CODE`.
+
+Each role can run on its own model. Add an `[agents.models]` table to the workspace's `.sa/config.toml`, keyed by role (`clerk`, `scout`, `hypothesis`, `engineer`, `verifier`, `statistician`, `reporter`, or a research or paper node name), with a model name, a `{ provider, model }` table naming a route from this profile, or a list that rotates across the parallel hypothesis lenses. The campaign reads it through `sagent domain show`; a role without an entry uses the session model.
+
+```toml
+[agents.models]
+clerk = { provider = "na-yz", model = "claude-haiku-5-5" }
+hypothesis = [{ provider = "na-yz", model = "claude-fable-5-2" }, { provider = "na-yz", model = "claude-opus-5-5" }]
+```
+
+In the Notebook each campaign round shows its seven-stage rail and one ring per experiment; selecting a stage shows its members, checks, metrics, candidates, and report.
 
 ## Write a paper
 
@@ -302,7 +312,7 @@ Two hooks run through the Claude Code hook bridge:
 science-agent owns the research, paper, and campaign role prompts, the `science-research`, `science-paper`, `science-agent`, and `science-agent-kaggle` skills, the hooks, the MCP launcher, the example objective, the LaTeX template and `sagent paper` commands, and the `research-loop`, `paper-writing`, `science-round`, and `science-campaign` workflows. `scripts/sync.ts` copies the prompts, workflows, skills, hooks, and example into `synced/` and adapts them to dsh; `scripts/campaign-sync.ts` holds the campaign half and the helpers both share:
 
 - every step prompt gains a runtime note (dsh tool names, never start a workflow; `templates/runtime-note.md` or `templates/paper-runtime-note.md`) and is embedded in its workflow script, which then needs no registered agent types;
-- both workflows lose Claude Code-only `agentType` and `effort` options; the research loop also loses the `pattern` schema keyword, which dsh's structured-output schema subset rejects (the script already normalizes experiment ids);
+- both workflows lose Claude Code-only `agentType` and `effort` options and keep science-agent's per-role `...route(role)` model options; every `agent()` call must carry an embedded persona, or the sync fails; the research loop also loses the `pattern` schema keyword, which dsh's structured-output schema subset rejects (the script already normalizes experiment ids);
 - the workflow narrates each round through `log()`, `artifact()`, and `metric()` lines that the Notebook view reads (`templates/loop-record-outputs.js`), recording the experiments_validated and supported counts per round;
 - the paper workflow writes its own fixed-grammar narration upstream, so the sync only checks that the lines the view reads are still there;
 - the campaign workflow inlines the round body (dsh workflows cannot nest), embeds each role persona, and records each round's delta, candidates, and report (`templates/campaign-record-outputs.js`); `kaggle-round` is the round saved under a second name; the six role personas (`templates/campaign-runtime-note.md`) also back the `sa_*` role presets in `presets/roles.patch.yml`;

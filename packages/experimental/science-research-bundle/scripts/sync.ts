@@ -28,6 +28,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import {
   SyncAnchorError,
+  assertPersonaOnEveryAgent,
   adaptGuard,
   buildCampaignAssets,
   adaptRoundTrigger,
@@ -132,7 +133,7 @@ function optionEdits(prefix: string): Edits {
   return [
     [`  agentType: typeOf(\`${prefix}-\${name}\`),\n`, ''],
     ["  effort: opts.effort || 'high',\n", ''],
-    [", agentType: typeOf('sa-clerk'), schema: SCHEMA.envelope, effort: 'low' })", ', schema: SCHEMA.envelope })'],
+    [", agentType: typeOf('sa-clerk'), schema: SCHEMA.envelope, effort: 'low', ...route('clerk') })", ", schema: SCHEMA.envelope, ...route('clerk') })"],
   ]
 }
 
@@ -219,6 +220,7 @@ function adaptWorkflow(source: string, personas: ReadonlyMap<string, string>, sp
   if (/^\s*effort: /mu.test(body)) {
     throw new SyncAnchorError(file, 'an agent() effort option remains after adaptation')
   }
+  assertPersonaOnEveryAgent(body, file)
   return new Map([
     [`${spec.name}.js`, body],
     [`${spec.name}.meta.json`, `${JSON.stringify(meta, undefined, 2)}\n`],

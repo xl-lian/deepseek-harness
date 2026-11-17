@@ -55,7 +55,7 @@ The envelope does **not** include a `ledger` field. The design note mentions
 | 4 | Budget, disk, or resource limit | `BudgetError`, `DISK` when free space is below the download threshold. |
 | 5 | Approval required | `sagent submit prepare` without a passing verdict; `sagent submit upload` with a bad token or a reached limit. |
 | 6 | Sandbox failure | `SandboxError`, `sagent sandbox selftest` failure. |
-| 7 | State conflict | Uninitialized workspace, unlocked objective, missing data, missing run, unknown ID. |
+| 7 | State conflict | Uninitialized workspace, unlocked objective, missing data, missing run, unknown ID; `STALE_CODE` when a run's code is byte-identical to its parent's or to another hypothesis's run. |
 | 10 | Internal error or lock failure | Uncaught exceptions; `LOCK` errors. |
 
 `sagent verify run` exits 3 only when the aggregate verdict is `fail`; a `warn` exits 0. `sagent verify
@@ -118,7 +118,7 @@ Profiles: `cpu-light`, `cpu-standard`, `cpu-full`, `cv`, `nlp`, `llm`.
 
 | Command | Key flags | Description |
 |---|---|---|
-| `sagent run execute` | `--code DIR` (required, must exist), `--experiment ID`, `--hypothesis ID` (repeatable), `--seeds 42,43,44`, `--label TEXT`, `--round ID`, `--parent-run ID`, `--allow-network`, `--timeout SEC`, `--memory MB`, `--workspace/-w DIR`, `--json` | Create one run per seed in a sandbox, execute, commit declared outputs, and write manifests. Reuses an identical finished signature. Exits 0 even if the experiment fails. |
+| `sagent run execute` | `--code DIR` (required, must exist), `--experiment ID`, `--hypothesis ID` (repeatable), `--seeds 42,43,44`, `--label TEXT`, `--round ID`, `--parent-run ID`, `--allow-network`, `--timeout SEC`, `--memory MB`, `--workspace/-w DIR`, `--json` | Create one run per seed in a sandbox, execute, commit declared outputs, and write manifests. Reuses an identical finished signature of the same hypothesis. Refuses with `STALE_CODE` when the code equals the parent run's code or a run of a different hypothesis: implement the change first. Writes `runs/<id>/supervisor.json` (owner pid, heartbeat) while the run executes. Exits 0 even if the experiment fails. |
 | `sagent run show` | `RUN_ID`, `--workspace/-w DIR`, `--json` | Show the run manifest. |
 | `sagent run list` | `--status STATUS`, `--round ID`, `--workspace/-w DIR`, `--json` | List runs, optionally filtered and sorted by creation time. |
 | `sagent run logs` | `RUN_ID`, `--tail N` (default 80), `--workspace/-w DIR`, `--json` | Return the last N lines of stdout and stderr. |
@@ -205,6 +205,7 @@ the API default is `0.5`.
 | `sagent state briefing` | `--workspace/-w DIR`, `--json` | Return the next-round briefing. |
 | `sagent state lessons` | `--workspace/-w DIR`, `--json` | Tested hypotheses (predicted vs observed), per-lens calibration, backlog, recurring checks, frontier; bounded for prompts. |
 | `sagent state show` | `--workspace/-w DIR`, `--json` | Print the full projection. |
+| `sagent reap` | `--dry-run`, `--now ISO`, `--workspace/-w DIR`, `--json` | Mark work a dead process left `running`: runs whose supervisor is gone become `failed` (`orphaned`), open rounds with no live run that were superseded, belong to an ended campaign, or idled past `execution.stale_after_s` (default 7200) end `aborted`, and such campaigns end. `campaign begin` and `round begin` reap automatically; an aborted round does not count toward stop-rule streaks. |
 
 ## 13. Commands not present in this CLI
 
@@ -235,3 +236,19 @@ subcommands. Use the stated alternative.
 
 If a command in this table is required, extend `cli.py` rather than assuming the design note is
 already wired.
+
+## 14. Per-role models
+
+`.sa/config.toml` may route workflow roles to specific models. Each value is a model name, a `{provider, model}` table, or a
+non-empty list of those; a list rotates across parallel calls, so the hypothesis lenses can run on different models.
+Roles: `clerk`, `scout`, `hypothesis`, `engineer`, `verifier`, `statistician`, `reporter`; research and paper nodes use
+their node name (`plan`, `retrieve-read`, `section`, ...). A role without an entry inherits the session model.
+
+```toml
+[agents.models]
+clerk = "claude-haiku-5-5"
+hypothesis = ["claude-fable-5-2", { provider = "deepseek", model = "deepseek-v4" }]
+```
+
+`sagent domain show --json` returns the validated table as `agent_models`; the campaign workflow applies it unless the caller
+passes `models` in the workflow args. The research and paper workflows read `models` from their args only.

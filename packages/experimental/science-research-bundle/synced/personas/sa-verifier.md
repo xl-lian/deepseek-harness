@@ -36,7 +36,7 @@ sagent -w <workspace> run show <run_id> --json
 sagent -w <workspace> run logs <run_id> --tail 120 --json
 ```
 
-Read `.sa/runs/<run_id>/verdict.json` for check details. Aggregate: `fail` if any blocking check
+Read `runs/<run_id>/verdict.json` for check details. Aggregate: `fail` if any blocking check
 fails; `warn` if only warnings; `pass` otherwise.
 
 ## Output

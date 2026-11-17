@@ -17,6 +17,16 @@ const MAX_CHALLENGES = A.maxChallengePasses === 0 ? 0 : posInt(A.maxChallengePas
 const RUN_TIMEOUT = posInt(A.runTimeoutSec, 600)
 const ROUND_TOKENS = posInt(A.perRoundTokenEstimate, 500000)
 const PREFIX = A.agentPrefix == null ? 'science-agent:' : A.agentPrefix
+// Model route per role from args.models: "model", {provider, model}, or a list that rotates by call index (parallel
+// proposers on different models). An absent role inherits the session model.
+let MODELS = A.models && typeof A.models === 'object' ? A.models : {}
+const route = (role, index) => {
+  const value = MODELS[role]
+  const pick = Array.isArray(value) ? value[(index || 0) % (value.length || 1)] : value
+  if (typeof pick === 'string' && pick) return { model: pick }
+  const ok = pick && typeof pick === 'object' && typeof pick.model === 'string' && pick.model
+  return ok ? { ...(typeof pick.provider === 'string' && pick.provider ? { provider: pick.provider } : {}), model: pick.model } : {}
+}
 const cmd = (sub) => `${SA} -w "${WS}" ${sub}`
 const shellQuote = (text) => `'${String(text).replace(/'/g, `'\\''`)}'`
 const clip = (value, limit) => typeof value === 'string' ? (value.length <= limit ? value : value.slice(0, limit) + '…') : null
@@ -99,6 +109,7 @@ Record what you write with: ${cmd(`research record --round ${R.round_id} --node 
 Return only the structured result.`), {
   label: opts.label,
   phase: opts.phase,
+  ...route(name),
   schema,
 }).then((result) => {
   // Keep the structured result exactly as received; save() writes it to the ledger with a checksum.
@@ -114,7 +125,7 @@ The command prints one JSON envelope on its last stdout line: {"ok": true, "data
 Return that envelope as the structured result, copying every value exactly; do not summarize, round, reorder, or add fields.
 Never run the command a second time: it may write state.
 If the command cannot run, return {"ok": false, "error": {"code": "CLERK", "message": "<what happened>"}}.
-Do not edit files. Do not run any other command.`), { label, phase: phaseName, schema: SCHEMA.envelope })
+Do not edit files. Do not run any other command.`), { label, phase: phaseName, schema: SCHEMA.envelope, ...route('clerk') })
 
 // ---------------------------------------------------------------- saving node results
 

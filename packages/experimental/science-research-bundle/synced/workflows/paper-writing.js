@@ -17,6 +17,16 @@ const oneLine = (value, limit) => (clip(String(value == null ? '' : value).repla
 const slug = (value, fallback) => String(value || '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || fallback
 const plain = (value) => JSON.parse(JSON.stringify(value === undefined ? null : value, (k, v) => (v === undefined ? null : v)))
 const PREFIX = A.agentPrefix == null ? 'science-agent:' : A.agentPrefix
+// Model route per role from args.models: "model", {provider, model}, or a list that rotates by call index (parallel
+// proposers on different models). An absent role inherits the session model.
+let MODELS = A.models && typeof A.models === 'object' ? A.models : {}
+const route = (role, index) => {
+  const value = MODELS[role]
+  const pick = Array.isArray(value) ? value[(index || 0) % (value.length || 1)] : value
+  if (typeof pick === 'string' && pick) return { model: pick }
+  const ok = pick && typeof pick === 'object' && typeof pick.model === 'string' && pick.model
+  return ok ? { ...(typeof pick.provider === 'string' && pick.provider ? { provider: pick.provider } : {}), model: pick.model } : {}
+}
 const cmd = (sub) => `${SA} -w "${WS}" ${sub}`
 const kit = (sub) => cmd(`paper ${sub} --json`)
 // Hosts that provide artifact() and metric() (DeepSeek Harness) list the paper files and issue counts; elsewhere these do nothing.
@@ -95,6 +105,7 @@ ${details ? `\n${details}\n` : ''}
 Return only the structured result.`), {
   label: opts.label,
   phase: opts.phase,
+  ...route(name),
   schema,
 })
 
@@ -106,7 +117,7 @@ The command prints one JSON envelope on its last stdout line: {"ok": true, "data
 Return that envelope as the structured result, copying every value exactly; do not summarize, round, reorder, or add fields.
 Never run the command a second time: it may write state.
 If the command cannot run, return {"ok": false, "error": {"code": "CLERK", "message": "<what happened>"}}.
-Do not edit files. Do not run any other command.`), { label, phase: phaseName, schema: SCHEMA.envelope })
+Do not edit files. Do not run any other command.`), { label, phase: phaseName, schema: SCHEMA.envelope, ...route('clerk') })
 
 const describeIssue = (issue) => `- ${issue.id}${issue.blocking ? ' (blocking)' : ''}: ${oneLine(issue.summary, 400)}${issue.fix ? ` Fix: ${oneLine(issue.fix, 300)}` : ''}`
 const normalizeIssues = (list, prefix) => (Array.isArray(list) ? list : []).map((issue, i) => ({

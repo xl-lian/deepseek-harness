@@ -104,7 +104,8 @@ Workflow({
     maxExperiments: 3,         // per round; the plan lists them in priority order
     maxDebugAttempts: 2,
     maxChallengePasses: 2,
-    runTimeoutSec: <60 * objective.budget.max_wall_clock_min_per_run>
+    runTimeoutSec: <60 * objective.budget.max_wall_clock_min_per_run>,
+    models: <agent_models from `sagent domain show --json`, when present>
   }
 })
 ```

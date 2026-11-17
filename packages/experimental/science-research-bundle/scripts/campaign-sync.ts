@@ -113,6 +113,20 @@ export function replaceAllRequired(text: string, anchor: string, replacement: st
 }
 
 /**
+ * Require every `agent(` call in an adapted workflow to pass a `withPersona(` prompt.
+ * @param text - adapted workflow text.
+ * @param file - source-relative path for diagnostics.
+ * @throws SyncAnchorError naming the first call site whose prompt has no embedded persona.
+ */
+export function assertPersonaOnEveryAgent(text: string, file: string): void {
+  const bare = /\bagent\((?!withPersona\()/u.exec(text)
+  if (bare !== null) {
+    const line = text.slice(0, bare.index).split('\n').length
+    throw new SyncAnchorError(file, `agent() call on adapted line ${line} has no persona wrapper; add an anchor for it`)
+  }
+}
+
+/**
  * Build each role persona: the dsh runtime note followed by the agent body without front matter.
  * @param agents - agent file name (`sa-scout.md`) → file text.
  * @param runtimeNote - the runtime note template.
@@ -303,6 +317,8 @@ export function adaptWorkflows(
   }
   campaign = replaceOnce(campaign, RECORD_MARKER, recordOutputs + RECORD_MARKER, campaignFile)
   assertRoundLog(campaign, campaignFile)
+  assertPersonaOnEveryAgent(roundStandalone, roundFile)
+  assertPersonaOnEveryAgent(campaign, campaignFile)
 
   return new Map([
     ['science-round.js', roundStandalone],
