@@ -300,6 +300,23 @@ To continue a study, ask to "continue researching" or run `/sa-research <rounds>
 }
 ```
 
+Its `cordis.patch.yml` copies the `research` profile's `agent-default-model` and `llm-pi-ai` rows and adds two things the headless stack lacks: the preset registry, which the Web bundle inserts and this bundle only configures, and the stored credentials the GUI saved, which the headless profile turns off by default:
+
+```yaml
+- id: credentials
+  disabled: false
+- id: authorization
+  disabled: false
+- id: deepseek-account
+  disabled: false
+- insert:
+    - id: agent-preset-registry
+      name: '@deepseek-ai/dsh-agent-preset-registry'
+      config:
+        default: research
+        modeSelectionEnabled: false
+```
+
 ```sh
 export SA_BENCH_LAUNCHER='pnpm --dir /path/to/deepseek-harness dsh --profile research-headless {prompt}'
 ```
