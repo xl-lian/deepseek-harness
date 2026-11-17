@@ -51,6 +51,9 @@ Wrap-up     clerk: campaign end; sa-reporter: read-only summary from briefing + 
 - **Outcome** (`round close`): `improved` iff the chosen candidate beats the best verified value from
   earlier rounds by more than `constraints.min_delta` (or is the first verified result) and has enough
   distinct seeds; `no_change`; `failed` (runs but no verified candidate); `blocked` (no runs).
+- **Ensemble**: a full round ends its execution with `sagent ensemble build --round <id>`; the blend is an ordinary
+  verified candidate in `round close`. **Final pair**: wrap-up runs `sagent submit select`, which records the two
+  submissions code would choose; nothing is uploaded.
 - The domain pack is fetched once in preflight and passed to every round.
 - The campaign never submits, approves, or reveals the holdout.
 

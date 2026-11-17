@@ -243,6 +243,8 @@ already wired.
 |---|---|---|
 | `sagent folds freeze` | `--k 5`, `--strategy auto,stratified,kfold,group,time`, `--seed`, `--group-column`, `--time-column`, `--workspace/-w DIR`, `--json` | Write `data/public/cv_folds.csv` once (event `folds.frozen`). Runs read `SA_DATA_DIR/cv_folds.csv`; the shipped tabular templates use it, and L3 `cv.frozen_folds` warns when a run's `folds.csv` differs. Freezing again returns the record. |
 | `sagent folds show` | `--workspace/-w DIR`, `--json` | The frozen-folds record, or null. |
+| `sagent ensemble build` | `--round ID`, `--max-members 6`, `--steps 25`, `--workspace/-w DIR`, `--json` | Blend the best verified candidates scored on the frozen folds (Caruana greedy selection, weights fitted out of fold so the reported score is nested). Runs one blend per shared seed through `run execute`, verifies L0-L3, and records `ensemble.built`. Returns `built: false` with a reason when there are no frozen folds, fewer than two members, time-ordered folds, a ranking metric, or the same members were blended before. The full round workflow calls it after confirmation. |
+| `sagent submit select` | `--tolerance 0.005`, `--correlation-weight 0.5`, `--workspace/-w DIR`, `--json` | Record the final pair (`submission.pair_selected`): the best risk-adjusted fully seeded candidate and a second within the tolerance whose OOF predictions correlate least with it. Uploads nothing. |
 | `sagent bench list` | `--json` | Benchmark packs and tasks. |
 | `sagent bench prepare` | `TASK`, `--out DIR`, `--pack`, `--rep`, `--arm`, `--json` | Seal a hidden split and build a locked bench workspace. |
 | `sagent bench run` | `WORKSPACE`, `--launcher CMD`, `--wall-minutes`, `--json` | Launch the agent with a wall-clock limit; reap afterwards. |

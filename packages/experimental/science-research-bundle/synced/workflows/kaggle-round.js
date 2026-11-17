@@ -892,6 +892,19 @@ const results = firstPass.filter(Boolean).map((item) => {
   return extra ? { ...item, confirm: extra.confirm, confirm_verify: extra.confirm_verify } : item
 })
 
+// A code-owned blend of the strongest verified candidates on the frozen folds; sagent decides whether one is due.
+let ensemble = null
+if (MODE === 'full' && A.ensemble !== false) {
+  const built = await clerk('ensemble', 'Verify', cmd(`ensemble build --round ${A.roundId} --json`))
+  ensemble = built && built.ok && built.data ? built.data : null
+  if (ensemble && ensemble.built) {
+    const scores = (ensemble.runs || []).map((x) => finiteOrNull(x.nested_score)).filter((x) => x !== null)
+    log(`Ensemble of ${(ensemble.members || []).length} candidates: ${(ensemble.runs || []).length} blend run(s), nested scores ${scores.join(', ') || 'n/a'}.`)
+  } else if (ensemble && ensemble.reason) {
+    log(`No ensemble this round: ${clip(ensemble.reason, 160)}`)
+  }
+}
+
 phase('Verify')
 // The verifier's numbers come from code; a statistician is worth an agent only when something needs interpreting.
 const ROUTINE_WARNINGS = new Set(['seeds.count', 'improvement.exceeds_noise', 'sandbox.isolation', 'data.inputs_read', 'source.no_network', 'public_lb_not_used'])
@@ -942,6 +955,12 @@ const out = {
   })),
   l3: boundL3(l3),
   l3Skipped,
+  ensemble: ensemble ? {
+    built: !!ensemble.built,
+    reason: clip(ensemble.reason, 200),
+    members: (ensemble.members || []).slice(0, 8).map((x) => ({ run_id: x.run_id ?? null, mean: finiteOrNull(x.mean) })),
+    runs: (ensemble.runs || []).slice(0, 6).map((x) => ({ run_id: x.run_id ?? null, verdict: x.verdict ?? null, nested_score: finiteOrNull(x.nested_score) })),
+  } : null,
   scoutReused: !!CACHED_SCOUT,
   tokenDelta: tokensSoFar(),
   next: `Run \`${SA} -w "${WS}" round close ${A.roundId} --json\` (decide, claim sync, report, design checks, stages, outcome, round end).`,

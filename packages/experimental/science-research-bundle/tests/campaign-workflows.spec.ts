@@ -94,6 +94,8 @@ function stubAgent(): (prompt: string, options?: AgentOptions) => Promise<Json> 
     if (label === 'l3-design') {
       return { round_summary: 'ok', seed_variance: 'low', multiple_comparisons: '3', budget_fairness: 'ok', stop_recommended: false, notes: '' }
     }
+    if (label === 'ensemble') return { ok: true, data: { built: false, reason: 'one candidate on the frozen folds' } }
+    if (label === 'submit-select') return { ok: true, data: { primary_run_id: 'r-h0', secondary_run_id: null } }
     throw new Error(`unexpected label ${label}`)
   }
 }

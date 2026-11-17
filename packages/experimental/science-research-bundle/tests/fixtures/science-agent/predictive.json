@@ -55,6 +55,9 @@
   "templates": {
     "tabular_baseline.py": "tabular baseline",
     "tabular_lgbm.py": "tabular LightGBM",
+    "tabular_optuna.py": "time-boxed LightGBM tuning for the tune operator (copy _contract.py too); binary, multiclass, regression",
+    "text_tfidf_linear.py": "TF-IDF word+char n-grams with a linear model (copy _contract.py too); text classification and regression",
+    "_contract.py": "shared helper for the two templates above: frozen folds, metrics, the output contract",
     "timeseries_lgbm.py": "time series (also copy tabular_lgbm.py)",
     "cv_timm.py": "computer vision scaffold (configure before running)",
     "nlp_transformer.py": "NLP scaffold (configure before running)",
