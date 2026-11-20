@@ -33,7 +33,7 @@ const STYLES = `
 .rl-wordmark{display:inline-flex;flex-direction:column;justify-content:center;gap:2px;font-family:${SERIF};line-height:1;white-space:nowrap}
 .rl-wordmark-main{color:${INK};font-size:15px;font-weight:600}
 .rl-wordmark-accent{color:${ACCENT};font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase}
-.rl-view{display:flex;flex-direction:column;gap:18px;padding:16px;flex:1 1 auto;height:100%;min-height:0;overflow:auto;box-sizing:border-box;color:${INK};font-variant-numeric:tabular-nums;
+.rl-view{position:relative;display:flex;flex-direction:column;gap:18px;padding:16px;flex:1 1 auto;height:100%;min-height:0;overflow:auto;box-sizing:border-box;color:${INK};font-variant-numeric:tabular-nums;
   background-image:linear-gradient(${RULE_FAINT} 1px,transparent 1px),linear-gradient(90deg,${RULE_FAINT} 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
 .rl-view>*{flex-shrink:0}
 .rl-notebook,.rl-run,.rl-card{background:${SURFACE};border:1px solid ${RULE};border-radius:10px}
