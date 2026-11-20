@@ -10,7 +10,7 @@ description: >
   research done in a science-agent workspace. Triggers include "write a paper", "draft the
   manuscript", "turn this into a paper", "arXiv", "写论文", "写成论文", "论文初稿", "修改论文".
   The research itself is the science-research skill.
-version: 0.4.0
+version: 0.11.0
 ---
 
 # Science-Agent Paper Writing

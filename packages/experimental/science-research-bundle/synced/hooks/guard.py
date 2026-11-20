@@ -37,14 +37,39 @@ DENY_BASH = [
 ]
 
 
-def workspace_has_sa(path: str) -> bool:
+def sa_root(path: str | Path) -> Path | None:
+    """The workspace (the nearest directory holding ``.sa/``) that contains ``path``, if any."""
     current = Path(path)
     if current.is_file():
         current = current.parent
     for candidate in (current, *current.parents):
         if (candidate / ".sa").is_dir():
-            return True
-    return False
+            return candidate
+    return None
+
+
+def workspace_has_sa(path: str) -> bool:
+    return sa_root(path) is not None
+
+
+# Inside a workspace, .sa/ and runs/ are written only by the sagent CLI. config.toml is the one file a
+# person (or an agent asked to) may edit, for model routes and limits.
+EDITABLE_IN_SA = {".sa/config.toml"}
+
+
+def protected_part(path: str, cwd: str) -> str | None:
+    """``.sa`` or ``runs`` when ``path`` lies under that directory of a workspace, else None."""
+    target = Path(os.path.normpath(Path(cwd) / path if not os.path.isabs(path) else path))
+    root = sa_root(target.parent)
+    if root is None:
+        return None
+    try:
+        rel = target.relative_to(root)
+    except ValueError:
+        return None
+    if rel.parts and rel.parts[0] in (".sa", "runs") and rel.as_posix() not in EDITABLE_IN_SA:
+        return rel.parts[0]
+    return None
 
 
 def deny(reason: str) -> None:
@@ -72,6 +97,12 @@ def main() -> None:
     tool = str(payload.get("tool_name") or payload.get("tool") or "").lower()
     tool_input = payload.get("tool_input") or {}
     cwd = payload.get("cwd") or os.getcwd()
+    if tool in {"write", "edit", "multiedit"}:
+        path = str(tool_input.get("file_path") or tool_input.get("path") or "")
+        # Checked wherever the session runs: the target's own workspace decides.
+        part = protected_part(path, cwd) if path else None
+        if part:
+            deny(f"{part}/ in a science-agent workspace is written only by the sagent CLI (runs record provenance, .sa holds the ledger)")
     if not workspace_has_sa(cwd) and not any(".sa" in str(v) for v in tool_input.values() if isinstance(v, str)):
         return
     if tool in {"write", "edit", "multiedit"}:

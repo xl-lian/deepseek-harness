@@ -10,7 +10,7 @@ description: >
   "symbolic regression", "pinned scorer", "跑实验", "继续实验", "接着跑", "跑到目标". For Kaggle intake and
   submissions use science-agent-kaggle; for an open research question in any field use
   science-research, which runs the prompt-driven research-loop workflow.
-version: 0.3.0
+version: 0.11.0
 ---
 
 # Science-Agent Campaign Orchestrator

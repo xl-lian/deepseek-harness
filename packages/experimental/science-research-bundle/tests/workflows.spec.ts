@@ -28,8 +28,16 @@ const FILES = {
   previous_round_dir: null,
 }
 
-/** Node and clerk replies by label; `register` decides whether the plan registration succeeds. */
-function replies(register: boolean): Readonly<Record<string, Value>> {
+/** `register: false` fails the plan registration; `blocked` blocks e1's build so the plan is revised once. */
+interface Scenario {
+  readonly register?: boolean
+  readonly blocked?: boolean
+}
+
+const registered = (casPath: string, experiments: string[]): Value => ({ ok: true, data: { plan: { cas_path: casPath, sha256: 'abcdef0123456789', experiments } } })
+
+/** Node and clerk replies by label. */
+function replies({ register = true, blocked = false }: Scenario): Readonly<Record<string, Value>> {
   return {
     'open-1': { ok: true, data: { stop: false, fired: [], reused: false, round_id: 'rd-1', number: 1, files: FILES } },
     'r1-retrieve-search': { focuses: [{ id: 'f1', question: 'what is known', why: 'scope' }], reason: 'one gap' },
@@ -39,17 +47,28 @@ function replies(register: boolean): Readonly<Record<string, Value>> {
       experiments: [{ id: 'e1', title: 'Warmup "range"', role: 'confirmatory' }, { id: 'e2', title: 'Curvature', role: 'exploratory' }],
       summary: 'two tests',
     },
-    'r1-save-plan': register
-      ? { ok: true, data: { plan: { cas_path: '.sa/objects/p', sha256: 'abcdef0123456789', experiments: ['e1'] } } }
-      : { ok: false, error: { code: 'STATE', message: 'plan file missing' } },
-    'r1-build-e1': { status: 'ready', code_dir: 'code', seeds: [0, 1], reason: 'built' },
+    'r1-save-plan': register ? registered('.sa/objects/p', ['e1']) : { ok: false, error: { code: 'STATE', message: 'plan file missing' } },
+    'r1-build-e1': blocked
+      ? { status: 'blocked', reason: 'needs torch', blocker_kind: 'package' }
+      : { status: 'ready', code_dir: 'code', seeds: [0, 1], reason: 'built' },
     'r1-run-e1-1': { ran: true, run_ids: ['run-a', 'run-b'] },
     'r1-check-e1': { verdict: 'supported', confidence: 'high', summary: 'holds' },
     'r1-challenge-e1-1': { objections: [{ id: 'o1', blocking: false, summary: 'minor' }], summary: 'no blocker' },
     'r1-save-e1': { ok: true, data: { saved: ['r1-build-e1'] } },
+    'r1-plan-2': {
+      experiments: [{ id: 'e1b', title: 'Warmup in numpy', role: 'confirmatory' }],
+      summary: 'the same test without torch',
+      needs_human: 'sagent env add torch==2.5.1',
+    },
+    'r1-save-plan-2': registered('.sa/objects/p2', ['e1b']),
+    'r1-build-e1b-rev1': { status: 'ready', code_dir: 'code', seeds: [0], reason: 'built' },
+    'r1-run-e1b-1': { ran: true, run_ids: ['run-c'] },
+    'r1-check-e1b': { verdict: 'inconclusive', confidence: 'low', summary: 'too small' },
+    'r1-challenge-e1b-1': { objections: [], summary: 'none' },
+    'r1-save-e1b': { ok: true, data: { saved: ['r1-build-e1b-rev1'] } },
     'r1-next-step': { decision: 'stop', reason: 'question answered', needs_human: 'approve network', summary: 'done' },
-    'r1-save-next': { ok: true, data: { saved: ['r1-next-step'] } },
-    'close-1': { ok: true, data: { next_round_allowed: false } },
+    // The close saves the next-step result too.
+    'close-1': { ok: true, data: { saved: ['r1-next-step'], next_round_allowed: false } },
     'write-up': { report_markdown: '# Report', answer: 'Warmup widens the stable range.' },
   }
 }
@@ -61,9 +80,9 @@ interface Trace {
   readonly labels: string[]
 }
 
-async function runLoop(register: boolean): Promise<{ result: Value; trace: Trace }> {
+async function runLoop(scenario: Scenario = {}): Promise<{ result: Value; trace: Trace }> {
   const trace: Trace = { logs: [], artifacts: [], metrics: [], labels: [] }
-  const table = replies(register)
+  const table = replies(scenario)
   const hooks: Record<string, unknown> = {
     args: { workspace: '/ws', maxRounds: 2, maxExperiments: 1 },
     phase: () => undefined,
@@ -101,7 +120,7 @@ describe('synced research loop workflow', () => {
   })
 
   it('runs a registered round through write-up and narrates each step', async () => {
-    const { result, trace } = await runLoop(true)
+    const { result, trace } = await runLoop()
     expect(result.started).toBe(true)
     expect(result.stop).toEqual({ reason: 'decided', detail: 'question answered' })
     const round = (result.rounds as Value[])[0]
@@ -132,11 +151,32 @@ describe('synced research loop workflow', () => {
     expect(trace.labels.some(label => label.startsWith('r1-build-e2'))).toBe(false)
   })
 
-  it('runs no experiment when the plan cannot be registered', async () => {
-    const { result, trace } = await runLoop(false)
+  it('stops with the round left open when the plan cannot be registered', async () => {
+    const { result, trace } = await runLoop({ register: false })
     expect(trace.labels.some(label => label.startsWith('r1-build-'))).toBe(false)
+    expect(trace.labels).not.toContain('r1-next-step')
+    expect(trace.labels).not.toContain('close-1')
+    expect(trace.labels).not.toContain('write-up')
+    expect(result.stop).toMatchObject({ reason: 'registration-failed' })
+    expect((result.rounds as Value[])[0]).toMatchObject({ closed: false })
     expect((result.rounds as Value[])[0]?.registration_error).toContain('plan file missing')
     expect(trace.logs.some(line => line.startsWith('Round 1 plan: not registered — '))).toBe(true)
-    expect(trace.metrics).toEqual(['experiments_validated=0@1', 'supported=0@1'])
+    expect(trace.logs.some(line => line.startsWith('Loop stopped: registration-failed — '))).toBe(true)
+    expect(trace.metrics).toEqual([])
+  })
+
+  it('revises the plan once after a blocked build and narrates the replacement', async () => {
+    const { result, trace } = await runLoop({ blocked: true })
+    expect(trace.labels).toEqual(expect.arrayContaining(['r1-build-e1', 'r1-plan-2', 'r1-save-plan-2', 'r1-build-e1b-rev1', 'r1-run-e1b-1']))
+    expect(trace.labels).not.toContain('r1-run-e1-1')
+    const round = (result.rounds as Value[])[0]
+    expect(round).toMatchObject({ plan_revisions: 1, dropped_in_revision: ['e1'], registered_plan: '.sa/objects/p2' })
+    expect(trace.logs).toEqual(expect.arrayContaining([
+      'Round 1: plan revision 1 registered after blocked builds',
+      'Round 1 plan: registered · e1b "Warmup in numpy" [confirmatory]',
+      'Round 1 e1: blocked — replaced in plan revision 1: needs torch',
+      'Round 1 e1b: inconclusive (low) · runs run-c',
+    ]))
+    expect(trace.metrics).toEqual(['experiments_validated=1@1', 'supported=0@1'])
   })
 })

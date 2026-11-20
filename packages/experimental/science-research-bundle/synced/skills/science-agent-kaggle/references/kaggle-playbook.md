@@ -256,3 +256,25 @@ check Kaggle's hidden format rules; read the competition's sample submission and
 - [ ] `metrics.json` uses a supported metric and reproduces from the OOF file.
 - [ ] The run writes only to `SA_OUTPUT_DIR` and reads only from `SA_DATA_DIR`.
 - [ ] No test labels, solution files, or public LB feedback are in the code or data.
+
+## 12. Packing and code competitions
+
+A packing task (`problem.task_type: packing`) has no labelled train/test split: validity is decided
+by the competition's own metric. The objective resolves to the `scored` domain pack
+(`sagent domain show --json`), and the round workflow reads its scout commands, lenses, templates,
+run contract, and verify/L3 notes from the pack. The round contract differs in four places:
+
+1. The objective's `competition.metric.recompute` names a workspace-relative Python file defining
+   `recompute(context)`, and `recompute_sha256` pins its bytes. The verifier refuses a changed
+   scorer; updating it is a human `sagent objective update`, never an agent edit.
+2. Runs produce `metrics.json` + `submission.csv` (+ optional `details.json`) instead of
+   OOF/folds/CV files. The engineer starts from the `packing_bank.py` and `packing_run.yaml`
+   templates and declares the base bank under the run's `inputs`.
+3. L2 recomputes the score from the submission and fails `submission.feasible` for any rejected
+   item; L3 skips CV/leakage and compares the certified total to the baseline. L5 does not apply.
+4. Seed runs default to one: a certified packing is deterministic given its parameters, so
+   run-to-run variance is optimizer variance, not label noise.
+
+Intake skips the download/freeze/holdout steps: `sagent env init --profile packing --json`. Round
+close, decide, report, and submission steps are unchanged. "Baseline first" means verifying the
+incumbent bank unchanged, so later rounds compare against a certified reference score.

@@ -19,7 +19,8 @@ snapshot.
 ## Your place in the loop
 
 ```text
-retrieve-* → plan (you) → for each experiment: build → run ⇄ debug → check → challenge ⇄ recheck → next-step
+retrieve-* → plan (you) → build every experiment → [plan (you), once, if a build is blocked]
+           → per experiment: run ⇄ debug → check → challenge ⇄ recheck → next-step
 ```
 
 Each experiment you list becomes one build–run–validate chain. The validator will judge it by the
@@ -77,11 +78,20 @@ analysis you write here, not by one it invents afterwards.
    experiment's code or inputs change after one of its runs has finished, or if a run under its id is
    never reported. A result that came from exploration is confirmed by a new confirmatory experiment,
    on new data or seeds, in a later round.
-7. **Fit the machine and the budget.** Each run must finish within the time limit in the message,
-   on this machine (`question.md` states the compute). Prefer the experiment that settles more for
-   less; a cheap pilot is allowed if labelled as one. List experiments in priority order: the loop
-   caps how many run, and the cap drops the last.
+7. **Fit the machine, the environment, and the budget.** Each run must finish within the time limit
+   in the message, on this machine (`question.md` states the compute). Check that it can run here at
+   all: compare the packages each experiment imports, and the requirements of any existing code it
+   runs or wraps (`requirements.txt`, `pyproject.toml`, its imports), with `env show`. Adding a
+   package is a person's decision, so do not list an experiment that cannot run without one: plan
+   what can run, or nothing, and name what is missing under **Needs** and in `needs_human`, with the
+   exact command (`sagent -w <ws> env add <pkg>==<version> ...`). Prefer the experiment that settles
+   more for less; a cheap pilot is allowed if labelled as one. List experiments in priority order:
+   the loop caps how many run, and the cap drops the last.
 8. **Name the threats to validity** and how the design guards against each.
+9. **Write in proportion to the stakes.** A confirmatory experiment needs everything above. An
+   exploratory measurement, pilot, or single trial needs its design, what it records, and what counts
+   as done: about a page. Refer to the question, the guidance, and earlier plans instead of
+   restating them.
 
 Across fields, the shape changes but the discipline does not. Machine learning: ablations over 5+
 seeds against a tuned baseline at equal compute. LLM evaluation: a fixed item set held out from any
@@ -91,6 +101,21 @@ counted. Physics: a known limiting case reproduced first; convergence in step si
 exponents fit over a stated range. Chemistry: the level of theory validated against reference values
 for a reference set before predicting new ones. Biology: public data with accession numbers; batch
 structure modelled; multiple testing corrected.
+
+## When the message says this is a plan revision
+
+Some builds were blocked. No run of this round exists yet, so the plan can still change: the
+revision is registered like the first plan, and validators judge by it. Read each blocked
+experiment's `build.md`, then rewrite `plan.md` with a **Revision** section at the top saying what
+changed and why.
+
+- A design or scale blocker: change the design so it can be built, or drop the experiment.
+- A missing package, data, or permission: only a person can provide it. Keep what can run without
+  it, and put the rest under **Needs** and in `needs_human`.
+- An experiment that built and that you leave unchanged keeps its id and is not rebuilt. Give a new
+  id (`e1b`) to any experiment whose design you change, so it is built again.
+
+Return the whole revised experiment list, as for a first plan.
 
 ## Tools
 
@@ -109,6 +134,8 @@ sagent -w <ws> templates-path --json
   refutation, design (step 3), analysis and criteria (step 4), replication (step 5), threats,
   expected runtime, and the evidence ids that motivate it. Mark exploratory experiments and pilots.
 - **Not tested this round**: candidates you considered and why they wait.
+- **Needs**, only when something is missing: what a person must provide (a package, data, a
+  permission) and the exact command or step.
 
 Write `plan.md` completely before you return: the workflow snapshots it as the registered plan the
 moment you return, and that snapshot is what proves the analysis came before the data.
@@ -121,6 +148,8 @@ moment you return, and that snapshot is what proves the analysis came before the
   run this round. Ids are letters, digits and `_` only (`e1`, `e2_pilot`), because run labels are
   `<id>` or `<id>-<suffix>` (`e1-analysis`).
 - `summary`: 2–4 sentences.
+- `needs_human`: what a person must provide before a planned or wanted experiment can run, with the
+  exact command (step 7), or an empty string.
 
 ## Rules
 

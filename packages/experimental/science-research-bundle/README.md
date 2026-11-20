@@ -78,20 +78,24 @@ sequenceDiagram
   S->>T: lit search · source add · evidence cite · record
   W->>S: plan
   W->>T: research results --plan-file (registers the plan)
-  loop each planned experiment (up to maxExperiments)
-    W->>S: build · run · debug
+  W->>S: build every planned experiment (up to maxExperiments)
+  opt a build is blocked, before any run (maxPlanRevisions)
+    W->>S: plan (revision) · register · rebuild
+  end
+  loop each planned experiment
+    W->>S: run · debug
     S->>T: run execute (sandbox) · verify run (provenance)
     W->>S: check · challenge · recheck
     W->>T: research results (saves each step's structured result)
   end
   W->>S: next-step
-  W->>T: research close-round --decision continue|stop
+  W->>T: research close-round --decision continue|stop --open-next (saves next-step's result)
   W->>S: write-up (after the last round)
   W-->>A: rounds, stop reason, report markdown
   A->>T: save report.md · research record · research status
 ```
 
-The round opens through `sagent`, which returns the round's file paths and refuses to open one when a hard limit has fired; an interrupted loop resumes the round that is still open. After the plan step, the workflow registers the plan, and from then on `sagent run execute` accepts runs only under a registered experiment id. Experiments flow through build, run, and validation as a per-experiment pipeline. The workflow saves every step's structured result in the ledger with a checksum, so a payload that was not copied exactly saves nothing.
+The round opens through `sagent`, which returns the round's file paths and refuses to open one when a hard limit has fired; an interrupted loop resumes the round that is still open. After the plan step, the workflow registers the plan, and from then on `sagent run execute` accepts runs only under a registered experiment id. A save that saved nothing is retried once; a plan that still cannot be saved is registered from its experiment ids alone, and if that fails too the loop stops with `registration-failed` and leaves the round open for the next invocation instead of spending it. Every experiment is built before any runs, because the plan can change only while the round has no run: a blocked build (a design, scale, missing package, data, or permission) sends the plan back once for revision, and the plan step names what a person must provide, such as a `sagent env add` line, as `needs_human`. Experiments then flow through run and validation as a per-experiment pipeline. The workflow saves every step's structured result in the ledger with a checksum, so a payload that was not copied exactly saves nothing; closing the round saves the next-step result and opens the next round in one command.
 
 ## The steps
 
@@ -122,6 +126,7 @@ The Research Agent passes these arguments to the `research-loop` workflow; ask f
 | `maxFocuses` | 3 | readers per retrieval pass; extra focuses are logged, not read |
 | `maxRetrievalPasses` | 2 | read → refine passes per round |
 | `maxExperiments` | 3 | experiments run per round; the plan lists them in priority order, and the rest are logged as not run |
+| `maxPlanRevisions` | 1 | plan revisions after blocked builds, before any run; `0` turns them off |
 | `maxDebugAttempts` | 2 | debug → rerun cycles per experiment |
 | `maxChallengePasses` | 2 | challenge → recheck cycles per experiment |
 | `runTimeoutSec` | 600 | time limit for each sandboxed run |
@@ -231,7 +236,7 @@ Long and GPU runs go out detached: `sagent run execute --detach` runs in a backg
 
 Each campaign's resolved hypotheses and best verified result go to a cross-competition memory (`sagent memory search`), and the scout of the next competition reads which idea families held on similar tasks.
 
-Each role can run on its own model. Add an `[agents.models]` table to the workspace's `.sa/config.toml`, keyed by role (`clerk`, `scout`, `hypothesis`, `engineer`, `verifier`, `statistician`, `reporter`, or a research or paper node name), with a model name, a `{ provider, model }` table naming a route from this profile, or a list that rotates across the parallel hypothesis lenses. The campaign reads it through `sagent domain show`; a role without an entry uses the session model.
+Each role can run on its own model. Add an `[agents.models]` table to the workspace's `.sa/config.toml`, keyed by role (`clerk`, `scout`, `hypothesis`, `engineer`, `verifier`, `statistician`, `reporter`, or a research or paper node name), with a model name, a `{ provider, model }` table naming a route from this profile, or a list that rotates across the parallel hypothesis lenses. The campaign reads it through `sagent domain show` and the research loop through `sagent research open-round`; a role without an entry uses the session model.
 
 ```toml
 [agents.models]
@@ -261,7 +266,7 @@ The Notebook shows each paper run below the loop runs: a stage rail (Outline, Fi
 
 ## Run it
 
-The profile needs the `sagent` toolkit 0.4.1 or later (0.3.0 has no `paper` commands; 0.4.1 routes experiment requests outside a workspace to intake) on `PATH` (or in `~/.local/bin`) and `python3` for the hooks. Install the toolkit from a science-agent checkout and create the profile once:
+The profile needs the `sagent` toolkit 0.11.0 or later (the synced research loop uses `research close-round --open-next` and `research results --experiment`) on `PATH` (or in `~/.local/bin`) and `python3` for the hooks. Install the toolkit from a science-agent checkout and create the profile once:
 
 ```sh
 uv tool install --python 3.13 --force "science-agent-toolkit[ml,mcp] @ file:///path/to/science-agent"
@@ -378,7 +383,9 @@ pnpm run sync-science-research-bundle --source /path/to/science-agent --check
 | `Address already in use` at launch | another Web profile holds the port; add `--port <port>` after `--profile research` |
 | The page asks for a token | open the exact `?token=` URL from the launcher log |
 | The page goes blank with asset 404s | the client was rebuilt while the server ran; restart the server (this stops a running loop) |
-| A round runs no experiment | the plan could not be registered; the Notebook shows the reason, and the next-step agent carries the plan forward |
+| A round runs no experiment | the plan could not be registered: the loop stops with `registration-failed`, the Notebook shows the reason, and the round stays open, so fixing the cause and running the loop again resumes it |
+| The loop stops and asks for a person | a build was blocked and the plan could not route around it, often a missing package; run the `sagent env add` line it gives, then continue |
+| `No such option: --open-next` or `--experiment` | the installed toolkit predates 0.11.0; reinstall it from the checkout with `uv tool install --force` |
 | Experiments are listed as not run | they exceeded `maxExperiments`; ask for a higher cap or another round |
 | Evidence class is missing | ask for `/sa-research-status`; the class comes from `sagent research status` |
 | The workflow tool refuses | the agent reports the error verbatim; check `/sa-doctor` and that the session uses the Research Agent preset |

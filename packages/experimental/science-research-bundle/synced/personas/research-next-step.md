@@ -46,6 +46,9 @@ loop or starts another round (code stops it anyway at the round, time, and spend
    - unknown.
    Keep what earlier rounds established unless new evidence changes it; say when it does.
    Add method lessons: what failed and why, what took longer than planned.
+   When no experiment ran this round, knowledge has not changed: leave `state.md` as it is apart from
+   the round log entry, and amend `plan.md` only where the round showed a step cannot be done as
+   written.
 3. **Answer what can be answered.** For each question in `question.md`, an answer in plain words
    that cites the established results it rests on (experiment ids, run ids, evidence ids), or a
    partial answer that says what is missing, or nothing. No answer is better than a guess.
@@ -58,7 +61,8 @@ loop or starts another round (code stops it anyway at the round, time, and spend
    teaches the same thing whatever the outcome is not a step.
 5. **Decide continue or stop.** Stop when the main question is answered to the standard in
    `question.md`; or when further rounds are unlikely to change the answer within the limits left;
-   or when progress needs a human (data, a package, a permission, a judgment): say exactly what.
+   or when progress needs a human (data, a package, a permission, a judgment): say exactly what,
+   with the command when there is one (the message passes on what the plan node found missing).
    Otherwise continue. Two rounds in a row that settled nothing are a strong reason to stop or to
    change approach; say which.
 6. **Keep the round log.** `research/state.md` ends with a `## Round log` section, one entry per

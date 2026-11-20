@@ -34,6 +34,16 @@ describe('research loop labels and narration', () => {
     expect(parseLabel('r1-challenge-e1-2')).toEqual({ round: 1, kind: 'challenge', experimentId: 'e1', pass: 2 })
     expect(parseLabel('r3-save-plan-retry')).toEqual({ round: 3, kind: 'save' })
     expect(parseLabel('close-2')).toEqual({ kind: 'close' })
+    // A plan revision after blocked builds, its rebuilds, the id-only registration, and the close fallbacks.
+    expect(parseLabel('r1-plan')).toEqual({ round: 1, kind: 'plan' })
+    expect(parseLabel('r1-plan-2')).toEqual({ round: 1, kind: 'plan', pass: 2 })
+    expect(parseLabel('r1-build-e1b-rev1')).toEqual({ round: 1, kind: 'build', experimentId: 'e1b', pass: 2 })
+    expect(parseLabel('r1-build-e-1')).toEqual({ round: 1, kind: 'build', experimentId: 'e-1' })
+    for (const save of ['r1-save-plan-2', 'r1-save-plan-ids', 'r1-save-plan-2-ids-retry']) {
+      expect(parseLabel(save), save).toEqual({ round: 1, kind: 'save' })
+      expect(memberStage({ kind: 'save', label: save }), save).toBe('plan')
+    }
+    for (const close of ['close-1-retry', 'close-1-plain', 'close-1-plain-retry']) expect(parseLabel(close), close).toEqual({ kind: 'close' })
     expect(parseLabel('open-1')).toBeUndefined()
     expect(memberStage({ kind: 'save', label: 'r1-save-plan' })).toBe('plan')
     expect(memberStage({ kind: 'save', label: 'r1-save-e1', experimentId: 'e1' })).toBe('validate')
@@ -49,6 +59,10 @@ describe('research loop labels and narration', () => {
       kind: 'verdict', id: 'e1', verdict: 'refuted', unresolved: ['o1', 'o2'], runIds: ['r-1'],
     })
     expect(parseLogLine('Round 1 e2: blocked — no data · runs r-2')).toMatchObject({ kind: 'outcome', outcome: 'blocked', reason: 'no data', runIds: ['r-2'] })
+    expect(parseLogLine('Round 1 e1: blocked — replaced in plan revision 1: needs torch')).toMatchObject({
+      kind: 'outcome', id: 'e1', outcome: 'blocked', reason: 'replaced in plan revision 1: needs torch',
+    })
+    expect(parseLogLine('Round 1: plan revision 1 registered after blocked builds')).toEqual({ kind: 'round-note', round: 1, text: 'plan revision 1 registered after blocked builds' })
     expect(parseLogLine('Round 1: no reading needed (x).')).toEqual({ kind: 'round-note', round: 1, text: 'no reading needed (x).' })
     expect(parseLogLine('Round 1 plan: registered · broken')).toBeUndefined()
     expect(parseLogLine('something else')).toBeUndefined()

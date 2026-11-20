@@ -11,7 +11,7 @@ description: >
   "investigate", "study", "find out why", "test the hypothesis", "new method", "literature and
   experiments", "研究", "调研并做实验", "探索", "验证假设", "继续研究". For a Kaggle competition use
   science-agent-kaggle; for a fixed scorer (packing, optimization) or equation discovery use science-agent.
-version: 0.3.0
+version: 0.11.0
 ---
 
 # Science-Agent Research Loop
@@ -22,7 +22,8 @@ next-step node decides to stop or a hard limit is reached, then writes a report:
 ```text
 round:  retrieve-search → [retrieve-read ×N → retrieve-refine]*        what to read, read it, enough?
         plan                                                           experiments + analysis, recorded first
-        per experiment:  experiment-build → [experiment-run → experiment-debug]*
+        experiment-build ×N  → [plan, once, if a build is blocked]     revised before anything runs
+        per experiment:  [experiment-run → experiment-debug]*
                          validate-check → [validate-challenge → validate-recheck]*
         next-step                                                       state, next plan, continue or stop
 end:    write-up
@@ -78,8 +79,11 @@ The question is the user's. Take it from their words; do not sharpen it into a d
    Leave `resources.network: false` and `resources.env: []` unless the user asked for experiments
    that call a hosted model or download data. Granting network or a key is the user's decision: ask.
 3. `sagent -w <dir> objective create --file objective.yaml --json && sagent -w <dir> objective lock --json`
-4. `sagent -w <dir> env init --profile research --json`. More packages: the user runs
-   `sagent -w <dir> env add <pkg>...`.
+4. `sagent -w <dir> env init --profile research --json`. When the question runs existing code (a
+   harness, a repository, a package), read its requirements (`requirements.txt`, `pyproject.toml`,
+   imports), compare them with `sagent -w <dir> env show --json`, and show the user the
+   `sagent -w <dir> env add <pkg>==<version> ...` line for what is missing before the loop starts.
+   Adding packages is the user's decision; a loop started without them stops at the first build.
 5. Data, when the question is about data: put files in `data/raw/`; experiments declare them under
    `inputs` in `run.yaml`. Simulations need no data.
 6. Optional: `research/guidance.md`, the user's standing instructions to every node (preferred
@@ -102,15 +106,27 @@ Workflow({
     maxFocuses: 3,             // readers per retrieval pass
     maxRetrievalPasses: 2,
     maxExperiments: 3,         // per round; the plan lists them in priority order
+    maxPlanRevisions: 1,       // re-plans after blocked builds, before any run; 0 turns it off
     maxDebugAttempts: 2,
     maxChallengePasses: 2,
-    runTimeoutSec: <60 * objective.budget.max_wall_clock_min_per_run>,
-    models: <agent_models from `sagent domain show --json`, when present>
+    runTimeoutSec: <60 * objective.budget.max_wall_clock_min_per_run>
   }
 })
 ```
 
 The script is saved in the profile and embeds every node prompt, so it needs no agent types or script path. A run that was interrupted resumes: the still-open round is reused.
+
+Models per node come from the workspace's `.sa/config.toml`, which `research open-round` reports, so
+the launch needs no `models` argument (one passed in args wins). Keys are node names plus `clerk`:
+
+```toml
+[agents.models]
+clerk = "<a small, fast model>"            # copies commands; no judgment
+experiment-run = "<a small, fast model>"   # runs and classifies; no judgment
+validate-challenge = "<a different model from the builder's>"
+```
+
+A role left out runs on the session model.
 
 **Save the report when the workflow returns.** Workflow subagents may not write report files, so the
 write-up node returns the report as text. If `result.report.markdown` is set, write it verbatim to
@@ -144,7 +160,10 @@ sagent -w <ws> research status --json    # rounds, decisions, recorded node outp
 2. Findings with their numbers, uncertainty, run ids, and how they were validated.
 3. Refuted hypotheses, null results, failed experiments.
 4. What is not established, and open objections.
-5. The next-step plan and why the loop stopped (the next-step decision or the hard limit).
+5. The next-step plan and why the loop stopped (the next-step decision or the hard limit). When it
+   stopped for a person (`needs_human` in the last round), say exactly what is needed and give the
+   command. When it stopped with `registration-failed`, no round was spent: the round is still open,
+   and running the loop again resumes it.
 
 Say plainly what is guaranteed: code records what ran and when each node's output was written, and
 checks that cited quotes exist in their sources. Whether an analysis is right and whether a result

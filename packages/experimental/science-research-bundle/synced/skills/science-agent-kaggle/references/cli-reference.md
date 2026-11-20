@@ -229,7 +229,7 @@ subcommands. Use the stated alternative.
 | `sagent judge add` | `sagent evidence add --type note --quality soft`. |
 | `sagent holdout reveal` | `sagent approve --action holdout-reveal` then `sagent verify run --holdout-token`. |
 | `sagent verify holdout RUN` | `sagent verify run RUN --holdout-token TOKEN`. |
-| `sagent claim show/promote/dispute/supersede` | `sagent claim list` and `sagent claim sync`; the extra lifecycle functions exist only in `science_agent.claims`. |
+| `sagent claim show` | `sagent claim list --json` (`claim promote`, `dispute`, and `supersede` do exist). |
 | `sagent search record/compare` | `sagent search next`, `sagent search curve`, `sagent decide`. |
 | `sagent run sweep/status` | `sagent run execute --seeds ...`; `sagent run show`; `sagent run rerun <run>`. |
 | `sagent round resume` | `sagent round status` / `sagent round next`; re-invoke the workflow with the same round ID. |

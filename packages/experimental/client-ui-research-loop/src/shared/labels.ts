@@ -22,15 +22,18 @@ const LABEL_RULES: readonly (readonly [RegExp, (match: RegExpExecArray) => Omit<
   [/^retrieve-search$/u, () => ({ kind: 'search' })],
   [/^read-(.+)$/u, match => ({ kind: 'read', focusId: match[1] })],
   [/^retrieve-refine-(\d+)$/u, match => ({ kind: 'refine', pass: Number(match[1]) })],
-  [/^plan$/u, () => ({ kind: 'plan' })],
-  [/^build-(.+)$/u, match => ({ kind: 'build', experimentId: match[1] })],
+  // `plan-<n>` is the n-th plan of the round: a revision after blocked builds, before any run.
+  [/^plan(?:-(\d+))?$/u, match => ({ kind: 'plan', pass: match[1] === undefined ? undefined : Number(match[1]) })],
+  // `build-<id>-rev<n>` rebuilds an experiment after plan revision n.
+  [/^build-(.+?)(?:-rev(\d+))?$/u, match => ({ kind: 'build', experimentId: match[1], pass: match[2] === undefined ? undefined : Number(match[2]) + 1 })],
   [/^run-(.+)-(\d+)$/u, match => ({ kind: 'run', experimentId: match[1], pass: Number(match[2]) })],
   [/^debug-(.+)-(\d+)$/u, match => ({ kind: 'debug', experimentId: match[1], pass: Number(match[2]) })],
   [/^check-(.+)$/u, match => ({ kind: 'check', experimentId: match[1] })],
   [/^challenge-(.+)-(\d+)$/u, match => ({ kind: 'challenge', experimentId: match[1], pass: Number(match[2]) })],
   [/^recheck-(.+)-(\d+)$/u, match => ({ kind: 'recheck', experimentId: match[1], pass: Number(match[2]) })],
   [/^next-step$/u, () => ({ kind: 'next' })],
-  [/^save-(plan|next)(?:-retry)?$/u, () => ({ kind: 'save' })],
+  // A plan save may be a revision's (`save-plan-2`) or the id-only registration fallback (`-ids`).
+  [/^save-(plan(?:-\d+)?|next)(?:-ids)?(?:-retry)?$/u, () => ({ kind: 'save' })],
   [/^save-(.+?)(?:-retry)?$/u, match => ({ kind: 'save', experimentId: match[1] })],
 ]
 
@@ -40,7 +43,8 @@ const LABEL_RULES: readonly (readonly [RegExp, (match: RegExpExecArray) => Omit<
  * @returns the round, kind, and ids, or `undefined` for labels the view does not show (`open-<i>`, `write-up`).
  */
 export function parseLabel(label: string): ParsedLabel | undefined {
-  if (/^close-\d+$/u.test(label)) return { kind: 'close' }
+  // `close-<i>-plain` closes without the next-step result after the combined close failed.
+  if (/^close-\d+(?:-plain)?(?:-retry)?$/u.test(label)) return { kind: 'close' }
   const scoped = /^r(\d+)-(.+)$/u.exec(label)
   if (scoped === null) return undefined
   for (const [pattern, build] of LABEL_RULES) {

@@ -115,10 +115,15 @@ const LOOP_VIEW_FIELDS = [
   'label: `r${R.number}-retrieve-search`',
   'label: `r${R.number}-read-${f.id}`',
   'label: `r${R.number}-plan`',
-  'label: `r${R.number}-build-${e.id}`',
+  'label: `r${R.number}-plan-${R.revisions + 1}`',
+  "label: `r${R.number}-build-${e.id}${R.revisions ? `-rev${R.revisions}` : ''}`",
   'label: `r${R.number}-check-${e.id}`',
   'label: `r${R.number}-next-step`',
   "label: 'write-up'",
+  "`${label}${attempt > 1 ? '-retry' : ''}`",
+  'twice(`${label}-ids`',
+  'twice(`close-${i + 1}`',
+  'twice(`close-${i + 1}-plain`',
   'log(`Round ${R.number} (${R.round_id})',
   'experiments: results.map((r) => ({ id: r.id, status: r.status, verdict: r.verdict || null, confidence: r.confidence || null, unresolved: r.unresolved || []',
   'needs_human:',
@@ -156,12 +161,19 @@ const SCHEMA_EDITS: Edits = [
 const RECORD_CALLS: readonly (readonly [string, string])[] = [
   ['    const retrieval = await retrieve(R)\n', '    const retrieval = await retrieve(R)\n    recordRetrieval(R, retrieval)\n'],
   // Before the per-invocation cap, so experiments it drops keep their titles and roles.
-  ['    if (experiments.length > MAX_EXPERIMENTS) {\n', '    recordPlan(R, plan, experiments)\n    if (experiments.length > MAX_EXPERIMENTS) {\n'],
+  [
+    "    const registered = plan ? await register(R, 'plan') : await save(R, 'plan', 'Plan')\n",
+    "    const registered = plan ? await register(R, 'plan') : await save(R, 'plan', 'Plan')\n    recordPlan(R, plan, experiments, registered)\n",
+  ],
+  ['      experiments = next\n', '      experiments = next\n      recordRevision(R, revised, experiments)\n'],
   [
     "      async (result, e) => { await save(R, e.id, 'Validate'); return result },",
     "      async (result, e) => { await save(R, e.id, 'Validate'); recordExperiment(R, e, result); return result },",
   ],
-  ["    await save(R, 'next', 'Next step')\n", "    await save(R, 'next', 'Next step')\n    recordNext(R, decision, reason, next)\n"],
+  [
+    "    const closed = await closeRound(R, i, decision, reason, spent, decision === 'continue' && i + 1 < MAX_ROUNDS)\n",
+    "    const closed = await closeRound(R, i, decision, reason, spent, decision === 'continue' && i + 1 < MAX_ROUNDS)\n    recordNext(R, decision, reason, next)\n",
+  ],
   ['\nreturn plain({\n', '\nif (last) recordWriteUp(last, report, stop)\n\nreturn plain({\n'],
 ]
 

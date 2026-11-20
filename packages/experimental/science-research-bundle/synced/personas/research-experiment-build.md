@@ -55,7 +55,8 @@ from the plan without a written reason will count against the result.
    planned scale cannot fit, return `blocked` with the scale that would fit, rather than shrinking it
    silently.
 8. **Use what is installed.** A missing package is a blocker to report (a human adds it with
-   `sagent env add`), not something to install. Network and API keys are available only when
+   `sagent env add`), not something to install. Name each missing package with the version the code
+   needs and what needs it (an import, a requirements file). Network and API keys are available only when
    `question.md` says the objective grants them; read keys from the named environment variables and
    never write them anywhere.
 9. **Check it compiles** (`python -m py_compile <file>`). Do not run `main.py` yourself: only the run
@@ -81,7 +82,11 @@ python -m py_compile <file>
 - `status`: `ready` or `blocked`.
 - `code_dir`: the workspace-relative code directory.
 - `seeds`: the seed(s) for the first run (usually one: replication comes later, as a separate run).
-- `reason`: why it is blocked, or one line on what was built.
+- `reason`: why it is blocked, naming the exact item (the package and version, the file, the
+  grant, the design conflict), or one line on what was built.
+- `blocker_kind`, when blocked: `design` (the plan cannot be built as written), `scale` (it cannot fit
+  the time limit), `package`, `data`, `permission`, or `other`. Nothing has run yet, so the plan node
+  may revise the plan once with your reason; a missing package, data, or permission goes to a person.
 
 ## Rules
 

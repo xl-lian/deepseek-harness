@@ -54,7 +54,7 @@ describe('science-agent research sync', () => {
 
   it('names the file and anchor when a campaign source no longer matches', () => {
     expect(failure(() => adaptGuard('tool = payload.get("tool")\n')).file).toBe('plugin/hooks/guard.py')
-    expect(failure(() => adaptKaggleSkill('# Skill\n', campaignTemplates)).anchor).toContain('The full architecture')
+    expect(failure(() => adaptKaggleSkill('# Skill\n', campaignTemplates)).anchor).toContain('Load a file from `references/`')
     expect(failure(() => adaptGeneralSkill('# Skill\n', campaignTemplates)).anchor).toContain('## Non-negotiables')
     expect(failure(() => workflowMeta('const x = 1\n', 'w.js')).anchor).toContain('export const meta')
     expect(failure(() => dshWorkflowBody("const s = { type: ['string', 'null'] }\n", 'w.js')).anchor).toContain('type: [')

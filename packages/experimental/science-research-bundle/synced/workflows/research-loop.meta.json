@@ -13,11 +13,11 @@
     },
     {
       "title": "Plan",
-      "detail": "plan: experiments and their analysis, recorded before anything runs"
+      "detail": "plan: experiments and their analysis, recorded before anything runs; revised before any run if a build is blocked"
     },
     {
       "title": "Experiment",
-      "detail": "per experiment: build, then run and debug until it runs"
+      "detail": "build every experiment, then per experiment: run and debug until it runs"
     },
     {
       "title": "Validate",

@@ -344,9 +344,9 @@ function dshCommandNames(text: string): string {
  */
 export function adaptKaggleSkill(text: string, templates: CampaignTemplates): string {
   const file = 'plugin/skills/science-agent-kaggle/SKILL.md'
-  const intro = 'The full architecture and rationale live in `references/`. Load only the reference you need.\n'
+  const intro = 'Load a file from `references/` only when you need it (list at the end).\n'
   let out = replaceOnce(text, intro, `${intro}\n${templates.skillRuntime}`, file)
-  const launch = /2\. \*\*Launch the campaign\*\*[\s\S]*?multi-agent sequence\.\n/
+  const launch = /2\. Launch:\n[\s\S]*?pass the absolute path from `command -v sagent` as `saBin`\.\n/
   if (!launch.test(out)) throw new SyncAnchorError(file, 'campaign launch step missing')
   out = out.replace(launch, () => templates.campaignLaunch)
   out = out.split('The Workflow tool is unavailable').join('The workflow tool is unavailable')
@@ -374,7 +374,8 @@ export function adaptGuard(text: string): string {
   const file = 'plugin/hooks/guard.py'
   let out = replaceOnce(text, '    tool = payload.get("tool_name") or payload.get("tool")\n',
     '    tool = str(payload.get("tool_name") or payload.get("tool") or "").lower()\n', file)
-  out = replaceOnce(out, '    if tool in {"Write", "Edit", "MultiEdit"}:\n', '    if tool in {"write", "edit", "multiedit"}:\n', file)
+  // Once for writes under any workspace's .sa/ or runs/, once for the session workspace's own checks.
+  out = replaceAllRequired(out, '    if tool in {"Write", "Edit", "MultiEdit"}:\n', '    if tool in {"write", "edit", "multiedit"}:\n', file)
   return replaceOnce(out, '    if tool == "Bash":\n', '    if tool == "bash":\n', file)
 }
 
